@@ -5,7 +5,7 @@ import { createScene } from "./game/createScene";
 const canvas = document.querySelector<HTMLCanvasElement>("#game-canvas");
 if (!canvas) throw new Error("Le canvas #game-canvas est introuvable.");
 
-const engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+const engine = new Engine(canvas, true);
 const scene = createScene(engine, canvas);
 
 // Un jeu redessine continuellement la scène afin que les animations et les
