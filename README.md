@@ -11,7 +11,7 @@ Un prototype très précoce d'un jeu 3D de survie et de construction jouable dan
 
 ## Prérequis
 
-- Node.js 20 ou une version LTS plus récente
+- Node.js 20.19+ ou Node.js 22.12+
 - npm
 
 ## Installation
