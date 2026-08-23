@@ -30,7 +30,7 @@ Vite affiche alors l'adresse locale à ouvrir dans un navigateur.
 
 ### Contrôles
 
-- ZQSD / WASD : déplacement
+- ZQSD / WASD / flèches directionnelles : déplacement
 
 ## Construction
 

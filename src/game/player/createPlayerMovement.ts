@@ -1,10 +1,20 @@
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
-import "@babylonjs/core/Culling/ray";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 
 const PLAYER_MOVEMENT_SPEED = 5;
-const MOVEMENT_KEYS = new Set(["z", "w", "s", "q", "a", "d"]);
+const MOVEMENT_KEYS = new Set([
+  "z",
+  "w",
+  "s",
+  "q",
+  "a",
+  "d",
+  "arrowup",
+  "arrowdown",
+  "arrowleft",
+  "arrowright",
+]);
 
 export function createPlayerMovement(player: Mesh, camera: ArcRotateCamera) {
   const pressedKeys = new Set<string>();
@@ -27,16 +37,23 @@ export function createPlayerMovement(player: Mesh, camera: ArcRotateCamera) {
 
   return (deltaTimeInSeconds: number) => {
     const forwardInput =
-      Number(pressedKeys.has("z") || pressedKeys.has("w")) -
-      Number(pressedKeys.has("s"));
+      Number(
+        pressedKeys.has("z") ||
+          pressedKeys.has("w") ||
+          pressedKeys.has("arrowup"),
+      ) - Number(pressedKeys.has("s") || pressedKeys.has("arrowdown"));
     const rightInput =
-      Number(pressedKeys.has("d")) -
-      Number(pressedKeys.has("q") || pressedKeys.has("a"));
+      Number(pressedKeys.has("d") || pressedKeys.has("arrowright")) -
+      Number(
+        pressedKeys.has("q") ||
+          pressedKeys.has("a") ||
+          pressedKeys.has("arrowleft"),
+      );
 
     if (forwardInput !== 0 || rightInput !== 0) {
       // Les axes de la caméra sont projetés sur X/Z : les touches correspondent
       // ainsi au haut et aux côtés de l'écran malgré la vue isométrique.
-      const cameraForward = camera.getForwardRay().direction;
+      const cameraForward = camera.target.subtract(camera.position);
       cameraForward.y = 0;
       cameraForward.normalize();
 
