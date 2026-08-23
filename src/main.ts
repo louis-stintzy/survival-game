@@ -6,7 +6,7 @@ const canvas = document.querySelector<HTMLCanvasElement>("#game-canvas");
 if (!canvas) throw new Error("Le canvas #game-canvas est introuvable.");
 
 const engine = new Engine(canvas, true);
-const scene = createScene(engine, canvas);
+const scene = createScene(engine);
 
 // Un jeu redessine continuellement la scène afin que les animations et les
 // futures interactions puissent être affichées image après image.
