@@ -10,6 +10,7 @@ import { Scene } from "@babylonjs/core/scene";
 import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import type { Engine } from "@babylonjs/core/Engines/engine";
+import { createPlayerMovement } from "./player/createPlayerMovement";
 
 const VIEW_HEIGHT = 28;
 
@@ -67,7 +68,7 @@ function createRock(
   return rock;
 }
 
-export function createScene(engine: Engine, canvas: HTMLCanvasElement): Scene {
+export function createScene(engine: Engine): Scene {
   const scene = new Scene(engine);
   scene.clearColor = new Color4(0.56, 0.84, 0.91, 1);
 
@@ -199,5 +200,11 @@ export function createScene(engine: Engine, canvas: HTMLCanvasElement): Scene {
   // Seuls les éléments au-dessus du sol projettent une ombre ; les surfaces
   // de l'île les reçoivent pour mieux ancrer les formes dans le diorama.
   [player, ...trees, ...rocks].forEach((mesh) => shadows.addShadowCaster(mesh));
+
+  const updatePlayerMovement = createPlayerMovement(player, camera);
+  scene.onBeforeRenderObservable.add(() => {
+    updatePlayerMovement(engine.getDeltaTime() / 1000);
+  });
+
   return scene;
 }
