@@ -3,6 +3,7 @@ import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import type { Scene } from "@babylonjs/core/scene";
+import type { HarvestableResource } from "../resources/resourceTypes";
 
 interface IslandMaterials {
   water: StandardMaterial;
@@ -31,15 +32,6 @@ export interface Island {
   walkableSurfaces: Mesh[];
   shadowCasters: Mesh[];
   harvestableResources: HarvestableResource[];
-}
-
-export type ResourceType = "wood" | "stone";
-
-export interface HarvestableResource {
-  type: ResourceType;
-  position: Vector3;
-  meshes: Mesh[];
-  harvested: boolean;
 }
 
 const GRASS_HEIGHT = 0.75;

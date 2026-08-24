@@ -1,8 +1,5 @@
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
-import type {
-  HarvestableResource,
-  ResourceType,
-} from "../world/createIsland";
+import type { HarvestableResource, ResourceType } from "./resourceTypes";
 
 const INTERACTION_DISTANCE = 2.75;
 const HARVEST_FEEDBACK_DURATION_SECONDS = 1.5;
