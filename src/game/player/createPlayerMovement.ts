@@ -1,8 +1,14 @@
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import { Ray } from "@babylonjs/core/Culling/ray";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 
 const PLAYER_MOVEMENT_SPEED = 5;
+const PLAYER_VERTICAL_SPEED = 4;
+const PLAYER_HALF_HEIGHT = 1.1;
+const GROUND_RAY_START_HEIGHT = 10;
+const GROUND_RAY_LENGTH = 20;
 const MOVEMENT_KEYS = new Set([
   "z",
   "w",
@@ -16,8 +22,14 @@ const MOVEMENT_KEYS = new Set([
   "arrowright",
 ]);
 
-export function createPlayerMovement(player: Mesh, camera: ArcRotateCamera) {
+export function createPlayerMovement(
+  player: Mesh,
+  camera: ArcRotateCamera,
+  walkableSurfaces: readonly AbstractMesh[],
+) {
   const pressedKeys = new Set<string>();
+  const walkableSurfaceSet = new Set(walkableSurfaces);
+  let targetPlayerHeight = player.position.y;
 
   const handleKeyDown = (event: KeyboardEvent) => {
     const key = event.key.toLowerCase();
@@ -70,7 +82,37 @@ export function createPlayerMovement(player: Mesh, camera: ArcRotateCamera) {
 
       // Le delta time rend la distance parcourue indépendante du nombre d'images par seconde.
       const distance = PLAYER_MOVEMENT_SPEED * deltaTimeInSeconds;
-      player.position.addInPlace(movementDirection.scale(distance));
+      const nextPosition = player.position.add(
+        movementDirection.scale(distance),
+      );
+
+      // Ce rayon vertical cherche la vraie surface praticable sous la prochaine
+      // position, afin d'en déduire sa hauteur sans tester des zones X/Z en dur.
+      const groundRay = new Ray(
+        new Vector3(nextPosition.x, GROUND_RAY_START_HEIGHT, nextPosition.z),
+        Vector3.Down(),
+        GROUND_RAY_LENGTH,
+      );
+      const groundHit = player.getScene().pickWithRay(
+        groundRay,
+        (mesh) => walkableSurfaceSet.has(mesh),
+      );
+
+      if (groundHit?.pickedPoint) {
+        player.position.x = nextPosition.x;
+        player.position.z = nextPosition.z;
+        targetPlayerHeight = groundHit.pickedPoint.y + PLAYER_HALF_HEIGHT;
+      }
+    }
+
+    // Une vitesse multipliée par le delta time lisse Y de la même manière,
+    // quel que soit le nombre d'images affichées chaque seconde.
+    const remainingHeight = targetPlayerHeight - player.position.y;
+    const maximumVerticalStep = PLAYER_VERTICAL_SPEED * deltaTimeInSeconds;
+    if (Math.abs(remainingHeight) <= maximumVerticalStep) {
+      player.position.y = targetPlayerHeight;
+    } else {
+      player.position.y += Math.sign(remainingHeight) * maximumVerticalStep;
     }
 
     camera.setTarget(player.position);
