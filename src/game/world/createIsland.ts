@@ -34,6 +34,7 @@ export interface Island {
 
 const GRASS_HEIGHT = 0.75;
 const ROCKY_PLATEAU_HEIGHT = 1.15;
+const ROCK_GROUND_SINK_RATIO = 0.45;
 
 function createTree(
   scene: Scene,
@@ -87,11 +88,7 @@ function createRock(
     { type: 1, size: 1 },
     scene,
   );
-  rock.position = new Vector3(
-    placement.x,
-    placement.groundHeight + placement.scale * 0.55,
-    placement.z,
-  );
+  rock.position = new Vector3(placement.x, 0, placement.z);
   rock.scaling = new Vector3(
     placement.scale,
     placement.scale * 0.75,
@@ -99,13 +96,21 @@ function createRock(
   );
   rock.rotation = new Vector3(0.12, placement.z, -0.08);
   rock.material = material;
+
+  rock.computeWorldMatrix(true);
+  const boundingBox = rock.getBoundingInfo().boundingBox;
+  const lowestPoint = boundingBox.minimumWorld.y;
+  const rockHeight = boundingBox.maximumWorld.y - lowestPoint;
+  // On pose d'abord le point le plus bas sur le terrain,
+  // puis on enfonce légèrement le rocher pour qu'il paraisse naturellement ancré.
+  rock.position.y += placement.groundHeight - lowestPoint;
+  rock.position.y -= rockHeight * ROCK_GROUND_SINK_RATIO;
+  rock.computeWorldMatrix(true);
+
   return rock;
 }
 
-export function createIsland(
-  scene: Scene,
-  materials: IslandMaterials,
-): Island {
+export function createIsland(scene: Scene, materials: IslandMaterials): Island {
   const water = MeshBuilder.CreateCylinder(
     "water",
     { diameter: 52, height: 0.6, tessellation: 48 },
