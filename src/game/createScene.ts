@@ -1,7 +1,6 @@
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
@@ -11,6 +10,7 @@ import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import type { Engine } from "@babylonjs/core/Engines/engine";
 import { createPlayerMovement } from "./player/createPlayerMovement";
+import { createIsland } from "./world/createIsland";
 
 const VIEW_HEIGHT = 28;
 
@@ -23,49 +23,6 @@ function createMaterial(
   material.diffuseColor = color;
   material.specularColor = Color3.Black();
   return material;
-}
-
-function createTree(
-  scene: Scene,
-  position: Vector3,
-  trunkMaterial: StandardMaterial,
-  leavesMaterial: StandardMaterial,
-): Mesh[] {
-  const trunk = MeshBuilder.CreateCylinder(
-    "tree-trunk",
-    { height: 2.2, diameterTop: 0.42, diameterBottom: 0.6, tessellation: 7 },
-    scene,
-  );
-  trunk.position = position.add(new Vector3(0, 1.1, 0));
-  trunk.material = trunkMaterial;
-  const crown = MeshBuilder.CreatePolyhedron(
-    "tree-crown",
-    { type: 2, size: 1.65 },
-    scene,
-  );
-  crown.position = position.add(new Vector3(0, 3, 0));
-  crown.scaling = new Vector3(0.9, 1.2, 0.9);
-  crown.rotation.y = position.x;
-  crown.material = leavesMaterial;
-  return [trunk, crown];
-}
-
-function createRock(
-  scene: Scene,
-  position: Vector3,
-  material: StandardMaterial,
-  scale: number,
-): Mesh {
-  const rock = MeshBuilder.CreatePolyhedron(
-    "rock",
-    { type: 1, size: 1 },
-    scene,
-  );
-  rock.position = position.add(new Vector3(0, scale * 0.55, 0));
-  rock.scaling = new Vector3(scale, scale * 0.75, scale * 0.85);
-  rock.rotation = new Vector3(0.12, position.z, -0.08);
-  rock.material = material;
-  return rock;
 }
 
 export function createScene(engine: Engine): Scene {
@@ -146,44 +103,14 @@ export function createScene(engine: Engine): Scene {
     new Color3(0.92, 0.3, 0.18),
   );
 
-  const water = MeshBuilder.CreateCylinder(
-    "water",
-    { diameter: 30, height: 0.6, tessellation: 48 },
-    scene,
-  );
-  water.position.y = -0.55;
-  water.material = waterMaterial;
-  water.receiveShadows = true;
-  const beach = MeshBuilder.CreateCylinder(
-    "beach",
-    { diameter: 18, height: 1.1, tessellation: 12 },
-    scene,
-  );
-  beach.position.y = -0.2;
-  beach.scaling.z = 0.82;
-  beach.rotation.y = 0.08;
-  beach.material = sandMaterial;
-  beach.receiveShadows = true;
-  const grass = MeshBuilder.CreateCylinder(
-    "grass",
-    { diameter: 15.5, height: 1, tessellation: 11 },
-    scene,
-  );
-  grass.position.y = 0.25;
-  grass.scaling.z = 0.8;
-  grass.rotation.y = -0.06;
-  grass.material = grassMaterial;
-  grass.receiveShadows = true;
-  const rockyPlateau = MeshBuilder.CreateCylinder(
-    "rocky-plateau",
-    { diameter: 4, height: 0.35, tessellation: 7 },
-    scene,
-  );
-  rockyPlateau.position = new Vector3(2.2, 0.925, -0.6);
-  rockyPlateau.scaling.z = 0.72;
-  rockyPlateau.rotation.y = 0.2;
-  rockyPlateau.material = rockMaterial;
-  rockyPlateau.receiveShadows = true;
+  const island = createIsland(scene, {
+    water: waterMaterial,
+    sand: sandMaterial,
+    grass: grassMaterial,
+    trunk: trunkMaterial,
+    leaves: leavesMaterial,
+    rock: rockMaterial,
+  });
 
   const player = MeshBuilder.CreateCapsule(
     "player",
@@ -192,32 +119,16 @@ export function createScene(engine: Engine): Scene {
   );
   player.position = new Vector3(0, 1.85, 0);
   player.material = playerMaterial;
-  const trees = [
-    new Vector3(-4.8, 0.75, -2.4),
-    new Vector3(-5.6, 0.75, 1.3),
-    new Vector3(-2.9, 0.75, 3.4),
-    new Vector3(4.5, 0.75, 2.2),
-    new Vector3(5.2, 0.75, -1.4),
-  ].flatMap((position) =>
-    createTree(scene, position, trunkMaterial, leavesMaterial),
-  );
-  const rocks = [
-    createRock(scene, new Vector3(-1.9, 0.75, -4.4), rockMaterial, 1.1),
-    createRock(scene, new Vector3(3.1, 0.75, -3.5), rockMaterial, 0.9),
-    createRock(scene, new Vector3(5.7, 0.3, 0.6), rockMaterial, 0.7),
-  ];
-
   // Seuls les éléments au-dessus du sol projettent une ombre ; les surfaces
   // de l'île les reçoivent pour mieux ancrer les formes dans le diorama.
-  [player, rockyPlateau, ...trees, ...rocks].forEach((mesh) =>
+  [player, ...island.shadowCasters].forEach((mesh) =>
     shadows.addShadowCaster(mesh),
   );
 
-  const walkableSurfaces = [grass, beach, rockyPlateau];
   const updatePlayerMovement = createPlayerMovement(
     player,
     camera,
-    walkableSurfaces,
+    island.walkableSurfaces,
   );
   scene.onBeforeRenderObservable.add(() => {
     updatePlayerMovement(engine.getDeltaTime() / 1000);
