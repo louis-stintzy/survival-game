@@ -5,6 +5,7 @@ import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 
 const PLAYER_MOVEMENT_SPEED = 5;
+const PLAYER_VERTICAL_SPEED = 4;
 const PLAYER_HALF_HEIGHT = 1.1;
 const GROUND_RAY_START_HEIGHT = 10;
 const GROUND_RAY_LENGTH = 20;
@@ -28,6 +29,7 @@ export function createPlayerMovement(
 ) {
   const pressedKeys = new Set<string>();
   const walkableSurfaceSet = new Set(walkableSurfaces);
+  let targetPlayerHeight = player.position.y;
 
   const handleKeyDown = (event: KeyboardEvent) => {
     const key = event.key.toLowerCase();
@@ -97,12 +99,20 @@ export function createPlayerMovement(
       );
 
       if (groundHit?.pickedPoint) {
-        player.position.set(
-          nextPosition.x,
-          groundHit.pickedPoint.y + PLAYER_HALF_HEIGHT,
-          nextPosition.z,
-        );
+        player.position.x = nextPosition.x;
+        player.position.z = nextPosition.z;
+        targetPlayerHeight = groundHit.pickedPoint.y + PLAYER_HALF_HEIGHT;
       }
+    }
+
+    // Une vitesse multipliée par le delta time lisse Y de la même manière,
+    // quel que soit le nombre d'images affichées chaque seconde.
+    const remainingHeight = targetPlayerHeight - player.position.y;
+    const maximumVerticalStep = PLAYER_VERTICAL_SPEED * deltaTimeInSeconds;
+    if (Math.abs(remainingHeight) <= maximumVerticalStep) {
+      player.position.y = targetPlayerHeight;
+    } else {
+      player.position.y += Math.sign(remainingHeight) * maximumVerticalStep;
     }
 
     camera.setTarget(player.position);

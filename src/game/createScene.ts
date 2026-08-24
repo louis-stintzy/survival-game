@@ -179,7 +179,7 @@ export function createScene(engine: Engine): Scene {
     { diameter: 4, height: 0.35, tessellation: 7 },
     scene,
   );
-  rockyPlateau.position = new Vector3(2.4, 0.925, 1.5);
+  rockyPlateau.position = new Vector3(2.2, 0.925, -0.6);
   rockyPlateau.scaling.z = 0.72;
   rockyPlateau.rotation.y = 0.2;
   rockyPlateau.material = rockMaterial;
@@ -209,7 +209,9 @@ export function createScene(engine: Engine): Scene {
 
   // Seuls les éléments au-dessus du sol projettent une ombre ; les surfaces
   // de l'île les reçoivent pour mieux ancrer les formes dans le diorama.
-  [player, ...trees, ...rocks].forEach((mesh) => shadows.addShadowCaster(mesh));
+  [player, rockyPlateau, ...trees, ...rocks].forEach((mesh) =>
+    shadows.addShadowCaster(mesh),
+  );
 
   const walkableSurfaces = [grass, beach, rockyPlateau];
   const updatePlayerMovement = createPlayerMovement(
