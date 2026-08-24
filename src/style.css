@@ -2,3 +2,21 @@
 * { box-sizing: border-box; }
 html, body, #game-canvas { width: 100%; height: 100%; margin: 0; overflow: hidden; }
 #game-canvas { display: block; outline: none; touch-action: none; }
+
+.game-message {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  padding: 0.65rem 1rem;
+  border-radius: 0.5rem;
+  color: white;
+  background: rgb(19 33 35 / 78%);
+  font-weight: 600;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.game-message--feedback {
+  bottom: 5.5rem;
+  color: #fff1b8;
+}

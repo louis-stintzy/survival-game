@@ -30,6 +30,16 @@ interface RockPlacement {
 export interface Island {
   walkableSurfaces: Mesh[];
   shadowCasters: Mesh[];
+  harvestableResources: HarvestableResource[];
+}
+
+export type ResourceType = "wood" | "stone";
+
+export interface HarvestableResource {
+  type: ResourceType;
+  position: Vector3;
+  meshes: Mesh[];
+  harvested: boolean;
 }
 
 const GRASS_HEIGHT = 0.75;
@@ -168,9 +178,15 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
     { x: 4.2, z: 7.4, scale: 0.9, rotation: 2.3 },
     { x: 11.5, z: 1.8, scale: 0.95, rotation: 1.2 },
   ];
-  const trees = treePlacements.flatMap((placement, index) =>
-    createTree(scene, placement, index, materials),
+  const treeResources: HarvestableResource[] = treePlacements.map(
+    (placement, index) => ({
+      type: "wood",
+      position: new Vector3(placement.x, GRASS_HEIGHT, placement.z),
+      meshes: createTree(scene, placement, index, materials),
+      harvested: false,
+    }),
   );
+  const trees = treeResources.flatMap((resource) => resource.meshes);
 
   const rockPlacements: RockPlacement[] = [
     { x: 6.2, z: -4.2, scale: 1.2, groundHeight: ROCKY_PLATEAU_HEIGHT },
@@ -182,12 +198,23 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
     { x: 3.2, z: 9.2, scale: 0.85, groundHeight: GRASS_HEIGHT },
     { x: -13.2, z: -4.4, scale: 0.7, groundHeight: GRASS_HEIGHT },
   ];
-  const rocks = rockPlacements.map((placement, index) =>
-    createRock(scene, placement, index, materials.rock),
+  const rockResources: HarvestableResource[] = rockPlacements.map(
+    (placement, index) => ({
+      type: "stone",
+      position: new Vector3(
+        placement.x,
+        placement.groundHeight,
+        placement.z,
+      ),
+      meshes: [createRock(scene, placement, index, materials.rock)],
+      harvested: false,
+    }),
   );
+  const rocks = rockResources.flatMap((resource) => resource.meshes);
 
   return {
     walkableSurfaces: [grass, beach, rockyPlateau],
     shadowCasters: [rockyPlateau, ...trees, ...rocks],
+    harvestableResources: [...treeResources, ...rockResources],
   };
 }
