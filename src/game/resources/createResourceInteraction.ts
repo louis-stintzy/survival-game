@@ -1,11 +1,14 @@
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
-import type { HarvestableResource, ResourceType } from "./resourceTypes";
+import type {
+  HarvestableResource,
+  HarvestableResourceType,
+} from "./resourceTypes";
 
 const INTERACTION_DISTANCE = 2.75;
 const HARVEST_FEEDBACK_DURATION_SECONDS = 1.5;
 
 const RESOURCE_TEXT: Record<
-  ResourceType,
+  HarvestableResourceType,
   { interaction: string; harvested: string }
 > = {
   wood: {
@@ -47,6 +50,7 @@ function findNearestResource(
 export function createResourceInteraction(
   player: Mesh,
   resources: readonly HarvestableResource[],
+  onHarvest: (type: HarvestableResourceType) => void,
 ) {
   const interactionPrompt = document.querySelector<HTMLElement>(
     "#interaction-prompt",
@@ -88,6 +92,7 @@ export function createResourceInteraction(
       if (nearestResource) {
         nearestResource.harvested = true;
         nearestResource.meshes.forEach((mesh) => mesh.setEnabled(false));
+        onHarvest(nearestResource.type);
         interactionPrompt.hidden = true;
         harvestFeedback.textContent =
           RESOURCE_TEXT[nearestResource.type].harvested;

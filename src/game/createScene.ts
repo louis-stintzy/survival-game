@@ -9,6 +9,7 @@ import { Scene } from "@babylonjs/core/scene";
 import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import type { Engine } from "@babylonjs/core/Engines/engine";
+import { createInventory } from "./inventory/createInventory";
 import { createPlayerMovement } from "./player/createPlayerMovement";
 import { createResourceInteraction } from "./resources/createResourceInteraction";
 import { createIsland } from "./world/createIsland";
@@ -126,6 +127,7 @@ export function createScene(engine: Engine): Scene {
     shadows.addShadowCaster(mesh),
   );
 
+  const inventory = createInventory();
   const updatePlayerMovement = createPlayerMovement(
     player,
     camera,
@@ -134,6 +136,7 @@ export function createScene(engine: Engine): Scene {
   const updateResourceInteraction = createResourceInteraction(
     player,
     island.harvestableResources,
+    (resourceType) => inventory.add(resourceType, 1),
   );
   scene.onBeforeRenderObservable.add(() => {
     const deltaTimeInSeconds = engine.getDeltaTime() / 1000;
