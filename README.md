@@ -1,6 +1,6 @@
 # Survival Game
 
-Un prototype très précoce d'un jeu 3D de survie et de construction jouable dans un navigateur. Pour l'instant, le projet affiche uniquement un petit diorama d'île low-poly : aucun gameplay n'est encore implémenté.
+Un prototype très précoce d'un jeu 3D de survie et de construction jouable dans un navigateur. Le joueur peut explorer une petite île low-poly et y récolter des ressources.
 
 ## Stack technique
 
@@ -31,6 +31,7 @@ Vite affiche alors l'adresse locale à ouvrir dans un navigateur.
 ### Contrôles
 
 - ZQSD / WASD / flèches directionnelles : déplacement
+- E : récolter un arbre ou un rocher proche
 
 ## Construction
 

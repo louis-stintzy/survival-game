@@ -10,6 +10,7 @@ import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import type { Engine } from "@babylonjs/core/Engines/engine";
 import { createPlayerMovement } from "./player/createPlayerMovement";
+import { createResourceInteraction } from "./resources/createResourceInteraction";
 import { createIsland } from "./world/createIsland";
 
 const VIEW_HEIGHT = 28;
@@ -130,8 +131,14 @@ export function createScene(engine: Engine): Scene {
     camera,
     island.walkableSurfaces,
   );
+  const updateResourceInteraction = createResourceInteraction(
+    player,
+    island.harvestableResources,
+  );
   scene.onBeforeRenderObservable.add(() => {
-    updatePlayerMovement(engine.getDeltaTime() / 1000);
+    const deltaTimeInSeconds = engine.getDeltaTime() / 1000;
+    updatePlayerMovement(deltaTimeInSeconds);
+    updateResourceInteraction(deltaTimeInSeconds);
   });
 
   return scene;
