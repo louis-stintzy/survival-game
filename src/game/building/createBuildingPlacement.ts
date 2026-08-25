@@ -172,10 +172,10 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
         shelter.root.rotation.y = currentPlacement.rotation;
         builtFootprints.push(currentPlacement);
         onShelterBuilt(shelter.meshes);
-
-        // Le nouvel abri et le nouvel inventaire participent immédiatement à
-        // une seconde validation du ghost resté en mode construction.
-        currentPlacement = updateGhostPlacement();
+        buildingModeActive = false;
+        currentPlacement = undefined;
+        ghost.root.setEnabled(false);
+        buildingPanel.hidden = true;
       }
     }
   };

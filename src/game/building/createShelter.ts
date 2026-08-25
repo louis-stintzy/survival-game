@@ -48,7 +48,7 @@ export function createShelter(
     scene,
   );
   leftRoof.position.set(-0.95, 2.9, 0);
-  leftRoof.rotation.z = -0.22;
+  leftRoof.rotation.z = 0.22;
   leftRoof.material = materials.roof;
   leftRoof.parent = root;
 
@@ -58,7 +58,7 @@ export function createShelter(
     scene,
   );
   rightRoof.position.set(0.95, 2.9, 0);
-  rightRoof.rotation.z = 0.22;
+  rightRoof.rotation.z = -0.22;
   rightRoof.material = materials.roof;
   rightRoof.parent = root;
 
