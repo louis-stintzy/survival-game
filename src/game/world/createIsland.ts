@@ -30,6 +30,7 @@ interface RockPlacement {
 
 export interface Island {
   walkableSurfaces: Mesh[];
+  buildableSurfaces: Mesh[];
   shadowCasters: Mesh[];
   harvestableResources: HarvestableResource[];
 }
@@ -206,6 +207,7 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
 
   return {
     walkableSurfaces: [grass, beach, rockyPlateau],
+    buildableSurfaces: [grass],
     shadowCasters: [rockyPlateau, ...trees, ...rocks],
     harvestableResources: [...treeResources, ...rockResources],
   };

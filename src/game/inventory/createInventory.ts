@@ -1,5 +1,9 @@
 import type { ResourceType } from "../resources/resourceTypes";
 
+export type InventoryCost = Partial<Record<ResourceType, number>>;
+
+const RESOURCE_TYPES: readonly ResourceType[] = ["wood", "stone", "food"];
+
 const INITIAL_COUNTS: Record<ResourceType, number> = {
   wood: 0,
   stone: 0,
@@ -31,7 +35,42 @@ export function createInventory() {
       counts[type] += amount;
       updateDisplayedCount(type);
     },
+
+    canAfford(cost: InventoryCost) {
+      return getValidatedCostEntries(cost).every(
+        ([type, amount]) => counts[type] >= amount,
+      );
+    },
+
+    spend(cost: InventoryCost) {
+      const entries = getValidatedCostEntries(cost);
+
+      // Toutes les quantités sont vérifiées avant la première modification :
+      // un coût est donc payé entièrement ou pas du tout.
+      if (!entries.every(([type, amount]) => counts[type] >= amount)) {
+        return false;
+      }
+
+      entries.forEach(([type, amount]) => {
+        counts[type] -= amount;
+        updateDisplayedCount(type);
+      });
+      return true;
+    },
   };
+}
+
+function getValidatedCostEntries(
+  cost: InventoryCost,
+): Array<[ResourceType, number]> {
+  return RESOURCE_TYPES.flatMap((type) => {
+    const amount = cost[type];
+    if (amount === undefined) return [];
+    if (!Number.isInteger(amount) || amount <= 0) {
+      throw new Error("Le coût doit contenir des entiers positifs.");
+    }
+    return [[type, amount]];
+  });
 }
 
 function getCountElement(selector: string): HTMLElement {

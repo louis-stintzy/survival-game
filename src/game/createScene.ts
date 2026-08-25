@@ -9,6 +9,7 @@ import { Scene } from "@babylonjs/core/scene";
 import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import type { Engine } from "@babylonjs/core/Engines/engine";
+import { createBuildingPlacement } from "./building/createBuildingPlacement";
 import { createInventory } from "./inventory/createInventory";
 import { createPlayerMovement } from "./player/createPlayerMovement";
 import { createResourceInteraction } from "./resources/createResourceInteraction";
@@ -104,6 +105,11 @@ export function createScene(engine: Engine): Scene {
     "player-material",
     new Color3(0.92, 0.3, 0.18),
   );
+  const shelterRoofMaterial = createMaterial(
+    scene,
+    "shelter-roof-material",
+    new Color3(0.66, 0.4, 0.18),
+  );
 
   const island = createIsland(scene, {
     water: waterMaterial,
@@ -138,10 +144,26 @@ export function createScene(engine: Engine): Scene {
     island.harvestableResources,
     (resourceType) => inventory.add(resourceType, 1),
   );
+  const updateBuildingPlacement = createBuildingPlacement({
+    scene,
+    player,
+    walkableSurfaces: island.walkableSurfaces,
+    buildableSurfaces: island.buildableSurfaces,
+    resources: island.harvestableResources,
+    inventory,
+    shelterMaterials: {
+      wood: trunkMaterial,
+      roof: shelterRoofMaterial,
+    },
+    onShelterBuilt: (meshes) => {
+      meshes.forEach((mesh) => shadows.addShadowCaster(mesh));
+    },
+  });
   scene.onBeforeRenderObservable.add(() => {
     const deltaTimeInSeconds = engine.getDeltaTime() / 1000;
     updatePlayerMovement(deltaTimeInSeconds);
     updateResourceInteraction(deltaTimeInSeconds);
+    updateBuildingPlacement();
   });
 
   return scene;
