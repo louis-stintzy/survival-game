@@ -7,11 +7,7 @@ import type { Scene } from "@babylonjs/core/scene";
 import { Ray } from "@babylonjs/core/Culling/ray";
 import type { InventoryCost } from "../inventory/createInventory";
 import type { HarvestableResource } from "../resources/resourceTypes";
-import {
-  createShelter,
-  SHELTER_DEPTH,
-  SHELTER_WIDTH,
-} from "./createShelter";
+import { createShelter, SHELTER_DEPTH, SHELTER_WIDTH } from "./createShelter";
 
 const GRID_SIZE = 1;
 const MAX_BUILD_DISTANCE = 6;
@@ -172,6 +168,9 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
         shelter.root.rotation.y = currentPlacement.rotation;
         builtFootprints.push(currentPlacement);
         onShelterBuilt(shelter.meshes);
+
+        // Une construction termine volontairement la session de placement.
+        // Le joueur doit appuyer de nouveau sur B pour construire un autre abri.
         buildingModeActive = false;
         currentPlacement = undefined;
         ghost.root.setEnabled(false);
@@ -281,10 +280,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     return { point: hit.pickedPoint, surface: hit.pickedMesh };
   }
 
-  function resourceBlocks(
-    resource: HarvestableResource,
-    footprint: Footprint,
-  ) {
+  function resourceBlocks(resource: HarvestableResource, footprint: Footprint) {
     if (resource.harvested) return false;
 
     // Le premier mesh est le tronc pour un arbre et le rocher lui-même pour
@@ -344,11 +340,7 @@ function footprintOverlapsBounds(
   );
 }
 
-function createGhostMaterial(
-  scene: Scene,
-  name: string,
-  color: Color3,
-) {
+function createGhostMaterial(scene: Scene, name: string, color: Color3) {
   const material = new StandardMaterial(name, scene);
   material.diffuseColor = color;
   material.emissiveColor = color.scale(0.25);

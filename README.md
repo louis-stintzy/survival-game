@@ -32,10 +32,10 @@ Vite affiche alors l'adresse locale à ouvrir dans un navigateur.
 
 - ZQSD / WASD / flèches directionnelles : déplacement
 - E : récolter un arbre ou un rocher proche
-- B : activer le mode construction
+- B : préparer la construction d'un abri
 - R : tourner l'abri de 90°
 - Clic gauche : construire
-- Échap : quitter le mode construction
+- Échap : annuler le placement
 
 ## Construction
 
