@@ -36,6 +36,8 @@ Vite affiche alors l'adresse locale à ouvrir dans un navigateur.
 - R : tourner l'abri de 90°
 - Clic gauche : construire
 - Échap : annuler le placement
+- C : tourner la caméra de +90°
+- Maj + C : tourner la caméra de -90°
 
 ## Construction
 
