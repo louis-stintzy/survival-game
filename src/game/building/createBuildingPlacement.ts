@@ -13,6 +13,7 @@ const GRID_SIZE = 1;
 const MAX_BUILD_DISTANCE = 6;
 const TERRAIN_RAY_HEIGHT = 10;
 const TERRAIN_RAY_LENGTH = 20;
+const GHOST_ALPHA_INDEX = Number.POSITIVE_INFINITY;
 const SHELTER_COST: InventoryCost = { wood: 4, stone: 2 };
 
 interface BuildingInventory {
@@ -28,7 +29,7 @@ interface ShelterMaterials {
 interface BuildingPlacementOptions {
   scene: Scene;
   player: Mesh;
-  walkableSurfaces: readonly AbstractMesh[];
+  placementSurfaces: readonly AbstractMesh[];
   buildableSurfaces: readonly AbstractMesh[];
   resources: readonly HarvestableResource[];
   inventory: BuildingInventory;
@@ -53,7 +54,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   const {
     scene,
     player,
-    walkableSurfaces,
+    placementSurfaces,
     buildableSurfaces,
     resources,
     inventory,
@@ -65,7 +66,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
 
   const buildingPanel = getElement("#building-panel");
   const buildingStatus = getElement("#building-status");
-  const walkableSurfaceSet = new Set(walkableSurfaces);
+  const placementSurfaceSet = new Set(placementSurfaces);
   const buildableSurfaceSet = new Set(buildableSurfaces);
   const builtFootprints: Footprint[] = [];
 
@@ -82,6 +83,9 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   const ghost = createShelter(scene, "shelter-ghost", {
     wood: invalidGhostMaterial,
     roof: invalidGhostMaterial,
+  });
+  ghost.meshes.forEach((mesh) => {
+    mesh.alphaIndex = GHOST_ALPHA_INDEX;
   });
   ghost.root.setEnabled(false);
 
@@ -189,7 +193,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     const pointerHit = scene.pick(
       pointerPosition.x,
       pointerPosition.y,
-      (mesh) => walkableSurfaceSet.has(mesh),
+      (mesh) => placementSurfaceSet.has(mesh),
     );
     if (!pointerHit?.pickedPoint) {
       ghost.root.setEnabled(false);
@@ -275,7 +279,9 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
       Vector3.Down(),
       TERRAIN_RAY_LENGTH,
     );
-    const hit = scene.pickWithRay(ray, (mesh) => walkableSurfaceSet.has(mesh));
+    const hit = scene.pickWithRay(ray, (mesh) =>
+      placementSurfaceSet.has(mesh),
+    );
     if (!hit?.pickedPoint || !hit.pickedMesh) return undefined;
     return { point: hit.pickedPoint, surface: hit.pickedMesh };
   }

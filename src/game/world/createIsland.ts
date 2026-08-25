@@ -31,6 +31,7 @@ interface RockPlacement {
 export interface Island {
   walkableSurfaces: Mesh[];
   buildableSurfaces: Mesh[];
+  placementSurfaces: Mesh[];
   shadowCasters: Mesh[];
   harvestableResources: HarvestableResource[];
 }
@@ -116,7 +117,7 @@ function createRock(
 export function createIsland(scene: Scene, materials: IslandMaterials): Island {
   const water = MeshBuilder.CreateCylinder(
     "water",
-    { diameter: 52, height: 0.6, tessellation: 48 },
+    { diameter: 100, height: 0.6, tessellation: 48 },
     scene,
   );
   water.position.y = -0.55;
@@ -194,11 +195,7 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
   const rockResources: HarvestableResource[] = rockPlacements.map(
     (placement, index) => ({
       type: "stone",
-      position: new Vector3(
-        placement.x,
-        placement.groundHeight,
-        placement.z,
-      ),
+      position: new Vector3(placement.x, placement.groundHeight, placement.z),
       meshes: [createRock(scene, placement, index, materials.rock)],
       harvested: false,
     }),
@@ -208,6 +205,7 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
   return {
     walkableSurfaces: [grass, beach, rockyPlateau],
     buildableSurfaces: [grass],
+    placementSurfaces: [grass, beach, rockyPlateau, water],
     shadowCasters: [rockyPlateau, ...trees, ...rocks],
     harvestableResources: [...treeResources, ...rockResources],
   };
