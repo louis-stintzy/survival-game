@@ -149,7 +149,7 @@ export function createScene(engine: Engine): Scene {
   const updateBuildingPlacement = createBuildingPlacement({
     scene,
     player,
-    walkableSurfaces: island.walkableSurfaces,
+    placementSurfaces: island.placementSurfaces,
     buildableSurfaces: island.buildableSurfaces,
     resources: island.harvestableResources,
     inventory,
