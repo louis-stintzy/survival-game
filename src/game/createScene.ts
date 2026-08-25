@@ -10,6 +10,7 @@ import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import type { Engine } from "@babylonjs/core/Engines/engine";
 import { createBuildingPlacement } from "./building/createBuildingPlacement";
+import { createCameraRotation } from "./camera/createCameraRotation";
 import { createInventory } from "./inventory/createInventory";
 import { createPlayerMovement } from "./player/createPlayerMovement";
 import { createResourceInteraction } from "./resources/createResourceInteraction";
@@ -134,6 +135,7 @@ export function createScene(engine: Engine): Scene {
   );
 
   const inventory = createInventory();
+  const updateCameraRotation = createCameraRotation(camera);
   const updatePlayerMovement = createPlayerMovement(
     player,
     camera,
@@ -161,6 +163,7 @@ export function createScene(engine: Engine): Scene {
   });
   scene.onBeforeRenderObservable.add(() => {
     const deltaTimeInSeconds = engine.getDeltaTime() / 1000;
+    updateCameraRotation(deltaTimeInSeconds);
     updatePlayerMovement(deltaTimeInSeconds);
     updateResourceInteraction(deltaTimeInSeconds);
     updateBuildingPlacement();
