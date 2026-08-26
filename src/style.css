@@ -60,3 +60,28 @@ html, body, #game-canvas { width: 100%; height: 100%; margin: 0; overflow: hidde
   bottom: 5.5rem;
   color: #fff1b8;
 }
+
+.harvest-progress {
+  position: fixed;
+  bottom: 8.75rem;
+  left: 50%;
+  width: min(14rem, calc(100% - 2rem));
+  padding: 0.65rem 1rem;
+  border-radius: 0.5rem;
+  color: white;
+  background: rgb(19 33 35 / 78%);
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.harvest-progress span,
+.harvest-progress progress {
+  display: block;
+  width: 100%;
+}
+
+.harvest-progress span {
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}

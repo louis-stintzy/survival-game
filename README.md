@@ -31,7 +31,7 @@ Vite affiche alors l'adresse locale à ouvrir dans un navigateur.
 ### Contrôles
 
 - ZQSD / WASD / flèches directionnelles : déplacement
-- E : récolter un arbre ou un rocher proche
+- Maintenir E : récolter un arbre ou un rocher proche
 - B : préparer la construction d'un abri
 - R : tourner l'abri de 90°
 - Clic gauche : construire

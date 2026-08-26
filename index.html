@@ -26,6 +26,15 @@
       <div id="building-status" class="building-status"></div>
     </aside>
     <div id="interaction-prompt" class="game-message" hidden></div>
+    <div id="harvest-progress" class="harvest-progress" hidden>
+      <span id="harvest-progress-label"></span>
+      <progress
+        id="harvest-progress-bar"
+        max="1"
+        value="0"
+        aria-labelledby="harvest-progress-label"
+      ></progress>
+    </div>
     <div
       id="harvest-feedback"
       class="game-message game-message--feedback"
