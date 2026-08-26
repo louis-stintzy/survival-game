@@ -4,9 +4,6 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Scene } from "@babylonjs/core/scene";
 
-export const SHELTER_WIDTH = 4;
-export const SHELTER_DEPTH = 3;
-
 interface ShelterMaterials {
   wood: StandardMaterial;
   roof: StandardMaterial;

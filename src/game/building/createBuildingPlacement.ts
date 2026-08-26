@@ -3,27 +3,33 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
+import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Scene } from "@babylonjs/core/scene";
 import { Ray } from "@babylonjs/core/Culling/ray";
 import type { InventoryCost } from "../inventory/createInventory";
 import type { HarvestableResource } from "../resources/resourceTypes";
-import { createShelter, SHELTER_DEPTH, SHELTER_WIDTH } from "./createShelter";
+import {
+  BUILDING_DEFINITIONS,
+  type BuildingType,
+} from "./buildingDefinitions";
+import { createShelter } from "./createShelter";
+import { createWorkbench } from "./createWorkbench";
 
 const GRID_SIZE = 1;
 const MAX_BUILD_DISTANCE = 6;
 const TERRAIN_RAY_HEIGHT = 10;
 const TERRAIN_RAY_LENGTH = 20;
 const GHOST_ALPHA_INDEX = Number.POSITIVE_INFINITY;
-const SHELTER_COST: InventoryCost = { wood: 4, stone: 2 };
 
 interface BuildingInventory {
   canAfford(cost: InventoryCost): boolean;
   spend(cost: InventoryCost): boolean;
 }
 
-interface ShelterMaterials {
+interface BuildingMaterials {
   wood: StandardMaterial;
   roof: StandardMaterial;
+  stone: StandardMaterial;
 }
 
 interface BuildingPlacementOptions {
@@ -33,8 +39,13 @@ interface BuildingPlacementOptions {
   buildableSurfaces: readonly AbstractMesh[];
   resources: readonly HarvestableResource[];
   inventory: BuildingInventory;
-  shelterMaterials: ShelterMaterials;
-  onShelterBuilt: (meshes: readonly Mesh[]) => void;
+  buildingMaterials: BuildingMaterials;
+  onBuildingBuilt: (meshes: readonly Mesh[]) => void;
+}
+
+interface BuildingGeometry {
+  root: TransformNode;
+  meshes: Mesh[];
 }
 
 interface Footprint {
@@ -58,13 +69,16 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     buildableSurfaces,
     resources,
     inventory,
-    shelterMaterials,
-    onShelterBuilt,
+    buildingMaterials,
+    onBuildingBuilt,
   } = options;
   const canvas = scene.getEngine().getRenderingCanvas();
   if (!canvas) throw new Error("Le canvas Babylon.js est introuvable.");
 
   const buildingPanel = getElement("#building-panel");
+  const buildingName = getElement("#building-name");
+  const buildingCostWood = getElement("#building-cost-wood");
+  const buildingCostStone = getElement("#building-cost-stone");
   const buildingStatus = getElement("#building-status");
   const placementSurfaceSet = new Set(placementSurfaces);
   const buildableSurfaceSet = new Set(buildableSurfaces);
@@ -72,26 +86,36 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
 
   const validGhostMaterial = createGhostMaterial(
     scene,
-    "valid-shelter-ghost-material",
+    "valid-building-ghost-material",
     new Color3(0.2, 0.85, 0.35),
   );
   const invalidGhostMaterial = createGhostMaterial(
     scene,
-    "invalid-shelter-ghost-material",
+    "invalid-building-ghost-material",
     new Color3(0.9, 0.2, 0.18),
   );
-  const ghost = createShelter(scene, "shelter-ghost", {
-    wood: invalidGhostMaterial,
-    roof: invalidGhostMaterial,
+  const ghosts: Record<BuildingType, BuildingGeometry> = {
+    shelter: createShelter(scene, "shelter-ghost", {
+      wood: invalidGhostMaterial,
+      roof: invalidGhostMaterial,
+    }),
+    workbench: createWorkbench(scene, "workbench-ghost", {
+      wood: invalidGhostMaterial,
+      stone: invalidGhostMaterial,
+    }),
+  };
+  Object.values(ghosts).forEach((ghost) => {
+    ghost.meshes.forEach((mesh) => {
+      mesh.alphaIndex = GHOST_ALPHA_INDEX;
+    });
+    ghost.root.setEnabled(false);
   });
-  ghost.meshes.forEach((mesh) => {
-    mesh.alphaIndex = GHOST_ALPHA_INDEX;
-  });
-  ghost.root.setEnabled(false);
 
   let buildingModeActive = false;
+  let selectedBuildingType: BuildingType = "shelter";
   let activationRequested = false;
   let cancellationRequested = false;
+  let selectionChangeRequested = false;
   let rotationRequested = false;
   let buildRequested = false;
   let rotationStep = 0;
@@ -101,6 +125,12 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   let lastStatus = "";
 
   window.addEventListener("keydown", (event) => {
+    if (event.key === "Tab" && buildingModeActive) {
+      event.preventDefault();
+      if (!event.repeat) selectionChangeRequested = true;
+      return;
+    }
+
     if (event.repeat) return;
 
     const key = event.key.toLowerCase();
@@ -135,6 +165,12 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
       activationRequested = false;
       if (!buildingModeActive) {
         buildingModeActive = true;
+        selectedBuildingType = "shelter";
+        rotationStep = 0;
+        currentPlacement = undefined;
+        lastGhostValidity = undefined;
+        disableGhosts();
+        updateBuildingPanel();
         buildingPanel.hidden = false;
       }
     }
@@ -143,8 +179,21 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
       cancellationRequested = false;
       buildingModeActive = false;
       buildRequested = false;
-      ghost.root.setEnabled(false);
+      disableGhosts();
       buildingPanel.hidden = true;
+    }
+
+    if (selectionChangeRequested) {
+      selectionChangeRequested = false;
+      if (buildingModeActive) {
+        selectedBuildingType =
+          selectedBuildingType === "shelter" ? "workbench" : "shelter";
+        rotationStep = 0;
+        currentPlacement = undefined;
+        lastGhostValidity = undefined;
+        disableGhosts();
+        updateBuildingPanel();
+      }
     }
 
     if (rotationRequested) {
@@ -158,32 +207,35 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
 
     if (buildRequested) {
       buildRequested = false;
-      if (currentPlacement?.valid && inventory.spend(SHELTER_COST)) {
-        const shelter = createShelter(
+      const definition = BUILDING_DEFINITIONS[selectedBuildingType];
+      if (currentPlacement?.valid && inventory.spend(definition.cost)) {
+        const building = createBuilding(
           scene,
-          `shelter-${builtFootprints.length}`,
-          shelterMaterials,
+          `${selectedBuildingType}-${builtFootprints.length}`,
+          selectedBuildingType,
+          buildingMaterials,
         );
-        shelter.root.position.set(
+        building.root.position.set(
           currentPlacement.x,
           currentPlacement.y,
           currentPlacement.z,
         );
-        shelter.root.rotation.y = currentPlacement.rotation;
+        building.root.rotation.y = currentPlacement.rotation;
         builtFootprints.push(currentPlacement);
-        onShelterBuilt(shelter.meshes);
+        onBuildingBuilt(building.meshes);
 
         // Une construction termine volontairement la session de placement.
-        // Le joueur doit appuyer de nouveau sur B pour construire un autre abri.
+        // Le joueur doit appuyer de nouveau sur B pour construire à nouveau.
         buildingModeActive = false;
         currentPlacement = undefined;
-        ghost.root.setEnabled(false);
+        disableGhosts();
         buildingPanel.hidden = true;
       }
     }
   };
 
   function updateGhostPlacement(): Placement | undefined {
+    const ghost = ghosts[selectedBuildingType];
     if (!pointerPosition) {
       ghost.root.setEnabled(false);
       updateStatus("Terrain introuvable", false);
@@ -211,8 +263,9 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     }
 
     const rotation = rotationStep * (Math.PI / 2);
-    const width = rotationStep % 2 === 0 ? SHELTER_WIDTH : SHELTER_DEPTH;
-    const depth = rotationStep % 2 === 0 ? SHELTER_DEPTH : SHELTER_WIDTH;
+    const definition = BUILDING_DEFINITIONS[selectedBuildingType];
+    const width = rotationStep % 2 === 0 ? definition.width : definition.depth;
+    const depth = rotationStep % 2 === 0 ? definition.depth : definition.width;
     const footprint = { x, z, width, depth };
     const validation = validatePlacement(footprint);
     const placement = {
@@ -249,7 +302,8 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
       return { valid: false, reason: "Emplacement occupé" };
     }
 
-    if (!inventory.canAfford(SHELTER_COST)) {
+    const definition = BUILDING_DEFINITIONS[selectedBuildingType];
+    if (!inventory.canAfford(definition.cost)) {
       return { valid: false, reason: "Ressources insuffisantes" };
     }
 
@@ -306,7 +360,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   function updateGhostMaterial(valid: boolean) {
     if (lastGhostValidity === valid) return;
     const material = valid ? validGhostMaterial : invalidGhostMaterial;
-    ghost.meshes.forEach((mesh) => {
+    ghosts[selectedBuildingType].meshes.forEach((mesh) => {
       mesh.material = material;
     });
     lastGhostValidity = valid;
@@ -318,6 +372,31 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
       lastStatus = message;
     }
     buildingStatus.classList.toggle("is-valid", valid);
+  }
+
+  function updateBuildingPanel() {
+    const definition = BUILDING_DEFINITIONS[selectedBuildingType];
+    buildingName.textContent = definition.label.toUpperCase();
+    buildingCostWood.textContent = String(definition.cost.wood ?? 0);
+    buildingCostStone.textContent = String(definition.cost.stone ?? 0);
+  }
+
+  function disableGhosts() {
+    Object.values(ghosts).forEach((ghost) => ghost.root.setEnabled(false));
+  }
+}
+
+function createBuilding(
+  scene: Scene,
+  name: string,
+  type: BuildingType,
+  materials: BuildingMaterials,
+): BuildingGeometry {
+  switch (type) {
+    case "shelter":
+      return createShelter(scene, name, materials);
+    case "workbench":
+      return createWorkbench(scene, name, materials);
   }
 }
 

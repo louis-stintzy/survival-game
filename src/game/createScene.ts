@@ -153,11 +153,12 @@ export function createScene(engine: Engine): Scene {
     buildableSurfaces: island.buildableSurfaces,
     resources: island.harvestableResources,
     inventory,
-    shelterMaterials: {
+    buildingMaterials: {
       wood: trunkMaterial,
       roof: shelterRoofMaterial,
+      stone: rockMaterial,
     },
-    onShelterBuilt: (meshes) => {
+    onBuildingBuilt: (meshes) => {
       meshes.forEach((mesh) => shadows.addShadowCaster(mesh));
     },
   });
