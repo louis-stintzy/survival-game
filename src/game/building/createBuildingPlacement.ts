@@ -40,12 +40,19 @@ interface BuildingPlacementOptions {
   resources: readonly HarvestableResource[];
   inventory: BuildingInventory;
   buildingMaterials: BuildingMaterials;
-  onBuildingBuilt: (meshes: readonly Mesh[]) => void;
+  isCraftingOpen: () => boolean;
+  onBuildingBuilt: (building: BuiltBuilding) => void;
 }
 
 interface BuildingGeometry {
   root: TransformNode;
   meshes: Mesh[];
+}
+
+export interface BuiltBuilding {
+  type: BuildingType;
+  root: TransformNode;
+  meshes: readonly Mesh[];
 }
 
 interface Footprint {
@@ -70,6 +77,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     resources,
     inventory,
     buildingMaterials,
+    isCraftingOpen,
     onBuildingBuilt,
   } = options;
   const canvas = scene.getEngine().getRenderingCanvas();
@@ -125,6 +133,13 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   let lastStatus = "";
 
   window.addEventListener("keydown", (event) => {
+    if (
+      isCraftingOpen() &&
+      (event.key === "Tab" || event.key.toLowerCase() === "escape")
+    ) {
+      return;
+    }
+
     if (event.key === "Tab" && buildingModeActive) {
       event.preventDefault();
       if (!event.repeat) selectionChangeRequested = true;
@@ -222,7 +237,11 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
         );
         building.root.rotation.y = currentPlacement.rotation;
         builtFootprints.push(currentPlacement);
-        onBuildingBuilt(building.meshes);
+        onBuildingBuilt({
+          type: selectedBuildingType,
+          root: building.root,
+          meshes: building.meshes,
+        });
 
         // Une construction termine volontairement la session de placement.
         // Le joueur doit appuyer de nouveau sur B pour construire à nouveau.

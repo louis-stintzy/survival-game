@@ -1,11 +1,9 @@
-import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type {
   HarvestableResource,
   HarvestableResourceType,
 } from "./resourceTypes";
 import { HARVEST_DURATION_SECONDS } from "./harvestingDefinitions";
 
-const INTERACTION_DISTANCE = 2.75;
 const HARVEST_FEEDBACK_DURATION_SECONDS = 1.5;
 
 const RESOURCE_TEXT: Record<
@@ -24,64 +22,22 @@ const RESOURCE_TEXT: Record<
   },
 };
 
-function findNearestResource(
-  player: Mesh,
-  resources: readonly HarvestableResource[],
-): HarvestableResource | undefined {
-  const maximumDistanceSquared = INTERACTION_DISTANCE ** 2;
-  let nearestResource: HarvestableResource | undefined;
-  let nearestDistanceSquared = maximumDistanceSquared;
-
-  // Une seule cible est retenue : la ressource active dont la distance
-  // horizontale avec le joueur est la plus courte.
-  for (const resource of resources) {
-    if (resource.harvested) continue;
-
-    const distanceX = resource.position.x - player.position.x;
-    const distanceZ = resource.position.z - player.position.z;
-    const distanceSquared = distanceX ** 2 + distanceZ ** 2;
-
-    if (distanceSquared <= nearestDistanceSquared) {
-      nearestResource = resource;
-      nearestDistanceSquared = distanceSquared;
-    }
-  }
-
-  return nearestResource;
+export function getResourceInteractionPrompt(
+  type: HarvestableResourceType,
+): string {
+  return RESOURCE_TEXT[type].interaction;
 }
 
 export function createResourceInteraction(
-  player: Mesh,
-  resources: readonly HarvestableResource[],
   onHarvest: (type: HarvestableResourceType) => void,
 ) {
-  const interactionPrompt = document.querySelector<HTMLElement>(
-    "#interaction-prompt",
+  const harvestFeedback = getElement("#harvest-feedback");
+  const harvestProgress = getElement("#harvest-progress");
+  const harvestProgressLabel = getElement("#harvest-progress-label");
+  const harvestProgressBar = getElement<HTMLProgressElement>(
+    "#harvest-progress-bar",
   );
-  const harvestFeedback = document.querySelector<HTMLElement>(
-    "#harvest-feedback",
-  );
-  const harvestProgress = document.querySelector<HTMLElement>(
-    "#harvest-progress",
-  );
-  const harvestProgressLabel = document.querySelector<HTMLElement>(
-    "#harvest-progress-label",
-  );
-  const harvestProgressBar =
-    document.querySelector<HTMLProgressElement>("#harvest-progress-bar");
 
-  if (
-    !interactionPrompt ||
-    !harvestFeedback ||
-    !harvestProgress ||
-    !harvestProgressLabel ||
-    !harvestProgressBar
-  ) {
-    throw new Error("L'interface d'interaction avec les ressources est absente.");
-  }
-
-  let interactionHeld = false;
-  let waitForInteractionRelease = false;
   let harvestTarget: HarvestableResource | undefined;
   let harvestElapsedSeconds = 0;
   let displayedProgressType: HarvestableResourceType | undefined;
@@ -94,57 +50,31 @@ export function createResourceInteraction(
     harvestProgress.hidden = true;
   };
 
-  window.addEventListener("keydown", (event) => {
-    if (event.key.toLowerCase() !== "e") return;
+  function update(
+    deltaTimeInSeconds: number,
+    target: HarvestableResource | undefined,
+    interactionHeld: boolean,
+  ): boolean {
+    let harvestCompleted = false;
 
-    event.preventDefault();
-
-    // Le clavier mémorise seulement l'intention : la boucle de jeu mesure
-    // ensuite la durée réelle de l'action, indépendamment du framerate.
-    if (!event.repeat && !waitForInteractionRelease) interactionHeld = true;
-  });
-
-  window.addEventListener("keyup", (event) => {
-    if (event.key.toLowerCase() !== "e") return;
-
-    event.preventDefault();
-    interactionHeld = false;
-    waitForInteractionRelease = false;
-    resetHarvestProgress();
-  });
-
-  window.addEventListener("blur", () => {
-    interactionHeld = false;
-    waitForInteractionRelease = false;
-    resetHarvestProgress();
-  });
-
-  return (deltaTimeInSeconds: number) => {
-    const nearestResource = findNearestResource(player, resources);
-
-    interactionPrompt.hidden = !nearestResource || waitForInteractionRelease;
-    interactionPrompt.textContent = nearestResource
-      ? RESOURCE_TEXT[nearestResource.type].interaction
-      : "";
-
-    if (!interactionHeld || waitForInteractionRelease || !nearestResource) {
+    if (!interactionHeld || !target) {
       resetHarvestProgress();
     } else {
-      if (harvestTarget !== nearestResource) {
+      if (harvestTarget !== target) {
         // Une progression appartient uniquement à l'interaction courante :
         // changer de cible recommence donc immédiatement à zéro.
         resetHarvestProgress();
-        harvestTarget = nearestResource;
+        harvestTarget = target;
         harvestProgress.hidden = false;
 
-        if (displayedProgressType !== nearestResource.type) {
+        if (displayedProgressType !== target.type) {
           harvestProgressLabel.textContent =
-            RESOURCE_TEXT[nearestResource.type].harvesting;
-          displayedProgressType = nearestResource.type;
+            RESOURCE_TEXT[target.type].harvesting;
+          displayedProgressType = target.type;
         }
       }
 
-      const harvestDuration = HARVEST_DURATION_SECONDS[nearestResource.type];
+      const harvestDuration = HARVEST_DURATION_SECONDS[target.type];
       harvestElapsedSeconds += deltaTimeInSeconds;
       harvestProgressBar.value = Math.min(
         harvestElapsedSeconds / harvestDuration,
@@ -152,17 +82,13 @@ export function createResourceInteraction(
       );
 
       if (harvestElapsedSeconds >= harvestDuration) {
-        nearestResource.harvested = true;
-        nearestResource.meshes.forEach((mesh) => mesh.setEnabled(false));
-        onHarvest(nearestResource.type);
+        target.harvested = true;
+        target.meshes.forEach((mesh) => mesh.setEnabled(false));
+        onHarvest(target.type);
         harvestFeedback.textContent =
-          RESOURCE_TEXT[nearestResource.type].harvested;
+          RESOURCE_TEXT[target.type].harvested;
         feedbackTimeRemaining = HARVEST_FEEDBACK_DURATION_SECONDS;
-
-        // Une pression maintenue ne récolte qu'une ressource. Le keyup doit
-        // lever ce verrou avant qu'une nouvelle progression puisse commencer.
-        waitForInteractionRelease = true;
-        interactionPrompt.hidden = true;
+        harvestCompleted = true;
         resetHarvestProgress();
       }
     }
@@ -172,5 +98,18 @@ export function createResourceInteraction(
       feedbackTimeRemaining - deltaTimeInSeconds,
     );
     harvestFeedback.hidden = feedbackTimeRemaining === 0;
+
+    return harvestCompleted;
+  }
+
+  return {
+    update,
+    cancel: resetHarvestProgress,
   };
+}
+
+function getElement<T extends HTMLElement = HTMLElement>(selector: string): T {
+  const element = document.querySelector<T>(selector);
+  if (!element) throw new Error(`L'élément de récolte ${selector} est absent.`);
+  return element;
 }

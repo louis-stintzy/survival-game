@@ -26,6 +26,45 @@
       <div>Échap : annuler</div>
       <div id="building-status" class="building-status"></div>
     </aside>
+    <aside id="crafting-panel" class="crafting-panel" hidden>
+      <strong>ÉTABLI</strong>
+      <div
+        id="crafting-recipe-stone-axe"
+        class="crafting-recipe is-selected"
+      >
+        <strong id="crafting-recipe-stone-axe-label"></strong>
+        <div>
+          Bois : <span id="crafting-recipe-stone-axe-wood"></span> — Pierre :
+          <span id="crafting-recipe-stone-axe-stone"></span>
+        </div>
+        <div>
+          Possédé : <span id="crafting-recipe-stone-axe-owned">0</span>
+        </div>
+      </div>
+      <div id="crafting-recipe-stone-pickaxe" class="crafting-recipe">
+        <strong id="crafting-recipe-stone-pickaxe-label"></strong>
+        <div>
+          Bois : <span id="crafting-recipe-stone-pickaxe-wood"></span> — Pierre :
+          <span id="crafting-recipe-stone-pickaxe-stone"></span>
+        </div>
+        <div>
+          Possédé : <span id="crafting-recipe-stone-pickaxe-owned">0</span>
+        </div>
+      </div>
+      <div id="crafting-progress" class="crafting-progress" hidden>
+        <span id="crafting-progress-label"></span>
+        <progress
+          id="crafting-progress-bar"
+          max="1"
+          value="0"
+          aria-labelledby="crafting-progress-label"
+        ></progress>
+      </div>
+      <div>Tab : changer de recette</div>
+      <div>E : fabriquer</div>
+      <div>Échap : fermer</div>
+      <div id="crafting-status" class="crafting-status" aria-live="polite"></div>
+    </aside>
     <div id="interaction-prompt" class="game-message" hidden></div>
     <div id="harvest-progress" class="harvest-progress" hidden>
       <span id="harvest-progress-label"></span>

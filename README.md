@@ -31,7 +31,11 @@ Vite affiche alors l'adresse locale à ouvrir dans un navigateur.
 ### Contrôles
 
 - ZQSD / WASD / flèches directionnelles : déplacement
-- Maintenir E : récolter un arbre ou un rocher proche
+- Maintenir E : récolter une ressource proche
+- E près d'un établi : ouvrir l'établi
+- Dans l'établi, Tab : changer de recette
+- Dans l'établi, E : fabriquer
+- Dans l'établi, Échap : fermer
 - B : entrer en mode construction (Abri sélectionné par défaut)
 - Tab : changer de bâtiment en mode construction
 - R : tourner le bâtiment de 90°
