@@ -6,6 +6,7 @@ import { getResourceInteractionPrompt } from "../resources/createResourceInterac
 import { getHarvestDurationSeconds } from "../resources/harvestingDefinitions";
 
 const INTERACTION_DISTANCE = 2.75;
+const NO_WORKBENCHES: readonly TransformNode[] = [];
 
 interface ResourceInteraction {
   update(
@@ -115,7 +116,7 @@ export function createWorldInteraction(
       ? findNearestTarget(
           player,
           resources,
-          workbenches,
+          NO_WORKBENCHES,
           (resource) =>
             getHarvestDurationSeconds(resource.type, equippedItem) !== undefined,
         ) ?? findNearestTarget(player, resources, workbenches)
