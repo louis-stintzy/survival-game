@@ -8,6 +8,7 @@
 - Hache de pierre : bois en 1,5 seconde ; incompatible avec la pierre.
 - Pioche de pierre : pierre en 2 secondes ; incompatible avec le bois.
 - La progression est annulée si E est relâchée ou si la cible est perdue.
+- Maintenir E permet d'enchaîner plusieurs ressources valides à portée, une par une, chacune avec sa durée complète de récolte.
 
 ### Abri
 
