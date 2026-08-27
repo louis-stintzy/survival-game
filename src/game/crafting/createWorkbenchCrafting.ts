@@ -27,6 +27,7 @@ interface RecipeElements {
 export function createWorkbenchCrafting(
   resourceInventory: ResourceInventory,
   toolInventory: ToolInventory,
+  onToolCrafted: (type: ToolType) => void,
 ) {
   const panel = getElement("#crafting-panel");
   const status = getElement("#crafting-status");
@@ -122,6 +123,7 @@ export function createWorkbenchCrafting(
         if (resourceInventory.spend(definition.cost)) {
           toolInventory.add(completedToolType, 1);
           updateOwnedCount(completedToolType);
+          onToolCrafted(completedToolType);
           setStatus(`${definition.label} fabriquée`);
         } else {
           setStatus("Ressources insuffisantes");

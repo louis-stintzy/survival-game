@@ -36,6 +36,9 @@ Vite affiche alors l'adresse locale à ouvrir dans un navigateur.
 - Dans l'établi, Tab : changer de recette
 - Dans l'établi, E : fabriquer
 - Dans l'établi, Échap : fermer
+- 1 : équiper les mains
+- 2 : équiper la Hache de pierre si possédée
+- 3 : équiper la Pioche de pierre si possédée
 - B : entrer en mode construction (Abri sélectionné par défaut)
 - Tab : changer de bâtiment en mode construction
 - R : tourner le bâtiment de 90°

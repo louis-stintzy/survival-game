@@ -17,7 +17,9 @@ import { createInventory } from "./inventory/createInventory";
 import { createWorldInteraction } from "./interaction/createWorldInteraction";
 import { createPlayerMovement } from "./player/createPlayerMovement";
 import { createResourceInteraction } from "./resources/createResourceInteraction";
+import { createToolEquipment } from "./tools/createToolEquipment";
 import { createToolInventory } from "./tools/createToolInventory";
+import { createToolModels } from "./tools/createToolModels";
 import { createIsland } from "./world/createIsland";
 
 const VIEW_HEIGHT = 28;
@@ -132,14 +134,22 @@ export function createScene(engine: Engine): Scene {
   );
   player.position = new Vector3(0, 1.85, 0);
   player.material = playerMaterial;
+  const toolModels = createToolModels(scene, player, {
+    wood: trunkMaterial,
+    stone: rockMaterial,
+  });
   // Seuls les éléments au-dessus du sol projettent une ombre ; les surfaces
   // de l'île les reçoivent pour mieux ancrer les formes dans le diorama.
-  [player, ...island.shadowCasters].forEach((mesh) =>
-    shadows.addShadowCaster(mesh),
-  );
+  [
+    player,
+    ...island.shadowCasters,
+    ...toolModels.stoneAxe.meshes,
+    ...toolModels.stonePickaxe.meshes,
+  ].forEach((mesh) => shadows.addShadowCaster(mesh));
 
   const inventory = createInventory();
   const toolInventory = createToolInventory();
+  const toolEquipment = createToolEquipment(toolInventory, toolModels);
   const builtWorkbenches: TransformNode[] = [];
   const updateCameraRotation = createCameraRotation(camera);
   const updatePlayerMovement = createPlayerMovement(
@@ -150,13 +160,18 @@ export function createScene(engine: Engine): Scene {
   const resourceInteraction = createResourceInteraction(
     (resourceType) => inventory.add(resourceType, 1),
   );
-  const workbenchCrafting = createWorkbenchCrafting(inventory, toolInventory);
+  const workbenchCrafting = createWorkbenchCrafting(
+    inventory,
+    toolInventory,
+    toolEquipment.onToolCrafted,
+  );
   const updateWorldInteraction = createWorldInteraction(
     player,
     island.harvestableResources,
     builtWorkbenches,
     resourceInteraction,
     workbenchCrafting,
+    toolEquipment.getEquippedItem,
   );
   const updateBuildingPlacement = createBuildingPlacement({
     scene,
