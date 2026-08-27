@@ -133,9 +133,16 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   let lastStatus = "";
 
   window.addEventListener("keydown", (event) => {
+    const key = event.key.toLowerCase();
+
+    if (isCraftingOpen() && key === "b") {
+      event.preventDefault();
+      return;
+    }
+
     if (
       isCraftingOpen() &&
-      (event.key === "Tab" || event.key.toLowerCase() === "escape")
+      (event.key === "Tab" || key === "escape")
     ) {
       return;
     }
@@ -148,7 +155,6 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
 
     if (event.repeat) return;
 
-    const key = event.key.toLowerCase();
     if (key === "b") {
       activationRequested = true;
       event.preventDefault();
@@ -176,6 +182,11 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   });
 
   return () => {
+    if (isCraftingOpen()) {
+      if (buildingModeActive || activationRequested) closeBuildingMode();
+      return;
+    }
+
     if (activationRequested) {
       activationRequested = false;
       if (!buildingModeActive) {
@@ -191,11 +202,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     }
 
     if (cancellationRequested) {
-      cancellationRequested = false;
-      buildingModeActive = false;
-      buildRequested = false;
-      disableGhosts();
-      buildingPanel.hidden = true;
+      closeBuildingMode();
     }
 
     if (selectionChangeRequested) {
@@ -245,10 +252,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
 
         // Une construction termine volontairement la session de placement.
         // Le joueur doit appuyer de nouveau sur B pour construire à nouveau.
-        buildingModeActive = false;
-        currentPlacement = undefined;
-        disableGhosts();
-        buildingPanel.hidden = true;
+        closeBuildingMode();
       }
     }
   };
@@ -402,6 +406,18 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
 
   function disableGhosts() {
     Object.values(ghosts).forEach((ghost) => ghost.root.setEnabled(false));
+  }
+
+  function closeBuildingMode() {
+    buildingModeActive = false;
+    activationRequested = false;
+    cancellationRequested = false;
+    selectionChangeRequested = false;
+    rotationRequested = false;
+    buildRequested = false;
+    currentPlacement = undefined;
+    disableGhosts();
+    buildingPanel.hidden = true;
   }
 }
 
