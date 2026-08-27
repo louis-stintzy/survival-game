@@ -2,6 +2,7 @@ import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
+import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
@@ -11,9 +12,12 @@ import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator"
 import type { Engine } from "@babylonjs/core/Engines/engine";
 import { createBuildingPlacement } from "./building/createBuildingPlacement";
 import { createCameraRotation } from "./camera/createCameraRotation";
+import { createWorkbenchCrafting } from "./crafting/createWorkbenchCrafting";
 import { createInventory } from "./inventory/createInventory";
+import { createWorldInteraction } from "./interaction/createWorldInteraction";
 import { createPlayerMovement } from "./player/createPlayerMovement";
 import { createResourceInteraction } from "./resources/createResourceInteraction";
+import { createToolInventory } from "./tools/createToolInventory";
 import { createIsland } from "./world/createIsland";
 
 const VIEW_HEIGHT = 28;
@@ -135,16 +139,24 @@ export function createScene(engine: Engine): Scene {
   );
 
   const inventory = createInventory();
+  const toolInventory = createToolInventory();
+  const builtWorkbenches: TransformNode[] = [];
   const updateCameraRotation = createCameraRotation(camera);
   const updatePlayerMovement = createPlayerMovement(
     player,
     camera,
     island.walkableSurfaces,
   );
-  const updateResourceInteraction = createResourceInteraction(
+  const resourceInteraction = createResourceInteraction(
+    (resourceType) => inventory.add(resourceType, 1),
+  );
+  const workbenchCrafting = createWorkbenchCrafting(inventory, toolInventory);
+  const updateWorldInteraction = createWorldInteraction(
     player,
     island.harvestableResources,
-    (resourceType) => inventory.add(resourceType, 1),
+    builtWorkbenches,
+    resourceInteraction,
+    workbenchCrafting,
   );
   const updateBuildingPlacement = createBuildingPlacement({
     scene,
@@ -158,15 +170,21 @@ export function createScene(engine: Engine): Scene {
       roof: shelterRoofMaterial,
       stone: rockMaterial,
     },
-    onBuildingBuilt: (meshes) => {
-      meshes.forEach((mesh) => shadows.addShadowCaster(mesh));
+    isCraftingOpen: workbenchCrafting.isOpen,
+    onBuildingBuilt: (building) => {
+      building.meshes.forEach((mesh) => shadows.addShadowCaster(mesh));
+      if (building.type === "workbench") {
+        // Le tableau partagé rend immédiatement chaque nouvel établi visible
+        // par le coordinateur d'interactions, sans registre global.
+        builtWorkbenches.push(building.root);
+      }
     },
   });
   scene.onBeforeRenderObservable.add(() => {
     const deltaTimeInSeconds = engine.getDeltaTime() / 1000;
     updateCameraRotation(deltaTimeInSeconds);
     updatePlayerMovement(deltaTimeInSeconds);
-    updateResourceInteraction(deltaTimeInSeconds);
+    updateWorldInteraction(deltaTimeInSeconds);
     updateBuildingPlacement();
   });
 

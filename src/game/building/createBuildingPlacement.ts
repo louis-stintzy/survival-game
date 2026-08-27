@@ -40,12 +40,19 @@ interface BuildingPlacementOptions {
   resources: readonly HarvestableResource[];
   inventory: BuildingInventory;
   buildingMaterials: BuildingMaterials;
-  onBuildingBuilt: (meshes: readonly Mesh[]) => void;
+  isCraftingOpen: () => boolean;
+  onBuildingBuilt: (building: BuiltBuilding) => void;
 }
 
 interface BuildingGeometry {
   root: TransformNode;
   meshes: Mesh[];
+}
+
+export interface BuiltBuilding {
+  type: BuildingType;
+  root: TransformNode;
+  meshes: readonly Mesh[];
 }
 
 interface Footprint {
@@ -70,6 +77,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     resources,
     inventory,
     buildingMaterials,
+    isCraftingOpen,
     onBuildingBuilt,
   } = options;
   const canvas = scene.getEngine().getRenderingCanvas();
@@ -125,6 +133,20 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   let lastStatus = "";
 
   window.addEventListener("keydown", (event) => {
+    const key = event.key.toLowerCase();
+
+    if (isCraftingOpen() && key === "b") {
+      event.preventDefault();
+      return;
+    }
+
+    if (
+      isCraftingOpen() &&
+      (event.key === "Tab" || key === "escape")
+    ) {
+      return;
+    }
+
     if (event.key === "Tab" && buildingModeActive) {
       event.preventDefault();
       if (!event.repeat) selectionChangeRequested = true;
@@ -133,7 +155,6 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
 
     if (event.repeat) return;
 
-    const key = event.key.toLowerCase();
     if (key === "b") {
       activationRequested = true;
       event.preventDefault();
@@ -161,6 +182,11 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   });
 
   return () => {
+    if (isCraftingOpen()) {
+      if (buildingModeActive || activationRequested) closeBuildingMode();
+      return;
+    }
+
     if (activationRequested) {
       activationRequested = false;
       if (!buildingModeActive) {
@@ -176,11 +202,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     }
 
     if (cancellationRequested) {
-      cancellationRequested = false;
-      buildingModeActive = false;
-      buildRequested = false;
-      disableGhosts();
-      buildingPanel.hidden = true;
+      closeBuildingMode();
     }
 
     if (selectionChangeRequested) {
@@ -222,14 +244,15 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
         );
         building.root.rotation.y = currentPlacement.rotation;
         builtFootprints.push(currentPlacement);
-        onBuildingBuilt(building.meshes);
+        onBuildingBuilt({
+          type: selectedBuildingType,
+          root: building.root,
+          meshes: building.meshes,
+        });
 
         // Une construction termine volontairement la session de placement.
         // Le joueur doit appuyer de nouveau sur B pour construire à nouveau.
-        buildingModeActive = false;
-        currentPlacement = undefined;
-        disableGhosts();
-        buildingPanel.hidden = true;
+        closeBuildingMode();
       }
     }
   };
@@ -383,6 +406,18 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
 
   function disableGhosts() {
     Object.values(ghosts).forEach((ghost) => ghost.root.setEnabled(false));
+  }
+
+  function closeBuildingMode() {
+    buildingModeActive = false;
+    activationRequested = false;
+    cancellationRequested = false;
+    selectionChangeRequested = false;
+    rotationRequested = false;
+    buildRequested = false;
+    currentPlacement = undefined;
+    disableGhosts();
+    buildingPanel.hidden = true;
   }
 }
 

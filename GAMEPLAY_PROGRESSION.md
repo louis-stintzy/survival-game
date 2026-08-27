@@ -16,11 +16,21 @@
 
 - Coût actuel : 2 bois et 1 pierre.
 - Constructible sur la prairie.
-- Aucune fonction de crafting n'est encore disponible dans le Lot 7.2.
+- Interaction possible avec E à moins de 2,75 unités.
+- E ouvre le menu de crafting.
+
+### Outils fabriqués à l'établi
+
+- Hache de pierre : 2 bois, 1 pierre et 2 secondes de fabrication.
+- Pioche de pierre : 1 bois, 2 pierres et 2 secondes de fabrication.
+- Plusieurs exemplaires de chaque outil peuvent être conservés dans l'inventaire outils.
+- Les outils ne sont pas encore équipables dans le Lot 7.3a.
 
 ## Progression prévue mais pas encore implémentée
 
-- Hache de pierre (Lot 7.3) : coût envisagé de 2 bois et 1 pierre, avec un objectif futur d'environ 1,5 seconde pour récolter du bois.
-- Pioche de pierre (Lot 7.3) : coût envisagé de 1 bois et 2 pierres, avec un objectif futur d'environ 2 secondes pour récolter de la pierre.
+- Lot 7.3b : équipement, quickbar et modèles d'outils visibles.
+- Hache de pierre équipée : objectif futur d'environ 1,5 seconde pour récolter du bois.
+- Pioche de pierre équipée : objectif futur d'environ 2 secondes pour récolter de la pierre.
+- Le mauvais outil sera interdit pour la ressource concernée.
 
-La hache de pierre et la pioche de pierre ne sont pas implémentées. Leurs coûts et durées cibles pourront être rééquilibrés ultérieurement.
+Ces effets sur la récolte ne sont pas encore actifs dans le Lot 7.3a.
