@@ -76,6 +76,11 @@ export function createWorldInteraction(
       hidePrompt();
       resourceInteraction.update(deltaTimeInSeconds, undefined, false);
 
+      if (interactionPressed) {
+        heldTargetKind = "workbench";
+        waitForInteractionRelease = interactionHeld;
+      }
+
       const activeWorkbench = workbenchCrafting.getActiveWorkbench();
       if (
         !activeWorkbench ||
