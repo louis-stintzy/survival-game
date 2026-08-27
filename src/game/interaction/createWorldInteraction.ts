@@ -3,6 +3,7 @@ import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { HarvestableResource } from "../resources/resourceTypes";
 import type { EquippedItem } from "../tools/toolDefinitions";
 import { getResourceInteractionPrompt } from "../resources/createResourceInteraction";
+import { getHarvestDurationSeconds } from "../resources/harvestingDefinitions";
 
 const INTERACTION_DISTANCE = 2.75;
 
@@ -42,6 +43,7 @@ export function createWorldInteraction(
   let interactionPressed = false;
   let waitForInteractionRelease = false;
   let heldTargetKind: WorldInteractionTarget["kind"] | undefined;
+  let harvestChainActive = false;
 
   window.addEventListener("keydown", (event) => {
     if (event.key.toLowerCase() !== "e") return;
@@ -53,6 +55,7 @@ export function createWorldInteraction(
     // appartient à la récolte continue ou à l'action ponctuelle de l'établi.
     interactionHeld = true;
     interactionPressed = true;
+    harvestChainActive = false;
   });
 
   window.addEventListener("keyup", (event) => {
@@ -62,6 +65,7 @@ export function createWorldInteraction(
     interactionHeld = false;
     waitForInteractionRelease = false;
     heldTargetKind = undefined;
+    harvestChainActive = false;
     resourceInteraction.cancel();
   });
 
@@ -70,6 +74,7 @@ export function createWorldInteraction(
     interactionPressed = false;
     waitForInteractionRelease = false;
     heldTargetKind = undefined;
+    harvestChainActive = false;
     resourceInteraction.cancel();
     workbenchCrafting.close();
   });
@@ -106,7 +111,15 @@ export function createWorldInteraction(
       return;
     }
 
-    const target = findNearestTarget(player, resources, workbenches);
+    const target = harvestChainActive
+      ? findNearestTarget(
+          player,
+          resources,
+          workbenches,
+          (resource) =>
+            getHarvestDurationSeconds(resource.type, equippedItem) !== undefined,
+        ) ?? findNearestTarget(player, resources, workbenches)
+      : findNearestTarget(player, resources, workbenches);
     updatePrompt(target, equippedItem);
 
     if (waitForInteractionRelease) {
@@ -124,12 +137,13 @@ export function createWorldInteraction(
     if (target?.kind === "resource") {
       if (interactionHeld && heldTargetKind !== "workbench") {
         heldTargetKind = "resource";
-        resourceInteraction.update(
+        const harvestCompleted = resourceInteraction.update(
           deltaTimeInSeconds,
           target.resource,
           true,
           equippedItem,
         );
+        if (harvestCompleted) harvestChainActive = true;
       } else {
         resourceInteraction.update(
           deltaTimeInSeconds,
@@ -191,13 +205,14 @@ function findNearestTarget(
   player: Mesh,
   resources: readonly HarvestableResource[],
   workbenches: readonly TransformNode[],
+  isResourceCandidate: (resource: HarvestableResource) => boolean = () => true,
 ): WorldInteractionTarget | undefined {
   const maximumDistanceSquared = INTERACTION_DISTANCE ** 2;
   let nearestTarget: WorldInteractionTarget | undefined;
   let nearestDistanceSquared = maximumDistanceSquared;
 
   for (const resource of resources) {
-    if (resource.harvested) continue;
+    if (resource.harvested || !isResourceCandidate(resource)) continue;
 
     const distanceSquared = getDistanceSquared(player, resource.position);
     if (distanceSquared <= nearestDistanceSquared) {
