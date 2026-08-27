@@ -65,6 +65,20 @@
       <div>Échap : fermer</div>
       <div id="crafting-status" class="crafting-status" aria-live="polite"></div>
     </aside>
+    <div id="tool-quickbar" class="tool-quickbar" aria-label="Équipement">
+      <div class="tool-slots">
+        <div id="tool-slot-hands" class="tool-slot is-equipped">1 — Mains</div>
+        <div id="tool-slot-stone-axe" class="tool-slot is-unavailable">
+          2 — Hache ×<span id="tool-count-stone-axe">0</span>
+        </div>
+        <div id="tool-slot-stone-pickaxe" class="tool-slot is-unavailable">
+          3 — Pioche ×<span id="tool-count-stone-pickaxe">0</span>
+        </div>
+      </div>
+      <div id="equipped-tool-label" class="equipped-tool-label">
+        Équipé : Mains
+      </div>
+    </div>
     <div id="interaction-prompt" class="game-message" hidden></div>
     <div id="harvest-progress" class="harvest-progress" hidden>
       <span id="harvest-progress-label"></span>

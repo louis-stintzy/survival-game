@@ -1,6 +1,7 @@
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { HarvestableResource } from "../resources/resourceTypes";
+import type { EquippedItem } from "../tools/toolDefinitions";
 import { getResourceInteractionPrompt } from "../resources/createResourceInteraction";
 
 const INTERACTION_DISTANCE = 2.75;
@@ -10,6 +11,7 @@ interface ResourceInteraction {
     deltaTimeInSeconds: number,
     target: HarvestableResource | undefined,
     interactionHeld: boolean,
+    equippedItem: EquippedItem,
   ): boolean;
   cancel(): void;
 }
@@ -32,6 +34,7 @@ export function createWorldInteraction(
   workbenches: readonly TransformNode[],
   resourceInteraction: ResourceInteraction,
   workbenchCrafting: WorkbenchCrafting,
+  getEquippedItem: () => EquippedItem,
 ) {
   const interactionPrompt = getElement("#interaction-prompt");
 
@@ -72,9 +75,16 @@ export function createWorldInteraction(
   });
 
   return (deltaTimeInSeconds: number) => {
+    const equippedItem = getEquippedItem();
+
     if (workbenchCrafting.isOpen()) {
       hidePrompt();
-      resourceInteraction.update(deltaTimeInSeconds, undefined, false);
+      resourceInteraction.update(
+        deltaTimeInSeconds,
+        undefined,
+        false,
+        equippedItem,
+      );
 
       if (interactionPressed) {
         heldTargetKind = "workbench";
@@ -97,10 +107,15 @@ export function createWorldInteraction(
     }
 
     const target = findNearestTarget(player, resources, workbenches);
-    updatePrompt(target);
+    updatePrompt(target, equippedItem);
 
     if (waitForInteractionRelease) {
-      resourceInteraction.update(deltaTimeInSeconds, undefined, false);
+      resourceInteraction.update(
+        deltaTimeInSeconds,
+        undefined,
+        false,
+        equippedItem,
+      );
       hidePrompt();
       interactionPressed = false;
       return;
@@ -113,16 +128,27 @@ export function createWorldInteraction(
           deltaTimeInSeconds,
           target.resource,
           true,
+          equippedItem,
         );
         if (harvestCompleted) {
           waitForInteractionRelease = true;
           hidePrompt();
         }
       } else {
-        resourceInteraction.update(deltaTimeInSeconds, undefined, false);
+        resourceInteraction.update(
+          deltaTimeInSeconds,
+          undefined,
+          false,
+          equippedItem,
+        );
       }
     } else {
-      resourceInteraction.update(deltaTimeInSeconds, undefined, false);
+      resourceInteraction.update(
+        deltaTimeInSeconds,
+        undefined,
+        false,
+        equippedItem,
+      );
 
       if (
         target?.kind === "workbench" &&
@@ -144,10 +170,13 @@ export function createWorldInteraction(
     interactionPressed = false;
   };
 
-  function updatePrompt(target: WorldInteractionTarget | undefined) {
+  function updatePrompt(
+    target: WorldInteractionTarget | undefined,
+    equippedItem: EquippedItem,
+  ) {
     const text =
       target?.kind === "resource"
-        ? getResourceInteractionPrompt(target.resource.type)
+        ? getResourceInteractionPrompt(target.resource.type, equippedItem)
         : target?.kind === "workbench"
           ? "E — Utiliser l'établi"
           : "";
