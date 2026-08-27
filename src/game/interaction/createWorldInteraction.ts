@@ -124,16 +124,12 @@ export function createWorldInteraction(
     if (target?.kind === "resource") {
       if (interactionHeld && heldTargetKind !== "workbench") {
         heldTargetKind = "resource";
-        const harvestCompleted = resourceInteraction.update(
+        resourceInteraction.update(
           deltaTimeInSeconds,
           target.resource,
           true,
           equippedItem,
         );
-        if (harvestCompleted) {
-          waitForInteractionRelease = true;
-          hidePrompt();
-        }
       } else {
         resourceInteraction.update(
           deltaTimeInSeconds,
