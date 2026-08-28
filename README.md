@@ -54,3 +54,11 @@ npm run build
 ```
 
 La version prête à être déployée est générée dans `dist/`.
+
+## Tests
+
+```bash
+npm test
+```
+
+Le mode interactif est également disponible avec `npm run test:watch`. Les tests actuels couvrent quelques règles TypeScript pures de gameplay, sans lancer le rendu Babylon.js.
