@@ -1,69 +1,127 @@
 import { Scene } from "@babylonjs/core/scene";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { GAME_PALETTE } from "../constants/gamePalette";
 
 function createMaterial(
   scene: Scene,
   name: string,
-  color: Color3,
+  color: string,
 ): StandardMaterial {
   const material = new StandardMaterial(name, scene);
-  material.diffuseColor = color;
+  material.diffuseColor = Color3.FromHexString(color);
   material.specularColor = Color3.Black();
   return material;
 }
 
 export function createGameMaterials(scene: Scene) {
+  // ----- World ----
   const water = createMaterial(
     scene,
-    "water-material",
-    new Color3(0.18, 0.62, 0.78),
+    "world-water-material",
+    GAME_PALETTE.world.water,
   );
   water.alpha = 0.92;
   const sand = createMaterial(
     scene,
-    "sand-material",
-    new Color3(0.91, 0.75, 0.46),
+    "world-sand-material",
+    GAME_PALETTE.world.sand,
   );
   const grass = createMaterial(
     scene,
-    "grass-material",
-    new Color3(0.3, 0.68, 0.32),
+    "world-grass-material",
+    GAME_PALETTE.world.grass,
   );
   const trunk = createMaterial(
     scene,
-    "trunk-material",
-    new Color3(0.38, 0.21, 0.1),
+    "world-trunk-material",
+    GAME_PALETTE.world.trunk,
   );
   const leaves = createMaterial(
     scene,
-    "leaves-material",
-    new Color3(0.12, 0.48, 0.24),
+    "world-leaves-material",
+    GAME_PALETTE.world.leaves,
   );
   const rock = createMaterial(
     scene,
-    "rock-material",
-    new Color3(0.38, 0.43, 0.44),
+    "world-rock-material",
+    GAME_PALETTE.world.rock,
   );
-  const player = createMaterial(
+
+  // ----- Player -----
+  const body = createMaterial(
     scene,
-    "player-material",
-    new Color3(0.92, 0.3, 0.18),
+    "player-body-material",
+    GAME_PALETTE.player.body,
   );
-  const shelterRoof = createMaterial(
+
+  // ----- Building ----
+  const posts = createMaterial(
     scene,
-    "shelter-roof-material",
-    new Color3(0.66, 0.4, 0.18),
+    "building-shelter-post-material",
+    GAME_PALETTE.building.shelter.posts,
+  );
+
+  const roof = createMaterial(
+    scene,
+    "building-shelter-roof-material",
+    GAME_PALETTE.building.shelter.roof,
+  );
+
+  const top = createMaterial(
+    scene,
+    "building-workbench-top-material",
+    GAME_PALETTE.building.workbench.top,
+  );
+
+  const legs = createMaterial(
+    scene,
+    "building-workbench-legs-material",
+    GAME_PALETTE.building.workbench.legs,
+  );
+
+  const stonePlate = createMaterial(
+    scene,
+    "building-workbench-stoneplate-material",
+    GAME_PALETTE.building.workbench.stonePlate,
+  );
+
+  const handle = createMaterial(
+    scene,
+    "tools-handle-material",
+    GAME_PALETTE.tools.handle,
+  );
+
+  const head = createMaterial(
+    scene,
+    "tools-head-material",
+    GAME_PALETTE.tools.head,
   );
 
   return {
-    water,
-    sand,
-    grass,
-    trunk,
-    leaves,
-    rock,
-    player,
-    shelterRoof,
+    world: {
+      water,
+      sand,
+      grass,
+      trunk,
+      leaves,
+      rock,
+    },
+    player: { body },
+    building: {
+      shelter: {
+        posts,
+        roof,
+      },
+      workbench: {
+        top,
+        legs,
+        stonePlate,
+      },
+    },
+    tools: {
+      handle,
+      head,
+    },
   };
 }

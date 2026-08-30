@@ -17,6 +17,7 @@ import { createGameMaterials } from "./rendering/createGameMaterials";
 import { createPlayer } from "./player/createPlayer";
 import { createGameCamera } from "./camera/createGameCamera";
 import { createLighting } from "./rendering/createLighting";
+import { createPlacementMaterials } from "./rendering/createPlacementMaterials";
 
 export function createScene(engine: Engine): Scene {
   const scene = new Scene(engine);
@@ -28,21 +29,22 @@ export function createScene(engine: Engine): Scene {
 
   const shadows = createLighting(scene);
   const materials = createGameMaterials(scene);
+  const placementMaterials = createPlacementMaterials(scene);
 
   const island = createIsland(scene, {
-    water: materials.water,
-    sand: materials.sand,
-    grass: materials.grass,
-    trunk: materials.trunk,
-    leaves: materials.leaves,
-    rock: materials.rock,
+    water: materials.world.water,
+    sand: materials.world.sand,
+    grass: materials.world.grass,
+    trunk: materials.world.trunk,
+    leaves: materials.world.leaves,
+    rock: materials.world.rock,
   });
 
-  const player = createPlayer(scene, materials.player);
+  const player = createPlayer(scene, materials.player.body);
 
   const toolModels = createToolModels(scene, player, {
-    wood: materials.trunk,
-    stone: materials.rock,
+    handle: materials.tools.handle,
+    head: materials.tools.head,
   });
 
   // Seuls les éléments au-dessus du sol projettent une ombre ; les surfaces
@@ -92,10 +94,17 @@ export function createScene(engine: Engine): Scene {
     resources: island.harvestableResources,
     inventory,
     buildingMaterials: {
-      wood: materials.trunk,
-      roof: materials.shelterRoof,
-      stone: materials.rock,
+      shelter: {
+        post: materials.building.shelter.posts,
+        roof: materials.building.shelter.roof,
+      },
+      workbench: {
+        top: materials.building.workbench.top,
+        legs: materials.building.workbench.legs,
+        stonePlate: materials.building.workbench.stonePlate,
+      },
     },
+    placementMaterials,
     isCraftingOpen: workbenchCrafting.isOpen,
     onBuildingBuilt: (building) => {
       building.meshes.forEach((mesh) => shadows.addShadowCaster(mesh));

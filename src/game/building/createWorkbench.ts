@@ -5,8 +5,9 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Scene } from "@babylonjs/core/scene";
 
 interface WorkbenchMaterials {
-  wood: StandardMaterial;
-  stone: StandardMaterial;
+  top: StandardMaterial;
+  legs: StandardMaterial;
+  stonePlate: StandardMaterial;
 }
 
 export interface Workbench {
@@ -26,7 +27,7 @@ export function createWorkbench(
     scene,
   );
   top.position.y = 1;
-  top.material = materials.wood;
+  top.material = materials.top;
   top.parent = root;
 
   const legPositions = [
@@ -42,7 +43,7 @@ export function createWorkbench(
       scene,
     );
     leg.position.set(x, 0.45, z);
-    leg.material = materials.wood;
+    leg.material = materials.legs;
     leg.parent = root;
     return leg;
   });
@@ -53,7 +54,7 @@ export function createWorkbench(
     scene,
   );
   stonePlate.position.set(0.55, 1.17, 0);
-  stonePlate.material = materials.stone;
+  stonePlate.material = materials.stonePlate;
   stonePlate.parent = root;
 
   const meshes = [top, ...legs, stonePlate];

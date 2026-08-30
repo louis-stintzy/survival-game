@@ -1,4 +1,3 @@
-import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
@@ -8,10 +7,7 @@ import type { Scene } from "@babylonjs/core/scene";
 import { Ray } from "@babylonjs/core/Culling/ray";
 import type { InventoryCost } from "../inventory/createInventory";
 import type { HarvestableResource } from "../resources/resourceTypes";
-import {
-  BUILDING_DEFINITIONS,
-  type BuildingType,
-} from "./buildingDefinitions";
+import { BUILDING_DEFINITIONS, type BuildingType } from "./buildingDefinitions";
 import { createShelter } from "./createShelter";
 import { createWorkbench } from "./createWorkbench";
 
@@ -27,9 +23,21 @@ interface BuildingInventory {
 }
 
 interface BuildingMaterials {
-  wood: StandardMaterial;
-  roof: StandardMaterial;
-  stone: StandardMaterial;
+  shelter: {
+    post: StandardMaterial;
+    roof: StandardMaterial;
+  };
+
+  workbench: {
+    top: StandardMaterial;
+    legs: StandardMaterial;
+    stonePlate: StandardMaterial;
+  };
+}
+
+interface PlacementMaterials {
+  valid: StandardMaterial;
+  invalid: StandardMaterial;
 }
 
 interface BuildingPlacementOptions {
@@ -40,6 +48,7 @@ interface BuildingPlacementOptions {
   resources: readonly HarvestableResource[];
   inventory: BuildingInventory;
   buildingMaterials: BuildingMaterials;
+  placementMaterials: PlacementMaterials;
   isCraftingOpen: () => boolean;
   onBuildingBuilt: (building: BuiltBuilding) => void;
 }
@@ -77,6 +86,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     resources,
     inventory,
     buildingMaterials,
+    placementMaterials,
     isCraftingOpen,
     onBuildingBuilt,
   } = options;
@@ -92,24 +102,15 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   const buildableSurfaceSet = new Set(buildableSurfaces);
   const builtFootprints: Footprint[] = [];
 
-  const validGhostMaterial = createGhostMaterial(
-    scene,
-    "valid-building-ghost-material",
-    new Color3(0.2, 0.85, 0.35),
-  );
-  const invalidGhostMaterial = createGhostMaterial(
-    scene,
-    "invalid-building-ghost-material",
-    new Color3(0.9, 0.2, 0.18),
-  );
   const ghosts: Record<BuildingType, BuildingGeometry> = {
     shelter: createShelter(scene, "shelter-ghost", {
-      wood: invalidGhostMaterial,
-      roof: invalidGhostMaterial,
+      post: placementMaterials.invalid,
+      roof: placementMaterials.invalid,
     }),
     workbench: createWorkbench(scene, "workbench-ghost", {
-      wood: invalidGhostMaterial,
-      stone: invalidGhostMaterial,
+      top: placementMaterials.invalid,
+      legs: placementMaterials.invalid,
+      stonePlate: placementMaterials.invalid,
     }),
   };
   Object.values(ghosts).forEach((ghost) => {
@@ -140,10 +141,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
       return;
     }
 
-    if (
-      isCraftingOpen() &&
-      (event.key === "Tab" || key === "escape")
-    ) {
+    if (isCraftingOpen() && (event.key === "Tab" || key === "escape")) {
       return;
     }
 
@@ -356,9 +354,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
       Vector3.Down(),
       TERRAIN_RAY_LENGTH,
     );
-    const hit = scene.pickWithRay(ray, (mesh) =>
-      placementSurfaceSet.has(mesh),
-    );
+    const hit = scene.pickWithRay(ray, (mesh) => placementSurfaceSet.has(mesh));
     if (!hit?.pickedPoint || !hit.pickedMesh) return undefined;
     return { point: hit.pickedPoint, surface: hit.pickedMesh };
   }
@@ -382,7 +378,9 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
 
   function updateGhostMaterial(valid: boolean) {
     if (lastGhostValidity === valid) return;
-    const material = valid ? validGhostMaterial : invalidGhostMaterial;
+    const material = valid
+      ? placementMaterials.valid
+      : placementMaterials.invalid;
     ghosts[selectedBuildingType].meshes.forEach((mesh) => {
       mesh.material = material;
     });
@@ -429,9 +427,9 @@ function createBuilding(
 ): BuildingGeometry {
   switch (type) {
     case "shelter":
-      return createShelter(scene, name, materials);
+      return createShelter(scene, name, materials.shelter);
     case "workbench":
-      return createWorkbench(scene, name, materials);
+      return createWorkbench(scene, name, materials.workbench);
   }
 }
 
@@ -458,15 +456,6 @@ function footprintOverlapsBounds(
     footprint.z - footprint.depth / 2 < maximumZ &&
     footprint.z + footprint.depth / 2 > minimumZ
   );
-}
-
-function createGhostMaterial(scene: Scene, name: string, color: Color3) {
-  const material = new StandardMaterial(name, scene);
-  material.diffuseColor = color;
-  material.emissiveColor = color.scale(0.25);
-  material.specularColor = Color3.Black();
-  material.alpha = 0.45;
-  return material;
 }
 
 function getElement(selector: string): HTMLElement {
