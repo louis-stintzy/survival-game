@@ -1,5 +1,5 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
@@ -24,7 +24,7 @@ interface BuildingInventory {
 
 interface BuildingMaterials {
   shelter: {
-    post: StandardMaterial;
+    posts: StandardMaterial;
     roof: StandardMaterial;
   };
 
@@ -104,7 +104,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
 
   const ghosts: Record<BuildingType, BuildingGeometry> = {
     shelter: createShelter(scene, "shelter-ghost", {
-      post: placementMaterials.invalid,
+      posts: placementMaterials.invalid,
       roof: placementMaterials.invalid,
     }),
     workbench: createWorkbench(scene, "workbench-ghost", {

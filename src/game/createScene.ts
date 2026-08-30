@@ -94,15 +94,8 @@ export function createScene(engine: Engine): Scene {
     resources: island.harvestableResources,
     inventory,
     buildingMaterials: {
-      shelter: {
-        post: materials.building.shelter.posts,
-        roof: materials.building.shelter.roof,
-      },
-      workbench: {
-        top: materials.building.workbench.top,
-        legs: materials.building.workbench.legs,
-        stonePlate: materials.building.workbench.stonePlate,
-      },
+      shelter: materials.building.shelter,
+      workbench: materials.building.workbench,
     },
     placementMaterials,
     isCraftingOpen: workbenchCrafting.isOpen,
