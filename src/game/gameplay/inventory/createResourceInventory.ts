@@ -1,9 +1,8 @@
 import {
-  ResourceCost,
-  ResourceType,
+  RESOURCE_TYPES,
+  type ResourceCost,
+  type ResourceType,
 } from "../../definitions/resourceDefinitions";
-
-const RESOURCE_TYPES: readonly ResourceType[] = ["wood", "stone", "food"];
 
 const INITIAL_COUNTS: Record<ResourceType, number> = {
   wood: 0,

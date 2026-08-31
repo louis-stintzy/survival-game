@@ -12,7 +12,7 @@ import {
 } from "../../definitions/buildingDefinitions";
 import { createShelter } from "../../models/createShelter";
 import { createWorkbench } from "../../models/createWorkbench";
-import { ResourceCost } from "../../definitions/resourceDefinitions";
+import type { ResourceCost } from "../../definitions/resourceDefinitions";
 
 const GRID_SIZE = 1;
 const MAX_BUILD_DISTANCE = 6;

@@ -1,4 +1,4 @@
-import { ResourceCost } from "./resourceDefinitions";
+import type { ResourceCost } from "./resourceDefinitions";
 
 export const BUILDING_TYPES = ["shelter", "workbench"] as const;
 

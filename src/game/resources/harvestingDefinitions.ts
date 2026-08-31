@@ -1,4 +1,4 @@
-import { HarvestableResourceType } from "../definitions/resourceDefinitions";
+import type { HarvestableResourceType } from "../definitions/resourceDefinitions";
 import {
   TOOL_DEFINITIONS,
   type EquippedItem,
