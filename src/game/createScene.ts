@@ -1,16 +1,6 @@
 import { Color4 } from "@babylonjs/core/Maths/math.color";
-import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Scene } from "@babylonjs/core/scene";
 import type { Engine } from "@babylonjs/core/Engines/engine";
-import { createBuildingPlacement } from "./building/createBuildingPlacement";
-import { createCameraRotation } from "./camera/createCameraRotation";
-import { createWorkbenchCrafting } from "./crafting/createWorkbenchCrafting";
-import { createResourceInventory } from "./resources/createResourceInventory";
-import { createWorldInteraction } from "./interaction/createWorldInteraction";
-import { createPlayerMovement } from "./player/createPlayerMovement";
-import { createResourceInteraction } from "./resources/createResourceInteraction";
-import { createToolEquipment } from "./tools/createToolEquipment";
-import { createToolInventory } from "./tools/createToolInventory";
 import { createToolModels } from "./tools/createToolModels";
 import { createIsland } from "./world/createIsland";
 import { createGameMaterials } from "./rendering/createGameMaterials";
@@ -18,6 +8,8 @@ import { createPlayer } from "./player/createPlayer";
 import { createGameCamera } from "./camera/createGameCamera";
 import { createLighting } from "./rendering/createLighting";
 import { createPlacementMaterials } from "./rendering/createPlacementMaterials";
+import { createGameplaySystems } from "./gameplay/createGameplaySystems";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 
 export function createScene(engine: Engine): Scene {
   const scene = new Scene(engine);
@@ -28,6 +20,10 @@ export function createScene(engine: Engine): Scene {
   // ----- Environnement -----
 
   const shadows = createLighting(scene);
+  const addShadowCasters = (meshes: readonly Mesh[]) => {
+    meshes.forEach((mesh) => shadows.addShadowCaster(mesh));
+  };
+
   const materials = createGameMaterials(scene);
   const placementMaterials = createPlacementMaterials(scene);
 
@@ -49,74 +45,31 @@ export function createScene(engine: Engine): Scene {
 
   // Seuls les éléments au-dessus du sol projettent une ombre ; les surfaces
   // de l'île les reçoivent pour mieux ancrer les formes dans le diorama.
-  [
+  addShadowCasters([
     player,
     ...island.shadowCasters,
     ...toolModels.stoneAxe.meshes,
     ...toolModels.stonePickaxe.meshes,
-  ].forEach((mesh) => shadows.addShadowCaster(mesh));
+  ]);
 
-  // ----- Systèmes de jeu -----
+  // ----- Gameplay -----
 
-  const resourceInventory = createResourceInventory();
-  const toolInventory = createToolInventory();
-  const toolEquipment = createToolEquipment(toolInventory, toolModels);
-  const builtWorkbenches: TransformNode[] = [];
-
-  const updateCameraRotation = createCameraRotation(camera);
-  const updatePlayerMovement = createPlayerMovement(
-    player,
-    camera,
-    island.walkableSurfaces,
-  );
-
-  const resourceInteraction = createResourceInteraction((resourceType) =>
-    resourceInventory.add(resourceType, 1),
-  );
-  const workbenchCrafting = createWorkbenchCrafting(
-    resourceInventory,
-    toolInventory,
-    toolEquipment.onToolCrafted,
-  );
-  const updateWorldInteraction = createWorldInteraction(
-    player,
-    island.harvestableResources,
-    builtWorkbenches,
-    resourceInteraction,
-    workbenchCrafting,
-    toolEquipment.getEquippedItem,
-  );
-  const updateBuildingPlacement = createBuildingPlacement({
+  const gameplay = createGameplaySystems(
     scene,
+    camera,
     player,
-    placementSurfaces: island.placementSurfaces,
-    buildableSurfaces: island.buildableSurfaces,
-    resources: island.harvestableResources,
-    resourceInventory,
-    buildingMaterials: {
-      shelter: materials.building.shelter,
-      workbench: materials.building.workbench,
-    },
+    island,
+    toolModels,
+    materials.building,
     placementMaterials,
-    isCraftingOpen: workbenchCrafting.isOpen,
-    onBuildingBuilt: (building) => {
-      building.meshes.forEach((mesh) => shadows.addShadowCaster(mesh));
-      if (building.type === "workbench") {
-        // Le tableau partagé rend immédiatement chaque nouvel établi visible
-        // par le coordinateur d'interactions, sans registre global.
-        builtWorkbenches.push(building.root);
-      }
-    },
-  });
+    addShadowCasters,
+  );
 
   // ----- Game loop ----
 
   scene.onBeforeRenderObservable.add(() => {
     const deltaTimeInSeconds = engine.getDeltaTime() / 1000;
-    updateCameraRotation(deltaTimeInSeconds);
-    updatePlayerMovement(deltaTimeInSeconds);
-    updateWorldInteraction(deltaTimeInSeconds);
-    updateBuildingPlacement();
+    gameplay.update(deltaTimeInSeconds);
   });
 
   return scene;

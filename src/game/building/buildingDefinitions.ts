@@ -1,18 +1,15 @@
-import type { InventoryCost } from "../inventory/createInventory";
+import type { ResourceInventoryCost } from "../resources/createResourceInventory";
 
 export type BuildingType = "shelter" | "workbench";
 
 export interface BuildingDefinition {
   label: string;
-  cost: InventoryCost;
+  cost: ResourceInventoryCost;
   width: number;
   depth: number;
 }
 
-export const BUILDING_DEFINITIONS: Record<
-  BuildingType,
-  BuildingDefinition
-> = {
+export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   shelter: {
     label: "Abri",
     cost: { wood: 4, stone: 2 },

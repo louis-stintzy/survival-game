@@ -22,7 +22,7 @@ interface BuildingInventory {
   spend(cost: ResourceInventoryCost): boolean;
 }
 
-interface BuildingMaterials {
+export interface BuildingMaterials {
   shelter: {
     posts: StandardMaterial;
     roof: StandardMaterial;
@@ -35,7 +35,7 @@ interface BuildingMaterials {
   };
 }
 
-interface PlacementMaterials {
+export interface PlacementMaterials {
   valid: StandardMaterial;
   invalid: StandardMaterial;
 }
