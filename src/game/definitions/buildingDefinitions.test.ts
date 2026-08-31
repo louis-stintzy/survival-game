@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { BUILDING_DEFINITIONS } from "./buildingDefinitions";
+import { BUILDING_DEFINITIONS } from "../definitions/buildingDefinitions";
 
 describe("BUILDING_DEFINITIONS", () => {
   test("protège le coût et l'empreinte de l'Abri", () => {

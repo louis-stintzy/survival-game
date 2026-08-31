@@ -1,14 +1,14 @@
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import type { InventoryCost } from "../inventory/createInventory";
-import type { ToolType } from "../tools/toolDefinitions";
+import type { ToolType } from "../../definitions/toolDefinitions";
 import {
   TOOL_DEFINITIONS,
   TOOL_TYPES,
-} from "../tools/toolDefinitions";
+} from "../../definitions/toolDefinitions";
+import { ResourceCost } from "../../definitions/resourceDefinitions";
 
 interface ResourceInventory {
-  canAfford(cost: InventoryCost): boolean;
-  spend(cost: InventoryCost): boolean;
+  canAfford(cost: ResourceCost): boolean;
+  spend(cost: ResourceCost): boolean;
 }
 
 interface ToolInventory {

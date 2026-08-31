@@ -1,8 +1,6 @@
 import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
-
-export type ResourceType = "wood" | "stone" | "food";
-export type HarvestableResourceType = Exclude<ResourceType, "food">;
+import type { HarvestableResourceType } from "../definitions/resourceDefinitions";
 
 export interface HarvestableResource {
   type: HarvestableResourceType;

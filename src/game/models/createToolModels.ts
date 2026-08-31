@@ -3,11 +3,11 @@ import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Scene } from "@babylonjs/core/scene";
-import type { ToolType } from "./toolDefinitions";
+import { ToolType } from "../definitions/toolDefinitions";
 
 interface ToolMaterials {
-  wood: StandardMaterial;
-  stone: StandardMaterial;
+  handle: StandardMaterial;
+  head: StandardMaterial;
 }
 
 export interface ToolModel {
@@ -49,7 +49,7 @@ function createStoneAxe(scene: Scene, materials: ToolMaterials): ToolModel {
     { width: 0.12, height: 1.25, depth: 0.12 },
     scene,
   );
-  handle.material = materials.wood;
+  handle.material = materials.handle;
   handle.parent = root;
 
   const head = MeshBuilder.CreateBox(
@@ -58,7 +58,7 @@ function createStoneAxe(scene: Scene, materials: ToolMaterials): ToolModel {
     scene,
   );
   head.position.set(0.2, 0.5, 0);
-  head.material = materials.stone;
+  head.material = materials.head;
   head.parent = root;
 
   return { root, meshes: [handle, head] };
@@ -73,7 +73,7 @@ function createStonePickaxe(scene: Scene, materials: ToolMaterials): ToolModel {
     { width: 0.12, height: 1.25, depth: 0.12 },
     scene,
   );
-  handle.material = materials.wood;
+  handle.material = materials.handle;
   handle.parent = root;
 
   const head = MeshBuilder.CreateBox(
@@ -82,7 +82,7 @@ function createStonePickaxe(scene: Scene, materials: ToolMaterials): ToolModel {
     scene,
   );
   head.position.y = 0.56;
-  head.material = materials.stone;
+  head.material = materials.head;
   head.parent = root;
 
   return { root, meshes: [handle, head] };

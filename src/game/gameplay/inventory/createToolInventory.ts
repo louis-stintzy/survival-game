@@ -1,4 +1,4 @@
-import { TOOL_TYPES, type ToolType } from "./toolDefinitions";
+import { TOOL_TYPES, ToolType } from "../../definitions/toolDefinitions";
 
 export function createToolInventory() {
   const counts = Object.fromEntries(
@@ -8,7 +8,9 @@ export function createToolInventory() {
   return {
     add(type: ToolType, amount: number) {
       if (!Number.isInteger(amount) || amount <= 0) {
-        throw new Error("La quantité d'outils ajoutée doit être un entier positif.");
+        throw new Error(
+          "La quantité d'outils ajoutée doit être un entier positif.",
+        );
       }
 
       counts[type] += amount;

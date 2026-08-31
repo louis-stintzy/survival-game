@@ -1,10 +1,10 @@
-import type { ToolModel } from "./createToolModels";
+import { ToolModel } from "../../models/createToolModels";
 import {
   TOOL_DEFINITIONS,
   TOOL_TYPES,
   type EquippedItem,
   type ToolType,
-} from "./toolDefinitions";
+} from "../../definitions/toolDefinitions";
 
 interface ToolInventory {
   getCount(type: ToolType): number;

@@ -5,7 +5,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Scene } from "@babylonjs/core/scene";
 
 interface ShelterMaterials {
-  wood: StandardMaterial;
+  posts: StandardMaterial;
   roof: StandardMaterial;
 }
 
@@ -34,7 +34,7 @@ export function createShelter(
       scene,
     );
     post.position.set(x, 1.35, z);
-    post.material = materials.wood;
+    post.material = materials.posts;
     post.parent = root;
     return post;
   });

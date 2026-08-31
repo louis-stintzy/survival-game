@@ -1,9 +1,7 @@
-import type {
-  HarvestableResource,
-  HarvestableResourceType,
-} from "./resourceTypes";
-import type { EquippedItem } from "../tools/toolDefinitions";
-import { getHarvestDurationSeconds } from "./harvestingDefinitions";
+import type { HarvestableResourceType } from "../../definitions/resourceDefinitions";
+import type { EquippedItem } from "../../definitions/toolDefinitions";
+import { getHarvestDurationSeconds } from "../../resources/harvestingDefinitions";
+import { HarvestableResource } from "../../resources/resourceTypes";
 
 const HARVEST_FEEDBACK_DURATION_SECONDS = 1.5;
 
@@ -73,10 +71,7 @@ export function createResourceInteraction(
     if (!interactionHeld || !target || harvestDuration === undefined) {
       resetHarvestProgress();
     } else {
-      if (
-        harvestTarget !== target ||
-        harvestEquippedItem !== equippedItem
-      ) {
+      if (harvestTarget !== target || harvestEquippedItem !== equippedItem) {
         // Une progression appartient uniquement à l'interaction courante :
         // changer de cible ou d'équipement recommence immédiatement à zéro.
         resetHarvestProgress();
@@ -101,8 +96,7 @@ export function createResourceInteraction(
         target.harvested = true;
         target.meshes.forEach((mesh) => mesh.setEnabled(false));
         onHarvest(target.type);
-        harvestFeedback.textContent =
-          RESOURCE_TEXT[target.type].harvested;
+        harvestFeedback.textContent = RESOURCE_TEXT[target.type].harvested;
         feedbackTimeRemaining = HARVEST_FEEDBACK_DURATION_SECONDS;
         harvestCompleted = true;
         resetHarvestProgress();

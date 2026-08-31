@@ -1,8 +1,8 @@
-import type { ResourceType } from "../resources/resourceTypes";
-
-export type InventoryCost = Partial<Record<ResourceType, number>>;
-
-const RESOURCE_TYPES: readonly ResourceType[] = ["wood", "stone", "food"];
+import {
+  RESOURCE_TYPES,
+  type ResourceCost,
+  type ResourceType,
+} from "../../definitions/resourceDefinitions";
 
 const INITIAL_COUNTS: Record<ResourceType, number> = {
   wood: 0,
@@ -10,7 +10,7 @@ const INITIAL_COUNTS: Record<ResourceType, number> = {
   food: 0,
 };
 
-export function createInventory() {
+export function createResourceInventory() {
   const counts = { ...INITIAL_COUNTS };
   const countElements: Record<ResourceType, HTMLElement> = {
     wood: getCountElement("#inventory-wood"),
@@ -36,13 +36,13 @@ export function createInventory() {
       updateDisplayedCount(type);
     },
 
-    canAfford(cost: InventoryCost) {
+    canAfford(cost: ResourceCost) {
       return getValidatedCostEntries(cost).every(
         ([type, amount]) => counts[type] >= amount,
       );
     },
 
-    spend(cost: InventoryCost) {
+    spend(cost: ResourceCost) {
       const entries = getValidatedCostEntries(cost);
 
       // Toutes les quantités sont vérifiées avant la première modification :
@@ -61,7 +61,7 @@ export function createInventory() {
 }
 
 function getValidatedCostEntries(
-  cost: InventoryCost,
+  cost: ResourceCost,
 ): Array<[ResourceType, number]> {
   return RESOURCE_TYPES.flatMap((type) => {
     const amount = cost[type];

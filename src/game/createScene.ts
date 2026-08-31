@@ -1,206 +1,75 @@
-import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
-import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
-import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
-import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
-import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { Scene } from "@babylonjs/core/scene";
-import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent";
-import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import type { Engine } from "@babylonjs/core/Engines/engine";
-import { createBuildingPlacement } from "./building/createBuildingPlacement";
-import { createCameraRotation } from "./camera/createCameraRotation";
-import { createWorkbenchCrafting } from "./crafting/createWorkbenchCrafting";
-import { createInventory } from "./inventory/createInventory";
-import { createWorldInteraction } from "./interaction/createWorldInteraction";
-import { createPlayerMovement } from "./player/createPlayerMovement";
-import { createResourceInteraction } from "./resources/createResourceInteraction";
-import { createToolEquipment } from "./tools/createToolEquipment";
-import { createToolInventory } from "./tools/createToolInventory";
-import { createToolModels } from "./tools/createToolModels";
+import { createToolModels } from "./models/createToolModels";
 import { createIsland } from "./world/createIsland";
-
-const VIEW_HEIGHT = 28;
-
-function createMaterial(
-  scene: Scene,
-  name: string,
-  color: Color3,
-): StandardMaterial {
-  const material = new StandardMaterial(name, scene);
-  material.diffuseColor = color;
-  material.specularColor = Color3.Black();
-  return material;
-}
+import { createGameMaterials } from "./rendering/createGameMaterials";
+import { createPlayer } from "./models/createPlayer";
+import { createGameCamera } from "./camera/createGameCamera";
+import { createLighting } from "./rendering/createLighting";
+import { createPlacementMaterials } from "./rendering/createPlacementMaterials";
+import { createGameplaySystems } from "./gameplay/createGameplaySystems";
+import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 
 export function createScene(engine: Engine): Scene {
   const scene = new Scene(engine);
   scene.clearColor = new Color4(0.56, 0.84, 0.91, 1);
 
-  const camera = new ArcRotateCamera(
-    "camera",
-    -Math.PI / 4,
-    Math.PI / 3.2,
-    30,
-    Vector3.Zero(),
-    scene,
-  );
-  camera.mode = ArcRotateCamera.ORTHOGRAPHIC_CAMERA;
-  camera.inputs.clear();
+  const camera = createGameCamera(scene, engine);
 
-  // Une caméra orthographique ne rétrécit pas les objets avec la distance.
-  // Ses limites doivent suivre le ratio du viewport pour conserver le cadrage.
-  const updateOrthographicBounds = () => {
-    const aspectRatio = engine.getRenderWidth() / engine.getRenderHeight();
-    camera.orthoTop = VIEW_HEIGHT / 2;
-    camera.orthoBottom = -VIEW_HEIGHT / 2;
-    camera.orthoLeft = (-VIEW_HEIGHT * aspectRatio) / 2;
-    camera.orthoRight = (VIEW_HEIGHT * aspectRatio) / 2;
+  // ----- Environnement -----
+
+  const shadows = createLighting(scene);
+  const addShadowCasters = (meshes: readonly Mesh[]) => {
+    meshes.forEach((mesh) => shadows.addShadowCaster(mesh));
   };
-  updateOrthographicBounds();
-  engine.onResizeObservable.add(updateOrthographicBounds);
 
-  const sun = new DirectionalLight("sun", new Vector3(-1, -2, -1), scene);
-  sun.position = new Vector3(12, 20, 10);
-  sun.intensity = 1.5;
-  const skyLight = new HemisphericLight(
-    "sky-light",
-    new Vector3(0, 1, 0),
-    scene,
-  );
-  skyLight.intensity = 0.45;
-  skyLight.groundColor = new Color3(0.25, 0.4, 0.45);
-  const shadows = new ShadowGenerator(1024, sun);
-  shadows.useBlurExponentialShadowMap = true;
-  shadows.blurKernel = 24;
-
-  const waterMaterial = createMaterial(
-    scene,
-    "water-material",
-    new Color3(0.18, 0.62, 0.78),
-  );
-  waterMaterial.alpha = 0.92;
-  const sandMaterial = createMaterial(
-    scene,
-    "sand-material",
-    new Color3(0.91, 0.75, 0.46),
-  );
-  const grassMaterial = createMaterial(
-    scene,
-    "grass-material",
-    new Color3(0.3, 0.68, 0.32),
-  );
-  const trunkMaterial = createMaterial(
-    scene,
-    "trunk-material",
-    new Color3(0.38, 0.21, 0.1),
-  );
-  const leavesMaterial = createMaterial(
-    scene,
-    "leaves-material",
-    new Color3(0.12, 0.48, 0.24),
-  );
-  const rockMaterial = createMaterial(
-    scene,
-    "rock-material",
-    new Color3(0.38, 0.43, 0.44),
-  );
-  const playerMaterial = createMaterial(
-    scene,
-    "player-material",
-    new Color3(0.92, 0.3, 0.18),
-  );
-  const shelterRoofMaterial = createMaterial(
-    scene,
-    "shelter-roof-material",
-    new Color3(0.66, 0.4, 0.18),
-  );
+  const materials = createGameMaterials(scene);
+  const placementMaterials = createPlacementMaterials(scene);
 
   const island = createIsland(scene, {
-    water: waterMaterial,
-    sand: sandMaterial,
-    grass: grassMaterial,
-    trunk: trunkMaterial,
-    leaves: leavesMaterial,
-    rock: rockMaterial,
+    water: materials.world.water,
+    sand: materials.world.sand,
+    grass: materials.world.grass,
+    trunk: materials.world.trunk,
+    leaves: materials.world.leaves,
+    rock: materials.world.rock,
   });
 
-  const player = MeshBuilder.CreateCapsule(
-    "player",
-    { height: 2.2, radius: 0.55, tessellation: 8 },
-    scene,
-  );
-  player.position = new Vector3(0, 1.85, 0);
-  player.material = playerMaterial;
+  const player = createPlayer(scene, materials.player.body);
+
   const toolModels = createToolModels(scene, player, {
-    wood: trunkMaterial,
-    stone: rockMaterial,
+    handle: materials.tools.handle,
+    head: materials.tools.head,
   });
+
   // Seuls les éléments au-dessus du sol projettent une ombre ; les surfaces
   // de l'île les reçoivent pour mieux ancrer les formes dans le diorama.
-  [
+  addShadowCasters([
     player,
     ...island.shadowCasters,
     ...toolModels.stoneAxe.meshes,
     ...toolModels.stonePickaxe.meshes,
-  ].forEach((mesh) => shadows.addShadowCaster(mesh));
+  ]);
 
-  const inventory = createInventory();
-  const toolInventory = createToolInventory();
-  const toolEquipment = createToolEquipment(toolInventory, toolModels);
-  const builtWorkbenches: TransformNode[] = [];
-  const updateCameraRotation = createCameraRotation(camera);
-  const updatePlayerMovement = createPlayerMovement(
-    player,
-    camera,
-    island.walkableSurfaces,
-  );
-  const resourceInteraction = createResourceInteraction(
-    (resourceType) => inventory.add(resourceType, 1),
-  );
-  const workbenchCrafting = createWorkbenchCrafting(
-    inventory,
-    toolInventory,
-    toolEquipment.onToolCrafted,
-  );
-  const updateWorldInteraction = createWorldInteraction(
-    player,
-    island.harvestableResources,
-    builtWorkbenches,
-    resourceInteraction,
-    workbenchCrafting,
-    toolEquipment.getEquippedItem,
-  );
-  const updateBuildingPlacement = createBuildingPlacement({
+  // ----- Gameplay -----
+
+  const gameplay = createGameplaySystems({
     scene,
+    camera,
     player,
-    placementSurfaces: island.placementSurfaces,
-    buildableSurfaces: island.buildableSurfaces,
-    resources: island.harvestableResources,
-    inventory,
-    buildingMaterials: {
-      wood: trunkMaterial,
-      roof: shelterRoofMaterial,
-      stone: rockMaterial,
-    },
-    isCraftingOpen: workbenchCrafting.isOpen,
-    onBuildingBuilt: (building) => {
-      building.meshes.forEach((mesh) => shadows.addShadowCaster(mesh));
-      if (building.type === "workbench") {
-        // Le tableau partagé rend immédiatement chaque nouvel établi visible
-        // par le coordinateur d'interactions, sans registre global.
-        builtWorkbenches.push(building.root);
-      }
-    },
+    island,
+    toolModels,
+    buildingMaterials: materials.building,
+    placementMaterials,
+    addShadowCasters,
   });
+
+  // ----- Game loop ----
+
   scene.onBeforeRenderObservable.add(() => {
     const deltaTimeInSeconds = engine.getDeltaTime() / 1000;
-    updateCameraRotation(deltaTimeInSeconds);
-    updatePlayerMovement(deltaTimeInSeconds);
-    updateWorldInteraction(deltaTimeInSeconds);
-    updateBuildingPlacement();
+    gameplay.update(deltaTimeInSeconds);
   });
 
   return scene;
