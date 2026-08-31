@@ -5,7 +5,7 @@ import type { Engine } from "@babylonjs/core/Engines/engine";
 import { createBuildingPlacement } from "./building/createBuildingPlacement";
 import { createCameraRotation } from "./camera/createCameraRotation";
 import { createWorkbenchCrafting } from "./crafting/createWorkbenchCrafting";
-import { createInventory } from "./inventory/createInventory";
+import { createResourceInventory } from "./resources/createResourceInventory";
 import { createWorldInteraction } from "./interaction/createWorldInteraction";
 import { createPlayerMovement } from "./player/createPlayerMovement";
 import { createResourceInteraction } from "./resources/createResourceInteraction";
@@ -58,7 +58,7 @@ export function createScene(engine: Engine): Scene {
 
   // ----- Systèmes de jeu -----
 
-  const inventory = createInventory();
+  const resourceInventory = createResourceInventory();
   const toolInventory = createToolInventory();
   const toolEquipment = createToolEquipment(toolInventory, toolModels);
   const builtWorkbenches: TransformNode[] = [];
@@ -71,10 +71,10 @@ export function createScene(engine: Engine): Scene {
   );
 
   const resourceInteraction = createResourceInteraction((resourceType) =>
-    inventory.add(resourceType, 1),
+    resourceInventory.add(resourceType, 1),
   );
   const workbenchCrafting = createWorkbenchCrafting(
-    inventory,
+    resourceInventory,
     toolInventory,
     toolEquipment.onToolCrafted,
   );
@@ -92,7 +92,7 @@ export function createScene(engine: Engine): Scene {
     placementSurfaces: island.placementSurfaces,
     buildableSurfaces: island.buildableSurfaces,
     resources: island.harvestableResources,
-    inventory,
+    resourceInventory,
     buildingMaterials: {
       shelter: materials.building.shelter,
       workbench: materials.building.workbench,

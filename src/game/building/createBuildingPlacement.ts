@@ -5,7 +5,7 @@ import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Scene } from "@babylonjs/core/scene";
 import { Ray } from "@babylonjs/core/Culling/ray";
-import type { InventoryCost } from "../inventory/createInventory";
+import type { ResourceInventoryCost } from "../resources/createResourceInventory";
 import type { HarvestableResource } from "../resources/resourceTypes";
 import { BUILDING_DEFINITIONS, type BuildingType } from "./buildingDefinitions";
 import { createShelter } from "./createShelter";
@@ -18,8 +18,8 @@ const TERRAIN_RAY_LENGTH = 20;
 const GHOST_ALPHA_INDEX = Number.POSITIVE_INFINITY;
 
 interface BuildingInventory {
-  canAfford(cost: InventoryCost): boolean;
-  spend(cost: InventoryCost): boolean;
+  canAfford(cost: ResourceInventoryCost): boolean;
+  spend(cost: ResourceInventoryCost): boolean;
 }
 
 interface BuildingMaterials {
@@ -46,7 +46,7 @@ interface BuildingPlacementOptions {
   placementSurfaces: readonly AbstractMesh[];
   buildableSurfaces: readonly AbstractMesh[];
   resources: readonly HarvestableResource[];
-  inventory: BuildingInventory;
+  resourceInventory: BuildingInventory;
   buildingMaterials: BuildingMaterials;
   placementMaterials: PlacementMaterials;
   isCraftingOpen: () => boolean;
@@ -84,7 +84,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     placementSurfaces,
     buildableSurfaces,
     resources,
-    inventory,
+    resourceInventory,
     buildingMaterials,
     placementMaterials,
     isCraftingOpen,
@@ -228,7 +228,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     if (buildRequested) {
       buildRequested = false;
       const definition = BUILDING_DEFINITIONS[selectedBuildingType];
-      if (currentPlacement?.valid && inventory.spend(definition.cost)) {
+      if (currentPlacement?.valid && resourceInventory.spend(definition.cost)) {
         const building = createBuilding(
           scene,
           `${selectedBuildingType}-${builtFootprints.length}`,
@@ -324,7 +324,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     }
 
     const definition = BUILDING_DEFINITIONS[selectedBuildingType];
-    if (!inventory.canAfford(definition.cost)) {
+    if (!resourceInventory.canAfford(definition.cost)) {
       return { valid: false, reason: "Ressources insuffisantes" };
     }
 
