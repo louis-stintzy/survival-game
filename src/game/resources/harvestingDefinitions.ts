@@ -1,16 +1,14 @@
-import type { HarvestableResourceType } from "./resourceTypes";
+import { HarvestableResourceType } from "../definitions/resourceDefinitions";
 import {
   TOOL_DEFINITIONS,
   type EquippedItem,
-} from "../tools/toolDefinitions";
+} from "../definitions/toolDefinitions";
 
-export const HARVEST_DURATION_SECONDS: Record<
-  HarvestableResourceType,
-  number
-> = {
-  wood: 3,
-  stone: 4,
-};
+export const HARVEST_DURATION_SECONDS: Record<HarvestableResourceType, number> =
+  {
+    wood: 3,
+    stone: 4,
+  };
 
 export function getHarvestDurationSeconds(
   resourceType: HarvestableResourceType,

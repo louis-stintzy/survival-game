@@ -3,21 +3,21 @@ import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Island } from "../world/createIsland";
-import type { ToolModel } from "../tools/createToolModels";
-import type { ToolType } from "../tools/toolDefinitions";
+import type { ToolModel } from "../models/createToolModels";
+import type { ToolType } from "../definitions/toolDefinitions";
 import {
   type BuildingMaterials,
   type PlacementMaterials,
   createBuildingPlacement,
-} from "../building/createBuildingPlacement";
-import { createWorldInteraction } from "../interaction/createWorldInteraction";
-import { createResourceInventory } from "../resources/createResourceInventory";
-import { createToolInventory } from "../tools/createToolInventory";
-import { createToolEquipment } from "../tools/createToolEquipment";
-import { createCameraRotation } from "../camera/createCameraRotation";
-import { createPlayerMovement } from "../player/createPlayerMovement";
-import { createResourceInteraction } from "../resources/createResourceInteraction";
-import { createWorkbenchCrafting } from "../crafting/createWorkbenchCrafting";
+} from "./building/createBuildingPlacement";
+import { createWorldInteraction } from "./interaction/createWorldInteraction";
+import { createResourceInventory } from "./inventory/createResourceInventory";
+import { createToolInventory } from "./inventory/createToolInventory";
+import { createToolEquipment } from "./equipment/createToolEquipment";
+import { createCameraRotation } from "./movement/createCameraRotation";
+import { createPlayerMovement } from "./movement/createPlayerMovement";
+import { createResourceInteraction } from "./interaction/createResourceInteraction";
+import { createWorkbenchCrafting } from "./crafting/createWorkbenchCrafting";
 
 interface GameplaySystemsOptions {
   scene: Scene;

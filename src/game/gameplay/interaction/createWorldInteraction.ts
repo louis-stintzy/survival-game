@@ -1,9 +1,9 @@
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import type { HarvestableResource } from "../resources/resourceTypes";
-import type { EquippedItem } from "../tools/toolDefinitions";
-import { getResourceInteractionPrompt } from "../resources/createResourceInteraction";
-import { getHarvestDurationSeconds } from "../resources/harvestingDefinitions";
+import type { HarvestableResource } from "../../resources/resourceTypes";
+import type { EquippedItem } from "../../definitions/toolDefinitions";
+import { getResourceInteractionPrompt } from "../interaction/createResourceInteraction";
+import { getHarvestDurationSeconds } from "../../resources/harvestingDefinitions";
 
 const INTERACTION_DISTANCE = 2.75;
 const NO_WORKBENCHES: readonly TransformNode[] = [];
@@ -113,13 +113,14 @@ export function createWorldInteraction(
     }
 
     const target = harvestChainActive
-      ? findNearestTarget(
+      ? (findNearestTarget(
           player,
           resources,
           NO_WORKBENCHES,
           (resource) =>
-            getHarvestDurationSeconds(resource.type, equippedItem) !== undefined,
-        ) ?? findNearestTarget(player, resources, workbenches)
+            getHarvestDurationSeconds(resource.type, equippedItem) !==
+            undefined,
+        ) ?? findNearestTarget(player, resources, workbenches))
       : findNearestTarget(player, resources, workbenches);
     updatePrompt(target, equippedItem);
 

@@ -1,13 +1,17 @@
-import type { ResourceInventoryCost } from "../resources/createResourceInventory";
-import type { HarvestableResourceType } from "../resources/resourceTypes";
+import type {
+  HarvestableResourceType,
+  ResourceCost,
+} from "./resourceDefinitions";
 
 export const TOOL_TYPES = ["stoneAxe", "stonePickaxe"] as const;
+
 export type ToolType = (typeof TOOL_TYPES)[number];
+
 export type EquippedItem = "hands" | ToolType;
 
 interface ToolDefinition {
   label: string;
-  cost: ResourceInventoryCost;
+  cost: ResourceCost;
   craftingDurationSeconds: number;
   effectiveOn: HarvestableResourceType;
   harvestSpeedMultiplier: number;

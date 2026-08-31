@@ -1,10 +1,10 @@
 import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { Scene } from "@babylonjs/core/scene";
 import type { Engine } from "@babylonjs/core/Engines/engine";
-import { createToolModels } from "./tools/createToolModels";
+import { createToolModels } from "./models/createToolModels";
 import { createIsland } from "./world/createIsland";
 import { createGameMaterials } from "./rendering/createGameMaterials";
-import { createPlayer } from "./player/createPlayer";
+import { createPlayer } from "./models/createPlayer";
 import { createGameCamera } from "./camera/createGameCamera";
 import { createLighting } from "./rendering/createLighting";
 import { createPlacementMaterials } from "./rendering/createPlacementMaterials";

@@ -5,11 +5,14 @@ import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Scene } from "@babylonjs/core/scene";
 import { Ray } from "@babylonjs/core/Culling/ray";
-import type { ResourceInventoryCost } from "../resources/createResourceInventory";
-import type { HarvestableResource } from "../resources/resourceTypes";
-import { BUILDING_DEFINITIONS, type BuildingType } from "./buildingDefinitions";
-import { createShelter } from "./createShelter";
-import { createWorkbench } from "./createWorkbench";
+import type { HarvestableResource } from "../../resources/resourceTypes";
+import {
+  BUILDING_DEFINITIONS,
+  type BuildingType,
+} from "../../definitions/buildingDefinitions";
+import { createShelter } from "../../models/createShelter";
+import { createWorkbench } from "../../models/createWorkbench";
+import { ResourceCost } from "../../definitions/resourceDefinitions";
 
 const GRID_SIZE = 1;
 const MAX_BUILD_DISTANCE = 6;
@@ -18,8 +21,8 @@ const TERRAIN_RAY_LENGTH = 20;
 const GHOST_ALPHA_INDEX = Number.POSITIVE_INFINITY;
 
 interface ResourceInventory {
-  canAfford(cost: ResourceInventoryCost): boolean;
-  spend(cost: ResourceInventoryCost): boolean;
+  canAfford(cost: ResourceCost): boolean;
+  spend(cost: ResourceCost): boolean;
 }
 
 export interface BuildingMaterials {

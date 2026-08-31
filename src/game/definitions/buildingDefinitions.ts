@@ -1,10 +1,12 @@
-import type { ResourceInventoryCost } from "../resources/createResourceInventory";
+import { ResourceCost } from "./resourceDefinitions";
 
-export type BuildingType = "shelter" | "workbench";
+export const BUILDING_TYPES = ["shelter", "workbench"] as const;
+
+export type BuildingType = (typeof BUILDING_TYPES)[number];
 
 export interface BuildingDefinition {
   label: string;
-  cost: ResourceInventoryCost;
+  cost: ResourceCost;
   width: number;
   depth: number;
 }
