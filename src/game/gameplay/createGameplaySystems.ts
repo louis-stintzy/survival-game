@@ -18,6 +18,7 @@ import { createCameraRotation } from "./movement/createCameraRotation";
 import { createPlayerMovement } from "./movement/createPlayerMovement";
 import { createResourceInteraction } from "./interaction/createResourceInteraction";
 import { createWorkbenchCrafting } from "./crafting/createWorkbenchCrafting";
+import { createPlayerWorldCollision } from "./collision/playerWorldCollision";
 
 interface GameplaySystemsOptions {
   scene: Scene;
@@ -48,14 +49,20 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
   const toolInventory = createToolInventory();
   const toolEquipment = createToolEquipment(toolInventory, toolModels);
   const builtWorkbenches: TransformNode[] = [];
+  const builtCollisionMeshes: Mesh[] = [];
 
   // ----- Mouvement -----
 
   const updateCameraRotation = createCameraRotation(camera);
+  const isPlayerPositionBlocked = createPlayerWorldCollision(
+    island.harvestableResources,
+    builtCollisionMeshes,
+  );
   const updatePlayerMovement = createPlayerMovement(
     player,
     camera,
     island.walkableSurfaces,
+    isPlayerPositionBlocked,
   );
 
   // ----- Système -----
@@ -90,6 +97,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
     isCraftingOpen: workbenchCrafting.isOpen,
     onBuildingBuilt: (building) => {
       addShadowCasters(building.meshes);
+      builtCollisionMeshes.push(...building.collisionMeshes);
       if (building.type === "workbench") {
         builtWorkbenches.push(building.root);
       }

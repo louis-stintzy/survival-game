@@ -6,5 +6,6 @@ export interface HarvestableResource {
   type: HarvestableResourceType;
   position: Vector3;
   meshes: Mesh[];
+  collisionMeshes: Mesh[];
   harvested: boolean;
 }

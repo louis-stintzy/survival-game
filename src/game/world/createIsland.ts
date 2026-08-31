@@ -45,7 +45,7 @@ function createTree(
   placement: TreePlacement,
   index: number,
   materials: IslandMaterials,
-): Mesh[] {
+): { meshes: Mesh[]; collisionMeshes: Mesh[] } {
   const trunk = MeshBuilder.CreateCylinder(
     `tree-trunk-${index}`,
     {
@@ -78,7 +78,7 @@ function createTree(
   crown.rotation.y = placement.rotation;
   crown.material = materials.leaves;
 
-  return [trunk, crown];
+  return { meshes: [trunk, crown], collisionMeshes: [trunk] };
 }
 
 function createRock(
@@ -173,12 +173,16 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
     { x: 11.5, z: 1.8, scale: 0.95, rotation: 1.2 },
   ];
   const treeResources: HarvestableResource[] = treePlacements.map(
-    (placement, index) => ({
-      type: "wood",
-      position: new Vector3(placement.x, GRASS_HEIGHT, placement.z),
-      meshes: createTree(scene, placement, index, materials),
-      harvested: false,
-    }),
+    (placement, index) => {
+      const tree = createTree(scene, placement, index, materials);
+      return {
+        type: "wood",
+        position: new Vector3(placement.x, GRASS_HEIGHT, placement.z),
+        meshes: tree.meshes,
+        collisionMeshes: tree.collisionMeshes,
+        harvested: false,
+      };
+    },
   );
   const trees = treeResources.flatMap((resource) => resource.meshes);
 
@@ -193,12 +197,16 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
     { x: -13.2, z: -4.4, scale: 0.7, groundHeight: GRASS_HEIGHT },
   ];
   const rockResources: HarvestableResource[] = rockPlacements.map(
-    (placement, index) => ({
-      type: "stone",
-      position: new Vector3(placement.x, placement.groundHeight, placement.z),
-      meshes: [createRock(scene, placement, index, materials.rock)],
-      harvested: false,
-    }),
+    (placement, index) => {
+      const rock = createRock(scene, placement, index, materials.rock);
+      return {
+        type: "stone",
+        position: new Vector3(placement.x, placement.groundHeight, placement.z),
+        meshes: [rock],
+        collisionMeshes: [rock],
+        harvested: false,
+      };
+    },
   );
   const rocks = rockResources.flatMap((resource) => resource.meshes);
 

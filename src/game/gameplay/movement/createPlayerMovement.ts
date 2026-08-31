@@ -26,6 +26,7 @@ export function createPlayerMovement(
   player: Mesh,
   camera: ArcRotateCamera,
   walkableSurfaces: readonly AbstractMesh[],
+  isPositionBlocked: (x: number, z: number) => boolean,
 ) {
   const pressedKeys = new Set<string>();
   const walkableSurfaceSet = new Set(walkableSurfaces);
@@ -82,26 +83,15 @@ export function createPlayerMovement(
 
       // Le delta time rend la distance parcourue indépendante du nombre d'images par seconde.
       const distance = PLAYER_MOVEMENT_SPEED * deltaTimeInSeconds;
-      const nextPosition = player.position.add(
-        movementDirection.scale(distance),
-      );
+      const movement = movementDirection.scale(distance);
+      const nextX = player.position.x + movement.x;
+      const nextZ = player.position.z + movement.z;
 
-      // Ce rayon vertical cherche la vraie surface praticable sous la prochaine
-      // position, afin d'en déduire sa hauteur sans tester des zones X/Z en dur.
-      const groundRay = new Ray(
-        new Vector3(nextPosition.x, GROUND_RAY_START_HEIGHT, nextPosition.z),
-        Vector3.Down(),
-        GROUND_RAY_LENGTH,
-      );
-      const groundHit = player.getScene().pickWithRay(
-        groundRay,
-        (mesh) => walkableSurfaceSet.has(mesh),
-      );
-
-      if (groundHit?.pickedPoint) {
-        player.position.x = nextPosition.x;
-        player.position.z = nextPosition.z;
-        targetPlayerHeight = groundHit.pickedPoint.y + PLAYER_HALF_HEIGHT;
+      if (!tryMoveTo(nextX, nextZ)) {
+        // Tester séparément les axes conserve la composante libre du mouvement
+        // lorsqu'une diagonale rencontre un obstacle.
+        tryMoveTo(nextX, player.position.z);
+        tryMoveTo(player.position.x, nextZ);
       }
     }
 
@@ -117,4 +107,25 @@ export function createPlayerMovement(
 
     camera.setTarget(player.position);
   };
+
+  function tryMoveTo(x: number, z: number): boolean {
+    if (isPositionBlocked(x, z)) return false;
+
+    // Ce rayon vertical cherche la vraie surface praticable sous chaque position
+    // candidate : collision et ancrage au terrain valident le même déplacement.
+    const groundRay = new Ray(
+      new Vector3(x, GROUND_RAY_START_HEIGHT, z),
+      Vector3.Down(),
+      GROUND_RAY_LENGTH,
+    );
+    const groundHit = player
+      .getScene()
+      .pickWithRay(groundRay, (mesh) => walkableSurfaceSet.has(mesh));
+    if (!groundHit?.pickedPoint) return false;
+
+    player.position.x = x;
+    player.position.z = z;
+    targetPlayerHeight = groundHit.pickedPoint.y + PLAYER_HALF_HEIGHT;
+    return true;
+  }
 }

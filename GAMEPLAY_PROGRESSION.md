@@ -29,3 +29,9 @@
 - Un outil fraîchement fabriqué est automatiquement équipé.
 - Quickbar : 1 pour les mains, 2 pour la hache et 3 pour la pioche.
 - Les outils n'ont aucun système de durabilité.
+
+### Collisions du monde
+
+- Le joueur ne traverse pas les troncs, les rochers non récoltés, les établis ni les poteaux des abris construits.
+- Le déplacement glisse le long des obstacles et continue de suivre la hauteur des surfaces praticables.
+- Les ressources récoltées cessent immédiatement de bloquer le passage ; les abris restent accessibles entre leurs poteaux.
