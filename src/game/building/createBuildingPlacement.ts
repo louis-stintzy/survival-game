@@ -17,7 +17,7 @@ const TERRAIN_RAY_HEIGHT = 10;
 const TERRAIN_RAY_LENGTH = 20;
 const GHOST_ALPHA_INDEX = Number.POSITIVE_INFINITY;
 
-interface BuildingInventory {
+interface ResourceInventory {
   canAfford(cost: ResourceInventoryCost): boolean;
   spend(cost: ResourceInventoryCost): boolean;
 }
@@ -46,7 +46,7 @@ interface BuildingPlacementOptions {
   placementSurfaces: readonly AbstractMesh[];
   buildableSurfaces: readonly AbstractMesh[];
   resources: readonly HarvestableResource[];
-  resourceInventory: BuildingInventory;
+  resourceInventory: ResourceInventory;
   buildingMaterials: BuildingMaterials;
   placementMaterials: PlacementMaterials;
   isCraftingOpen: () => boolean;

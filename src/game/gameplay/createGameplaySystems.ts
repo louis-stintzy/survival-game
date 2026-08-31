@@ -6,9 +6,9 @@ import type { Island } from "../world/createIsland";
 import type { ToolModel } from "../tools/createToolModels";
 import type { ToolType } from "../tools/toolDefinitions";
 import {
-  BuildingMaterials,
+  type BuildingMaterials,
+  type PlacementMaterials,
   createBuildingPlacement,
-  PlacementMaterials,
 } from "../building/createBuildingPlacement";
 import { createWorldInteraction } from "../interaction/createWorldInteraction";
 import { createResourceInventory } from "../resources/createResourceInventory";
@@ -19,16 +19,29 @@ import { createPlayerMovement } from "../player/createPlayerMovement";
 import { createResourceInteraction } from "../resources/createResourceInteraction";
 import { createWorkbenchCrafting } from "../crafting/createWorkbenchCrafting";
 
-export function createGameplaySystems(
-  scene: Scene,
-  camera: ArcRotateCamera,
-  player: Mesh,
-  island: Island,
-  toolModels: Record<ToolType, ToolModel>,
-  buildingMaterials: BuildingMaterials,
-  placementMaterials: PlacementMaterials,
-  addShadowCasters: (meshes: readonly Mesh[]) => void,
-) {
+interface GameplaySystemsOptions {
+  scene: Scene;
+  camera: ArcRotateCamera;
+  player: Mesh;
+  island: Island;
+  toolModels: Record<ToolType, ToolModel>;
+  buildingMaterials: BuildingMaterials;
+  placementMaterials: PlacementMaterials;
+  addShadowCasters: (meshes: readonly Mesh[]) => void;
+}
+
+export function createGameplaySystems(options: GameplaySystemsOptions) {
+  const {
+    scene,
+    camera,
+    player,
+    island,
+    toolModels,
+    buildingMaterials,
+    placementMaterials,
+    addShadowCasters,
+  } = options;
+
   // ----- Etat -----
 
   const resourceInventory = createResourceInventory();
@@ -71,17 +84,12 @@ export function createGameplaySystems(
     placementSurfaces: island.placementSurfaces,
     buildableSurfaces: island.buildableSurfaces,
     resources: island.harvestableResources,
-
-    resourceInventory: resourceInventory,
-
+    resourceInventory,
     buildingMaterials,
     placementMaterials,
-
     isCraftingOpen: workbenchCrafting.isOpen,
-
     onBuildingBuilt: (building) => {
       addShadowCasters(building.meshes);
-
       if (building.type === "workbench") {
         builtWorkbenches.push(building.root);
       }

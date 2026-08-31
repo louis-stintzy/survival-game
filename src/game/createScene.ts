@@ -9,7 +9,7 @@ import { createGameCamera } from "./camera/createGameCamera";
 import { createLighting } from "./rendering/createLighting";
 import { createPlacementMaterials } from "./rendering/createPlacementMaterials";
 import { createGameplaySystems } from "./gameplay/createGameplaySystems";
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 
 export function createScene(engine: Engine): Scene {
   const scene = new Scene(engine);
@@ -54,16 +54,16 @@ export function createScene(engine: Engine): Scene {
 
   // ----- Gameplay -----
 
-  const gameplay = createGameplaySystems(
+  const gameplay = createGameplaySystems({
     scene,
     camera,
     player,
     island,
     toolModels,
-    materials.building,
+    buildingMaterials: materials.building,
     placementMaterials,
     addShadowCasters,
-  );
+  });
 
   // ----- Game loop ----
 
