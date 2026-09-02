@@ -1,5 +1,8 @@
 import { describe, expect, test } from "vitest";
-import { circleOverlapsHorizontalBounds } from "./playerWorldCollision";
+import {
+  circleOverlapsHorizontalBounds,
+  circlesOverlap,
+} from "./playerWorldCollision";
 
 const obstacle = {
   minimumX: -1,
@@ -32,5 +35,15 @@ describe("circleOverlapsHorizontalBounds", () => {
     expect(circleOverlapsHorizontalBounds(1.36, 1.36, radius, obstacle)).toBe(
       false,
     );
+  });
+});
+
+describe("circlesOverlap", () => {
+  test("détecte deux cercles qui se chevauchent", () => {
+    expect(circlesOverlap(0, 0, 0.5, 0.8, 0, 0.4)).toBe(true);
+  });
+
+  test("ignore deux cercles suffisamment éloignés", () => {
+    expect(circlesOverlap(0, 0, 0.5, 1, 0, 0.4)).toBe(false);
   });
 });

@@ -1,8 +1,15 @@
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { HarvestableResource } from "../../resources/resourceTypes";
 
+/**
+ * Rayon horizontal du joueur utilisé pour toutes les collisions
+ * dans le plan X/Z.
+ */
 export const PLAYER_COLLISION_RADIUS = 0.5;
 
+/**
+ * Limites rectangulaires d'un obstacle projetées dans le plan X/Z.
+ */
 export interface HorizontalBounds {
   minimumX: number;
   maximumX: number;
@@ -10,6 +17,42 @@ export interface HorizontalBounds {
   maximumZ: number;
 }
 
+/**
+ * Indique si deux cercles horizontaux se chevauchent.
+ *
+ * Cette fonction est utilisée pour les collisions joueur ↔ ressources :
+ * le joueur et chaque ressource sont représentés par des cercles
+ * dans le plan X/Z.
+ *
+ * @param firstX Position X du centre du premier cercle.
+ * @param firstZ Position Z du centre du premier cercle.
+ * @param firstRadius Rayon du premier cercle.
+ * @param secondX Position X du centre du second cercle.
+ * @param secondZ Position Z du centre du second cercle.
+ * @param secondRadius Rayon du second cercle.
+ * @returns `true` lorsque les deux cercles se touchent ou se chevauchent.
+ */
+export function circlesOverlap(
+  firstX: number,
+  firstZ: number,
+  firstRadius: number,
+  secondX: number,
+  secondZ: number,
+  secondRadius: number,
+): boolean {
+  const distanceX = firstX - secondX;
+  const distanceZ = firstZ - secondZ;
+  const minimumDistance = firstRadius + secondRadius;
+  return distanceX ** 2 + distanceZ ** 2 <= minimumDistance ** 2;
+}
+
+/**
+ * Vérifie si un cercle horizontal touche un rectangle horizontal.
+ *
+ * Utilisé actuellement pour les collisions joueur ↔ bâtiments.
+ *
+ * @returns `true` si le cercle touche ou chevauche le rectangle.
+ */
 export function circleOverlapsHorizontalBounds(
   x: number,
   z: number,
@@ -24,15 +67,36 @@ export function circleOverlapsHorizontalBounds(
   return distanceX ** 2 + distanceZ ** 2 <= radius ** 2;
 }
 
+/**
+ * Crée la fonction chargée de déterminer si une position X/Z
+ * candidate du joueur est occupée.
+ *
+ * Les ressources sont testées avec des colliders circulaires simples.
+ * Les bâtiments construits sont testés à partir des limites X/Z
+ * de leurs meshes de collision.
+ *
+ * @param resources Ressources naturelles susceptibles de bloquer le joueur.
+ * @param builtCollisionMeshes Meshes de collision des bâtiments construits.
+ * @returns Une fonction `(x, z) => boolean` indiquant si une position
+ *          candidate du joueur est bloquée.
+ */
 export function createPlayerWorldCollision(
   resources: readonly HarvestableResource[],
   builtCollisionMeshes: readonly Mesh[],
 ) {
   return (x: number, z: number): boolean => {
     for (const resource of resources) {
+      if (resource.harvested) continue;
+
       if (
-        !resource.harvested &&
-        resource.collisionMeshes.some((mesh) => meshBlocksPosition(mesh, x, z))
+        circlesOverlap(
+          x,
+          z,
+          PLAYER_COLLISION_RADIUS,
+          resource.position.x,
+          resource.position.z,
+          resource.movementCollisionRadius,
+        )
       ) {
         return true;
       }
@@ -42,6 +106,10 @@ export function createPlayerWorldCollision(
   };
 }
 
+/**
+ * Transforme la bounding box Babylon d'un mesh en obstacle
+ * horizontal puis vérifie si elle bloque le joueur.
+ */
 function meshBlocksPosition(mesh: Mesh, x: number, z: number): boolean {
   mesh.computeWorldMatrix(true);
   const boundingBox = mesh.getBoundingInfo().boundingBox;

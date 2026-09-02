@@ -6,6 +6,18 @@ export interface HarvestableResource {
   type: HarvestableResourceType;
   position: Vector3;
   meshes: Mesh[];
+
+  /**
+   * Meshes physiques utilisés notamment pour empêcher la construction
+   * d'un bâtiment sur cette ressource.
+   */
   collisionMeshes: Mesh[];
+
+  /**
+   * Rayon horizontal simplifié utilisé pour les collisions
+   * entre le joueur et cette ressource dans le plan X/Z.
+   */
+  movementCollisionRadius: number;
+
   harvested: boolean;
 }

@@ -180,6 +180,7 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
         position: new Vector3(placement.x, GRASS_HEIGHT, placement.z),
         meshes: tree.meshes,
         collisionMeshes: tree.collisionMeshes,
+        movementCollisionRadius: 0.3 * placement.scale,
         harvested: false,
       };
     },
@@ -204,6 +205,7 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
         position: new Vector3(placement.x, placement.groundHeight, placement.z),
         meshes: [rock],
         collisionMeshes: [rock],
+        movementCollisionRadius: 1.15 * placement.scale,
         harvested: false,
       };
     },
