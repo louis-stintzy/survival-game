@@ -54,7 +54,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
   // ----- Mouvement -----
 
   const updateCameraRotation = createCameraRotation(camera);
-  const isPlayerPositionBlocked = createPlayerWorldCollision(
+  const getPlayerWorldCollision = createPlayerWorldCollision(
     island.harvestableResources,
     builtCollisionMeshes,
   );
@@ -62,7 +62,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
     player,
     camera,
     island.walkableSurfaces,
-    isPlayerPositionBlocked,
+    getPlayerWorldCollision,
   );
 
   // ----- Système -----

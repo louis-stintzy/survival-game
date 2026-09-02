@@ -3,6 +3,7 @@ import { Ray } from "@babylonjs/core/Culling/ray";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
+import type { CollisionContact } from "../collision/playerWorldCollision";
 
 const PLAYER_MOVEMENT_SPEED = 5;
 const PLAYER_VERTICAL_SPEED = 4;
@@ -22,11 +23,40 @@ const MOVEMENT_KEYS = new Set([
   "arrowright",
 ]);
 
+/**
+ * Retire d'un mouvement uniquement sa composante dirigée vers une surface.
+ *
+ * Le produit scalaire mesure la composante du mouvement portée par la normale
+ * extérieure. Lorsqu'il est négatif, cette composante entre dans l'obstacle :
+ * elle est retirée et le reste constitue le mouvement tangent à la surface.
+ *
+ * @param movementX Composante X du mouvement demandé.
+ * @param movementZ Composante Z du mouvement demandé.
+ * @param normalX Composante X de la normale extérieure unitaire.
+ * @param normalZ Composante Z de la normale extérieure unitaire.
+ * @returns Le mouvement original s'il va vers l'extérieur (`dot >= 0`), sinon
+ *          sa projection tangentielle, sans renormalisation.
+ */
+export function projectMovementAlongSurface(
+  movementX: number,
+  movementZ: number,
+  normalX: number,
+  normalZ: number,
+): { x: number; z: number } {
+  const dot = movementX * normalX + movementZ * normalZ;
+  if (dot >= 0) return { x: movementX, z: movementZ };
+
+  return {
+    x: movementX - normalX * dot,
+    z: movementZ - normalZ * dot,
+  };
+}
+
 export function createPlayerMovement(
   player: Mesh,
   camera: ArcRotateCamera,
   walkableSurfaces: readonly AbstractMesh[],
-  isPositionBlocked: (x: number, z: number) => boolean,
+  getCollisionContact: (x: number, z: number) => CollisionContact | undefined,
 ) {
   const pressedKeys = new Set<string>();
   const walkableSurfaceSet = new Set(walkableSurfaces);
@@ -87,11 +117,18 @@ export function createPlayerMovement(
       const nextX = player.position.x + movement.x;
       const nextZ = player.position.z + movement.z;
 
-      if (!tryMoveTo(nextX, nextZ)) {
-        // Tester séparément les axes conserve la composante libre du mouvement
-        // lorsqu'une diagonale rencontre un obstacle.
-        tryMoveTo(nextX, player.position.z);
-        tryMoveTo(player.position.x, nextZ);
+      const collisionContact = tryMoveTo(nextX, nextZ);
+      if (collisionContact) {
+        const slideMovement = projectMovementAlongSurface(
+          movement.x,
+          movement.z,
+          collisionContact.normalX,
+          collisionContact.normalZ,
+        );
+        tryMoveTo(
+          player.position.x + slideMovement.x,
+          player.position.z + slideMovement.z,
+        );
       }
     }
 
@@ -108,8 +145,9 @@ export function createPlayerMovement(
     camera.setTarget(player.position);
   };
 
-  function tryMoveTo(x: number, z: number): boolean {
-    if (isPositionBlocked(x, z)) return false;
+  function tryMoveTo(x: number, z: number): CollisionContact | undefined {
+    const collisionContact = getCollisionContact(x, z);
+    if (collisionContact) return collisionContact;
 
     // Ce rayon vertical cherche la vraie surface praticable sous chaque position
     // candidate : collision et ancrage au terrain valident le même déplacement.
@@ -121,11 +159,11 @@ export function createPlayerMovement(
     const groundHit = player
       .getScene()
       .pickWithRay(groundRay, (mesh) => walkableSurfaceSet.has(mesh));
-    if (!groundHit?.pickedPoint) return false;
+    if (!groundHit?.pickedPoint) return undefined;
 
     player.position.x = x;
     player.position.z = z;
     targetPlayerHeight = groundHit.pickedPoint.y + PLAYER_HALF_HEIGHT;
-    return true;
+    return undefined;
   }
 }

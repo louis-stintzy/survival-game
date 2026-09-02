@@ -3,6 +3,9 @@ import {
   circleOverlapsHorizontalBounds,
   circleOverlapsOrientedBox,
   circlesOverlap,
+  getCircleHorizontalBoundsContact,
+  getCircleOrientedBoxContact,
+  getCirclesContact,
 } from "./playerWorldCollision";
 
 const obstacle = {
@@ -113,5 +116,55 @@ describe("circleOverlapsOrientedBox", () => {
         Math.PI / 4,
       ),
     ).toBe(true);
+  });
+});
+
+describe("normales de contact", () => {
+  test("un contact circulaire frontal pointe de l'obstacle vers le joueur", () => {
+    expect(getCirclesContact(-0.8, 0, 0.5, 0, 0, 0.4)).toEqual({
+      normalX: -1,
+      normalZ: 0,
+    });
+  });
+
+  test("un contact circulaire oblique produit une normale unitaire", () => {
+    const contact = getCirclesContact(0.6, 0.6, 0.5, 0, 0, 0.4);
+
+    expect(contact?.normalX).toBeCloseTo(Math.SQRT1_2);
+    expect(contact?.normalZ).toBeCloseTo(Math.SQRT1_2);
+  });
+
+  test("les côtés gauche et droit d'un rectangle ont des normales opposées", () => {
+    const leftContact = getCircleHorizontalBoundsContact(
+      -1.4,
+      0,
+      radius,
+      obstacle,
+    );
+    const rightContact = getCircleHorizontalBoundsContact(
+      1.4,
+      0,
+      radius,
+      obstacle,
+    );
+
+    expect(leftContact).toEqual({ normalX: -1, normalZ: 0 });
+    expect(rightContact).toEqual({ normalX: 1, normalZ: 0 });
+  });
+
+  test("la normale locale d'un rectangle orienté est ramenée dans le monde", () => {
+    const contact = getCircleOrientedBoxContact(
+      0.85,
+      -0.85,
+      0.25,
+      0,
+      0,
+      1,
+      0.4,
+      Math.PI / 4,
+    );
+
+    expect(contact?.normalX).toBeCloseTo(Math.SQRT1_2);
+    expect(contact?.normalZ).toBeCloseTo(-Math.SQRT1_2);
   });
 });
