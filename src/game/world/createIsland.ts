@@ -26,6 +26,7 @@ interface RockPlacement {
   z: number;
   scale: number;
   groundHeight: number;
+  rotation: number;
 }
 
 export interface Island {
@@ -39,6 +40,8 @@ export interface Island {
 const GRASS_HEIGHT = 0.75;
 const ROCKY_PLATEAU_HEIGHT = 1.15;
 const ROCK_GROUND_SINK_RATIO = 0.45;
+const ROCK_COLLISION_HALF_WIDTH_RATIO = 0.85;
+const ROCK_COLLISION_HALF_DEPTH_RATIO = 0.7;
 
 function createTree(
   scene: Scene,
@@ -98,7 +101,7 @@ function createRock(
     placement.scale * 0.75,
     placement.scale * 0.85,
   );
-  rock.rotation = new Vector3(0.12, placement.z, -0.08);
+  rock.rotation = new Vector3(0.12, placement.rotation, -0.08);
   rock.material = material;
 
   rock.computeWorldMatrix(true);
@@ -180,7 +183,10 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
         position: new Vector3(placement.x, GRASS_HEIGHT, placement.z),
         meshes: tree.meshes,
         collisionMeshes: tree.collisionMeshes,
-        movementCollisionRadius: 0.3 * placement.scale,
+        movementCollider: {
+          kind: "circle",
+          radius: 0.3 * placement.scale,
+        },
         harvested: false,
       };
     },
@@ -188,14 +194,14 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
   const trees = treeResources.flatMap((resource) => resource.meshes);
 
   const rockPlacements: RockPlacement[] = [
-    { x: 6.2, z: -4.2, scale: 1.2, groundHeight: ROCKY_PLATEAU_HEIGHT },
-    { x: 8.1, z: -2.7, scale: 0.8, groundHeight: ROCKY_PLATEAU_HEIGHT },
-    { x: 9.7, z: -4.5, scale: 1.05, groundHeight: ROCKY_PLATEAU_HEIGHT },
-    { x: 7.7, z: -5.2, scale: 0.65, groundHeight: ROCKY_PLATEAU_HEIGHT },
-    { x: 10.1, z: -2.4, scale: 0.6, groundHeight: ROCKY_PLATEAU_HEIGHT },
-    { x: -2.5, z: -9.8, scale: 1, groundHeight: GRASS_HEIGHT },
-    { x: 3.2, z: 9.2, scale: 0.85, groundHeight: GRASS_HEIGHT },
-    { x: -13.2, z: -4.4, scale: 0.7, groundHeight: GRASS_HEIGHT },
+    { x: 6.2, z: -4.2, scale: 1.2, groundHeight: ROCKY_PLATEAU_HEIGHT, rotation: -4.2 },
+    { x: 8.1, z: -2.7, scale: 0.8, groundHeight: ROCKY_PLATEAU_HEIGHT, rotation: -2.7 },
+    { x: 9.7, z: -4.5, scale: 1.05, groundHeight: ROCKY_PLATEAU_HEIGHT, rotation: -4.5 },
+    { x: 7.7, z: -5.2, scale: 0.65, groundHeight: ROCKY_PLATEAU_HEIGHT, rotation: -5.2 },
+    { x: 10.1, z: -2.4, scale: 0.6, groundHeight: ROCKY_PLATEAU_HEIGHT, rotation: -2.4 },
+    { x: -2.5, z: -9.8, scale: 1, groundHeight: GRASS_HEIGHT, rotation: -9.8 },
+    { x: 3.2, z: 9.2, scale: 0.85, groundHeight: GRASS_HEIGHT, rotation: 9.2 },
+    { x: -13.2, z: -4.4, scale: 0.7, groundHeight: GRASS_HEIGHT, rotation: -4.4 },
   ];
   const rockResources: HarvestableResource[] = rockPlacements.map(
     (placement, index) => {
@@ -205,7 +211,12 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
         position: new Vector3(placement.x, placement.groundHeight, placement.z),
         meshes: [rock],
         collisionMeshes: [rock],
-        movementCollisionRadius: 1.15 * placement.scale,
+        movementCollider: {
+          kind: "orientedBox",
+          halfWidth: ROCK_COLLISION_HALF_WIDTH_RATIO * placement.scale,
+          halfDepth: ROCK_COLLISION_HALF_DEPTH_RATIO * placement.scale,
+          rotation: placement.rotation,
+        },
         harvested: false,
       };
     },

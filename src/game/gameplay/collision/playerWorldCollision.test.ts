@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   circleOverlapsHorizontalBounds,
+  circleOverlapsOrientedBox,
   circlesOverlap,
 } from "./playerWorldCollision";
 
@@ -45,5 +46,72 @@ describe("circlesOverlap", () => {
 
   test("ignore deux cercles suffisamment éloignés", () => {
     expect(circlesOverlap(0, 0, 0.5, 1, 0, 0.4)).toBe(false);
+  });
+});
+
+describe("circleOverlapsOrientedBox", () => {
+  test("retrouve le comportement d'un rectangle normal sans rotation", () => {
+    expect(circleOverlapsOrientedBox(1.4, 0, 0.5, 0, 0, 1, 0.5, 0)).toBe(
+      true,
+    );
+  });
+
+  test("détecte un cercle proche d'une pointe à 45 degrés", () => {
+    expect(
+      circleOverlapsOrientedBox(
+        0.85,
+        -0.85,
+        0.25,
+        0,
+        0,
+        1,
+        0.4,
+        Math.PI / 4,
+      ),
+    ).toBe(true);
+  });
+
+  test("ignore un cercle suffisamment éloigné d'un côté à 45 degrés", () => {
+    expect(
+      circleOverlapsOrientedBox(
+        0.57,
+        0.57,
+        0.2,
+        0,
+        0,
+        1,
+        0.4,
+        Math.PI / 4,
+      ),
+    ).toBe(false);
+  });
+
+  test("la rotation change le résultat pour un rectangle non carré", () => {
+    const circle = { x: 0.57, z: -0.57, radius: 0.1 };
+
+    expect(
+      circleOverlapsOrientedBox(
+        circle.x,
+        circle.z,
+        circle.radius,
+        0,
+        0,
+        1,
+        0.4,
+        0,
+      ),
+    ).toBe(false);
+    expect(
+      circleOverlapsOrientedBox(
+        circle.x,
+        circle.z,
+        circle.radius,
+        0,
+        0,
+        1,
+        0.4,
+        Math.PI / 4,
+      ),
+    ).toBe(true);
   });
 });

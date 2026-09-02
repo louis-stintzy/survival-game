@@ -2,6 +2,15 @@ import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { HarvestableResourceType } from "../definitions/resourceDefinitions";
 
+export type ResourceMovementCollider =
+  | { kind: "circle"; radius: number }
+  | {
+      kind: "orientedBox";
+      halfWidth: number;
+      halfDepth: number;
+      rotation: number;
+    };
+
 export interface HarvestableResource {
   type: HarvestableResourceType;
   position: Vector3;
@@ -13,11 +22,8 @@ export interface HarvestableResource {
    */
   collisionMeshes: Mesh[];
 
-  /**
-   * Rayon horizontal simplifié utilisé pour les collisions
-   * entre le joueur et cette ressource dans le plan X/Z.
-   */
-  movementCollisionRadius: number;
+  /** Forme gameplay X/Z dédiée au déplacement du joueur. */
+  movementCollider: ResourceMovementCollider;
 
   harvested: boolean;
 }

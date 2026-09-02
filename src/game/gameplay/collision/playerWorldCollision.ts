@@ -68,10 +68,55 @@ export function circleOverlapsHorizontalBounds(
 }
 
 /**
+ * Vérifie si un cercle touche un rectangle orienté dans le plan X/Z.
+ *
+ * La position du cercle est ramenée dans le repère local du rectangle par la
+ * rotation inverse. Le rectangle y devient alors aligné avec les axes et peut
+ * être testé avec {@link circleOverlapsHorizontalBounds}.
+ *
+ * @param circleX Position X du centre du cercle dans le monde.
+ * @param circleZ Position Z du centre du cercle dans le monde.
+ * @param circleRadius Rayon du cercle.
+ * @param boxX Position X du centre du rectangle dans le monde.
+ * @param boxZ Position Z du centre du rectangle dans le monde.
+ * @param halfWidth Demi-largeur locale du rectangle sur X.
+ * @param halfDepth Demi-profondeur locale du rectangle sur Z.
+ * @param rotation Rotation du rectangle autour de Y, en radians.
+ * @returns `true` lorsque le cercle touche ou chevauche le rectangle orienté.
+ */
+export function circleOverlapsOrientedBox(
+  circleX: number,
+  circleZ: number,
+  circleRadius: number,
+  boxX: number,
+  boxZ: number,
+  halfWidth: number,
+  halfDepth: number,
+  rotation: number,
+): boolean {
+  const relativeX = circleX - boxX;
+  const relativeZ = circleZ - boxZ;
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+
+  // La rotation inverse exprime le centre du cercle dans les axes du collider.
+  const localX = relativeX * cos - relativeZ * sin;
+  const localZ = relativeX * sin + relativeZ * cos;
+
+  return circleOverlapsHorizontalBounds(localX, localZ, circleRadius, {
+    minimumX: -halfWidth,
+    maximumX: halfWidth,
+    minimumZ: -halfDepth,
+    maximumZ: halfDepth,
+  });
+}
+
+/**
  * Crée la fonction chargée de déterminer si une position X/Z
  * candidate du joueur est occupée.
  *
- * Les ressources sont testées avec des colliders circulaires simples.
+ * Les ressources utilisent leur collider gameplay explicite : cercle pour un
+ * arbre ou rectangle orienté pour un rocher.
  * Les bâtiments construits sont testés à partir des limites X/Z
  * de leurs meshes de collision.
  *
@@ -87,23 +132,41 @@ export function createPlayerWorldCollision(
   return (x: number, z: number): boolean => {
     for (const resource of resources) {
       if (resource.harvested) continue;
-
-      if (
-        circlesOverlap(
-          x,
-          z,
-          PLAYER_COLLISION_RADIUS,
-          resource.position.x,
-          resource.position.z,
-          resource.movementCollisionRadius,
-        )
-      ) {
-        return true;
-      }
+      if (resourceBlocksPosition(resource, x, z)) return true;
     }
 
     return builtCollisionMeshes.some((mesh) => meshBlocksPosition(mesh, x, z));
   };
+}
+
+function resourceBlocksPosition(
+  resource: HarvestableResource,
+  x: number,
+  z: number,
+): boolean {
+  const collider = resource.movementCollider;
+
+  if (collider.kind === "circle") {
+    return circlesOverlap(
+      x,
+      z,
+      PLAYER_COLLISION_RADIUS,
+      resource.position.x,
+      resource.position.z,
+      collider.radius,
+    );
+  }
+
+  return circleOverlapsOrientedBox(
+    x,
+    z,
+    PLAYER_COLLISION_RADIUS,
+    resource.position.x,
+    resource.position.z,
+    collider.halfWidth,
+    collider.halfDepth,
+    collider.rotation,
+  );
 }
 
 /**
