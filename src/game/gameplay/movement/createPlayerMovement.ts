@@ -3,7 +3,10 @@ import { Ray } from "@babylonjs/core/Culling/ray";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
-import type { CollisionContact } from "../collision/playerWorldCollision";
+import type {
+  CollisionContact,
+  PlayerCollisionQuery,
+} from "../collision/playerWorldCollision";
 
 const PLAYER_MOVEMENT_SPEED = 5;
 const PLAYER_VERTICAL_SPEED = 4;
@@ -56,7 +59,9 @@ export function createPlayerMovement(
   player: Mesh,
   camera: ArcRotateCamera,
   walkableSurfaces: readonly AbstractMesh[],
-  getCollisionContact: (x: number, z: number) => CollisionContact | undefined,
+  getCollisionContact: (
+    query: PlayerCollisionQuery,
+  ) => CollisionContact | undefined,
 ) {
   const pressedKeys = new Set<string>();
   const walkableSurfaceSet = new Set(walkableSurfaces);
@@ -117,17 +122,19 @@ export function createPlayerMovement(
       const nextX = player.position.x + movement.x;
       const nextZ = player.position.z + movement.z;
 
-      const collisionContact = tryMoveTo(nextX, nextZ);
-      if (collisionContact) {
+      const reference = { x: player.position.x, z: player.position.z };
+      const moveAttempt = tryMoveTo(nextX, nextZ, reference);
+      if (moveAttempt.kind === "collision") {
         const slideMovement = projectMovementAlongSurface(
           movement.x,
           movement.z,
-          collisionContact.normalX,
-          collisionContact.normalZ,
+          moveAttempt.contact.normalX,
+          moveAttempt.contact.normalZ,
         );
         tryMoveTo(
           player.position.x + slideMovement.x,
           player.position.z + slideMovement.z,
+          reference,
         );
       }
     }
@@ -145,9 +152,18 @@ export function createPlayerMovement(
     camera.setTarget(player.position);
   };
 
-  function tryMoveTo(x: number, z: number): CollisionContact | undefined {
-    const collisionContact = getCollisionContact(x, z);
-    if (collisionContact) return collisionContact;
+  function tryMoveTo(
+    x: number,
+    z: number,
+    reference: { x: number; z: number },
+  ): MoveAttempt {
+    const collisionContact = getCollisionContact({
+      candidate: { x, z },
+      reference,
+    });
+    if (collisionContact) {
+      return { kind: "collision", contact: collisionContact };
+    }
 
     // Ce rayon vertical cherche la vraie surface praticable sous chaque position
     // candidate : collision et ancrage au terrain valident le même déplacement.
@@ -159,11 +175,16 @@ export function createPlayerMovement(
     const groundHit = player
       .getScene()
       .pickWithRay(groundRay, (mesh) => walkableSurfaceSet.has(mesh));
-    if (!groundHit?.pickedPoint) return undefined;
+    if (!groundHit?.pickedPoint) return { kind: "noGround" };
 
     player.position.x = x;
     player.position.z = z;
     targetPlayerHeight = groundHit.pickedPoint.y + PLAYER_HALF_HEIGHT;
-    return undefined;
+    return { kind: "moved" };
   }
 }
+
+type MoveAttempt =
+  | { kind: "moved" }
+  | { kind: "collision"; contact: CollisionContact }
+  | { kind: "noGround" };

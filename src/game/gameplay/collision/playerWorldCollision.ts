@@ -23,6 +23,18 @@ export interface CollisionContact {
   normalZ: number;
 }
 
+export interface HorizontalPosition {
+  x: number;
+  z: number;
+}
+
+export interface PlayerCollisionQuery {
+  /** Position tentée, utilisée pour détecter l'obstacle rencontré. */
+  candidate: HorizontalPosition;
+  /** Dernière position valide, utilisée pour calculer la normale de sliding. */
+  reference: HorizontalPosition;
+}
+
 /**
  * Indique si deux cercles horizontaux se chevauchent.
  *
@@ -54,9 +66,9 @@ export function circlesOverlap(
 /**
  * Calcule le contact entre deux cercles horizontaux.
  *
- * La normale retournée pointe du second cercle (l'obstacle) vers le premier
- * cercle (le joueur). Si les centres sont confondus, l'axe +X fournit une
- * normale déterministe sans division par zéro.
+ * La position du premier cercle détecte l'intersection. La normale pointe du
+ * second cercle (l'obstacle) vers la référence, qui peut être la dernière
+ * position valide du joueur et ne doit donc pas nécessairement collisionner.
  *
  * @param firstX Position X du cercle représentant le joueur.
  * @param firstZ Position Z du cercle représentant le joueur.
@@ -64,6 +76,8 @@ export function circlesOverlap(
  * @param secondX Position X du cercle obstacle.
  * @param secondZ Position Z du cercle obstacle.
  * @param secondRadius Rayon du cercle obstacle.
+ * @param reference Point utilisé pour calculer la normale ; la candidate est
+ *                  utilisée par défaut pour préserver l'usage historique.
  * @returns Le contact avec sa normale extérieure, ou `undefined` sans contact.
  */
 export function getCirclesContact(
@@ -73,6 +87,7 @@ export function getCirclesContact(
   secondX: number,
   secondZ: number,
   secondRadius: number,
+  reference: HorizontalPosition = { x: firstX, z: firstZ },
 ): CollisionContact | undefined {
   if (
     !circlesOverlap(
@@ -87,8 +102,30 @@ export function getCirclesContact(
     return undefined;
   }
 
-  const normalX = firstX - secondX;
-  const normalZ = firstZ - secondZ;
+  return getCircleNormalAtPoint(reference.x, reference.z, secondX, secondZ);
+}
+
+/**
+ * Calcule la normale extérieure d'un cercle obstacle vers un point de référence.
+ *
+ * Le point n'a pas besoin d'être en collision : il représente généralement la
+ * dernière position valide du joueur. Les centres confondus utilisent +X comme
+ * fallback déterministe.
+ *
+ * @param pointX Position X du point de référence.
+ * @param pointZ Position Z du point de référence.
+ * @param circleX Position X du centre de l'obstacle.
+ * @param circleZ Position Z du centre de l'obstacle.
+ * @returns Une normale unitaire pointant du centre de l'obstacle vers le point.
+ */
+export function getCircleNormalAtPoint(
+  pointX: number,
+  pointZ: number,
+  circleX: number,
+  circleZ: number,
+): CollisionContact {
+  const normalX = pointX - circleX;
+  const normalZ = pointZ - circleZ;
   const normalLength = Math.hypot(normalX, normalZ);
   if (normalLength === 0) return { normalX: 1, normalZ: 0 };
 
@@ -125,6 +162,7 @@ export function circleOverlapsHorizontalBounds(
  * @param z Position Z du centre du cercle.
  * @param radius Rayon du cercle.
  * @param bounds Limites du rectangle dans le même repère.
+ * @param reference Point utilisé pour calculer la normale extérieure.
  * @returns Le contact avec sa normale extérieure, ou `undefined` sans contact.
  */
 export function getCircleHorizontalBoundsContact(
@@ -132,13 +170,39 @@ export function getCircleHorizontalBoundsContact(
   z: number,
   radius: number,
   bounds: HorizontalBounds,
+  reference: HorizontalPosition = { x, z },
 ): CollisionContact | undefined {
+  const nearestX = Math.max(bounds.minimumX, Math.min(x, bounds.maximumX));
+  const nearestZ = Math.max(bounds.minimumZ, Math.min(z, bounds.maximumZ));
+  const distanceX = x - nearestX;
+  const distanceZ = z - nearestZ;
+  if (distanceX ** 2 + distanceZ ** 2 > radius ** 2) return undefined;
+
+  return getHorizontalBoundsNormalAtPoint(reference.x, reference.z, bounds);
+}
+
+/**
+ * Calcule la normale extérieure d'un rectangle vers un point de référence.
+ *
+ * À l'extérieur, elle va du point des bounds le plus proche vers la référence.
+ * Si la référence est dedans, la face la plus proche fournit un fallback
+ * déterministe. La référence n'a pas besoin d'être elle-même en collision.
+ *
+ * @param x Position X du point de référence.
+ * @param z Position Z du point de référence.
+ * @param bounds Limites du rectangle dans le même repère.
+ * @returns Une normale extérieure unitaire.
+ */
+export function getHorizontalBoundsNormalAtPoint(
+  x: number,
+  z: number,
+  bounds: HorizontalBounds,
+): CollisionContact {
   const nearestX = Math.max(bounds.minimumX, Math.min(x, bounds.maximumX));
   const nearestZ = Math.max(bounds.minimumZ, Math.min(z, bounds.maximumZ));
   const normalX = x - nearestX;
   const normalZ = z - nearestZ;
   const normalLengthSquared = normalX ** 2 + normalZ ** 2;
-  if (normalLengthSquared > radius ** 2) return undefined;
 
   if (normalLengthSquared > 0) {
     const normalLength = Math.sqrt(normalLengthSquared);
@@ -216,6 +280,8 @@ export function circleOverlapsOrientedBox(
  * @param halfWidth Demi-largeur locale du rectangle sur X.
  * @param halfDepth Demi-profondeur locale du rectangle sur Z.
  * @param rotation Rotation du rectangle autour de Y, en radians.
+ * @param reference Position monde utilisée pour calculer la normale ; elle est
+ *                  transformée indépendamment de la candidate.
  * @returns Le contact avec une normale extérieure en coordonnées monde, ou
  *          `undefined` sans contact.
  */
@@ -228,6 +294,7 @@ export function getCircleOrientedBoxContact(
   halfWidth: number,
   halfDepth: number,
   rotation: number,
+  reference: HorizontalPosition = { x: circleX, z: circleZ },
 ): CollisionContact | undefined {
   const relativeX = circleX - boxX;
   const relativeZ = circleZ - boxZ;
@@ -235,6 +302,10 @@ export function getCircleOrientedBoxContact(
   const sin = Math.sin(rotation);
   const localX = relativeX * cos - relativeZ * sin;
   const localZ = relativeX * sin + relativeZ * cos;
+  const relativeReferenceX = reference.x - boxX;
+  const relativeReferenceZ = reference.z - boxZ;
+  const localReferenceX = relativeReferenceX * cos - relativeReferenceZ * sin;
+  const localReferenceZ = relativeReferenceX * sin + relativeReferenceZ * cos;
 
   const localContact = getCircleHorizontalBoundsContact(
     localX,
@@ -246,6 +317,7 @@ export function getCircleOrientedBoxContact(
       minimumZ: -halfDepth,
       maximumZ: halfDepth,
     },
+    { x: localReferenceX, z: localReferenceZ },
   );
   if (!localContact) return undefined;
 
@@ -267,22 +339,25 @@ export function getCircleOrientedBoxContact(
  *
  * @param resources Ressources naturelles susceptibles de bloquer le joueur.
  * @param builtCollisionMeshes Meshes de collision des bâtiments construits.
+ * La candidate sert uniquement à identifier l'obstacle touché. La reference
+ * est la dernière position valide et détermine la normale utilisée au sliding.
+ *
  * @returns Une fonction qui renvoie la normale extérieure du premier obstacle
- *          rencontré, ou `undefined` lorsque la position est libre.
+ *          rencontré par la candidate, ou `undefined` si elle est libre.
  */
 export function createPlayerWorldCollision(
   resources: readonly HarvestableResource[],
   builtCollisionMeshes: readonly Mesh[],
 ) {
-  return (x: number, z: number): CollisionContact | undefined => {
+  return (query: PlayerCollisionQuery): CollisionContact | undefined => {
     for (const resource of resources) {
       if (resource.harvested) continue;
-      const contact = getResourceContact(resource, x, z);
+      const contact = getResourceContact(resource, query);
       if (contact) return contact;
     }
 
     for (const mesh of builtCollisionMeshes) {
-      const contact = getMeshContact(mesh, x, z);
+      const contact = getMeshContact(mesh, query);
       if (contact) return contact;
     }
 
@@ -292,31 +367,32 @@ export function createPlayerWorldCollision(
 
 function getResourceContact(
   resource: HarvestableResource,
-  x: number,
-  z: number,
+  query: PlayerCollisionQuery,
 ): CollisionContact | undefined {
   const collider = resource.movementCollider;
 
   if (collider.kind === "circle") {
     return getCirclesContact(
-      x,
-      z,
+      query.candidate.x,
+      query.candidate.z,
       PLAYER_COLLISION_RADIUS,
       resource.position.x,
       resource.position.z,
       collider.radius,
+      query.reference,
     );
   }
 
   return getCircleOrientedBoxContact(
-    x,
-    z,
+    query.candidate.x,
+    query.candidate.z,
     PLAYER_COLLISION_RADIUS,
     resource.position.x,
     resource.position.z,
     collider.halfWidth,
     collider.halfDepth,
     collider.rotation,
+    query.reference,
   );
 }
 
@@ -326,16 +402,21 @@ function getResourceContact(
  */
 function getMeshContact(
   mesh: Mesh,
-  x: number,
-  z: number,
+  query: PlayerCollisionQuery,
 ): CollisionContact | undefined {
   mesh.computeWorldMatrix(true);
   const boundingBox = mesh.getBoundingInfo().boundingBox;
 
-  return getCircleHorizontalBoundsContact(x, z, PLAYER_COLLISION_RADIUS, {
-    minimumX: boundingBox.minimumWorld.x,
-    maximumX: boundingBox.maximumWorld.x,
-    minimumZ: boundingBox.minimumWorld.z,
-    maximumZ: boundingBox.maximumWorld.z,
-  });
+  return getCircleHorizontalBoundsContact(
+    query.candidate.x,
+    query.candidate.z,
+    PLAYER_COLLISION_RADIUS,
+    {
+      minimumX: boundingBox.minimumWorld.x,
+      maximumX: boundingBox.maximumWorld.x,
+      minimumZ: boundingBox.minimumWorld.z,
+      maximumZ: boundingBox.maximumWorld.z,
+    },
+    query.reference,
+  );
 }

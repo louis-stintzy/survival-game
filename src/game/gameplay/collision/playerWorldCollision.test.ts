@@ -134,6 +134,22 @@ describe("normales de contact", () => {
     expect(contact?.normalZ).toBeCloseTo(Math.SQRT1_2);
   });
 
+  test("un contact circulaire utilise une référence extérieure pour sa normale", () => {
+    const contact = getCirclesContact(
+      -0.32,
+      0.13,
+      0.5,
+      0,
+      0,
+      0.3,
+      { x: -0.81, z: 0.13 },
+    );
+    const referenceLength = Math.hypot(-0.81, 0.13);
+
+    expect(contact?.normalX).toBeCloseTo(-0.81 / referenceLength);
+    expect(contact?.normalZ).toBeCloseTo(0.13 / referenceLength);
+  });
+
   test("les côtés gauche et droit d'un rectangle ont des normales opposées", () => {
     const leftContact = getCircleHorizontalBoundsContact(
       -1.4,
@@ -150,6 +166,18 @@ describe("normales de contact", () => {
 
     expect(leftContact).toEqual({ normalX: -1, normalZ: 0 });
     expect(rightContact).toEqual({ normalX: 1, normalZ: 0 });
+  });
+
+  test("un rectangle calcule sa normale depuis une référence extérieure", () => {
+    const contact = getCircleHorizontalBoundsContact(
+      -1.4,
+      0,
+      radius,
+      obstacle,
+      { x: -1.6, z: 0.2 },
+    );
+
+    expect(contact).toEqual({ normalX: -1, normalZ: 0 });
   });
 
   test("la normale locale d'un rectangle orienté est ramenée dans le monde", () => {
