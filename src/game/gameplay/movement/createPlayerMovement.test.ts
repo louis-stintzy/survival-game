@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest";
+import { projectMovementAlongSurface } from "./createPlayerMovement";
 import {
   circlesOverlap,
   getCirclesContact,
-} from "../collision/playerWorldCollision";
-import { projectMovementAlongSurface } from "./createPlayerMovement";
+} from "../collision/circleCollision";
 
 describe("projectMovementAlongSurface", () => {
   test("arrête un mouvement frontal contre un mur", () => {

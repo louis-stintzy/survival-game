@@ -1,12 +1,13 @@
 import { describe, expect, test } from "vitest";
 import {
   circleOverlapsHorizontalBounds,
-  circleOverlapsOrientedBox,
-  circlesOverlap,
   getCircleHorizontalBoundsContact,
+} from "./horizontalBoundsCollision";
+import { circlesOverlap, getCirclesContact } from "./circleCollision";
+import {
+  circleOverlapsOrientedBox,
   getCircleOrientedBoxContact,
-  getCirclesContact,
-} from "./playerWorldCollision";
+} from "./orientedBoxCollision";
 
 const obstacle = {
   minimumX: -1,
@@ -54,38 +55,18 @@ describe("circlesOverlap", () => {
 
 describe("circleOverlapsOrientedBox", () => {
   test("retrouve le comportement d'un rectangle normal sans rotation", () => {
-    expect(circleOverlapsOrientedBox(1.4, 0, 0.5, 0, 0, 1, 0.5, 0)).toBe(
-      true,
-    );
+    expect(circleOverlapsOrientedBox(1.4, 0, 0.5, 0, 0, 1, 0.5, 0)).toBe(true);
   });
 
   test("détecte un cercle proche d'une pointe à 45 degrés", () => {
     expect(
-      circleOverlapsOrientedBox(
-        0.85,
-        -0.85,
-        0.25,
-        0,
-        0,
-        1,
-        0.4,
-        Math.PI / 4,
-      ),
+      circleOverlapsOrientedBox(0.85, -0.85, 0.25, 0, 0, 1, 0.4, Math.PI / 4),
     ).toBe(true);
   });
 
   test("ignore un cercle suffisamment éloigné d'un côté à 45 degrés", () => {
     expect(
-      circleOverlapsOrientedBox(
-        0.57,
-        0.57,
-        0.2,
-        0,
-        0,
-        1,
-        0.4,
-        Math.PI / 4,
-      ),
+      circleOverlapsOrientedBox(0.57, 0.57, 0.2, 0, 0, 1, 0.4, Math.PI / 4),
     ).toBe(false);
   });
 
@@ -135,15 +116,10 @@ describe("normales de contact", () => {
   });
 
   test("un contact circulaire utilise une référence extérieure pour sa normale", () => {
-    const contact = getCirclesContact(
-      -0.32,
-      0.13,
-      0.5,
-      0,
-      0,
-      0.3,
-      { x: -0.81, z: 0.13 },
-    );
+    const contact = getCirclesContact(-0.32, 0.13, 0.5, 0, 0, 0.3, {
+      x: -0.81,
+      z: 0.13,
+    });
     const referenceLength = Math.hypot(-0.81, 0.13);
 
     expect(contact?.normalX).toBeCloseTo(-0.81 / referenceLength);

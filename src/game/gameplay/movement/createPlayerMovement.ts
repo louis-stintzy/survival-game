@@ -3,10 +3,8 @@ import { Ray } from "@babylonjs/core/Culling/ray";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
-import type {
-  CollisionContact,
-  PlayerCollisionQuery,
-} from "../collision/playerWorldCollision";
+import type { PlayerCollisionQuery } from "../collision/playerWorldCollision";
+import type { CollisionContact } from "../collision/collisionTypes";
 
 const PLAYER_MOVEMENT_SPEED = 5;
 const PLAYER_VERTICAL_SPEED = 4;

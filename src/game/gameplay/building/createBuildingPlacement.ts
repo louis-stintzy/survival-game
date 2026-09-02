@@ -13,10 +13,8 @@ import {
 import { createShelter } from "../../models/createShelter";
 import { createWorkbench } from "../../models/createWorkbench";
 import type { ResourceCost } from "../../definitions/resourceDefinitions";
-import {
-  PLAYER_COLLISION_RADIUS,
-  circleOverlapsHorizontalBounds,
-} from "../collision/playerWorldCollision";
+import { PLAYER_COLLISION_RADIUS } from "../collision/playerWorldCollision";
+import { circleOverlapsHorizontalBounds } from "../collision/horizontalBoundsCollision";
 
 const GRID_SIZE = 1;
 const MAX_BUILD_DISTANCE = 6;
