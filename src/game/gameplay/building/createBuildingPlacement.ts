@@ -13,6 +13,8 @@ import {
 import { createShelter } from "../../models/createShelter";
 import { createWorkbench } from "../../models/createWorkbench";
 import type { ResourceCost } from "../../definitions/resourceDefinitions";
+import { PLAYER_COLLISION_RADIUS } from "../collision/playerWorldCollision";
+import { circleOverlapsHorizontalBounds } from "../collision/horizontalBoundsCollision";
 
 const GRID_SIZE = 1;
 const MAX_BUILD_DISTANCE = 6;
@@ -59,12 +61,14 @@ interface BuildingPlacementOptions {
 interface BuildingGeometry {
   root: TransformNode;
   meshes: Mesh[];
+  collisionMeshes: Mesh[];
 }
 
 export interface BuiltBuilding {
   type: BuildingType;
   root: TransformNode;
   meshes: readonly Mesh[];
+  collisionMeshes: readonly Mesh[];
 }
 
 interface Footprint {
@@ -249,6 +253,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
           type: selectedBuildingType,
           root: building.root,
           meshes: building.meshes,
+          collisionMeshes: building.collisionMeshes,
         });
 
         // Une construction termine volontairement la session de placement.
@@ -318,6 +323,22 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
       return { valid: false, reason: "Hors de portée" };
     }
 
+    if (
+      circleOverlapsHorizontalBounds(
+        player.position.x,
+        player.position.z,
+        PLAYER_COLLISION_RADIUS,
+        {
+          minimumX: footprint.x - footprint.width / 2,
+          maximumX: footprint.x + footprint.width / 2,
+          minimumZ: footprint.z - footprint.depth / 2,
+          maximumZ: footprint.z + footprint.depth / 2,
+        },
+      )
+    ) {
+      return { valid: false, reason: "Emplacement occupé" };
+    }
+
     if (resources.some((resource) => resourceBlocks(resource, footprint))) {
       return { valid: false, reason: "Emplacement occupé" };
     }
@@ -365,18 +386,17 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   function resourceBlocks(resource: HarvestableResource, footprint: Footprint) {
     if (resource.harvested) return false;
 
-    // Le premier mesh est le tronc pour un arbre et le rocher lui-même pour
-    // la pierre : sa bounding box représente l'obstacle proche du sol.
-    const obstacle = resource.meshes[0];
-    obstacle.computeWorldMatrix(true);
-    const bounds = obstacle.getBoundingInfo().boundingBox;
-    return footprintOverlapsBounds(
-      footprint,
-      bounds.minimumWorld.x,
-      bounds.maximumWorld.x,
-      bounds.minimumWorld.z,
-      bounds.maximumWorld.z,
-    );
+    return resource.collisionMeshes.some((obstacle) => {
+      obstacle.computeWorldMatrix(true);
+      const bounds = obstacle.getBoundingInfo().boundingBox;
+      return footprintOverlapsBounds(
+        footprint,
+        bounds.minimumWorld.x,
+        bounds.maximumWorld.x,
+        bounds.minimumWorld.z,
+        bounds.maximumWorld.z,
+      );
+    });
   }
 
   function updateGhostMaterial(valid: boolean) {

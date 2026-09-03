@@ -12,6 +12,7 @@ interface ShelterMaterials {
 export interface Shelter {
   root: TransformNode;
   meshes: Mesh[];
+  collisionMeshes: Mesh[];
 }
 
 export function createShelter(
@@ -65,5 +66,5 @@ export function createShelter(
     mesh.receiveShadows = true;
   });
 
-  return { root, meshes };
+  return { root, meshes, collisionMeshes: posts };
 }

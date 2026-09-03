@@ -13,6 +13,7 @@ interface WorkbenchMaterials {
 export interface Workbench {
   root: TransformNode;
   meshes: Mesh[];
+  collisionMeshes: Mesh[];
 }
 
 export function createWorkbench(
@@ -63,5 +64,5 @@ export function createWorkbench(
     mesh.receiveShadows = true;
   });
 
-  return { root, meshes };
+  return { root, meshes, collisionMeshes: [top] };
 }
