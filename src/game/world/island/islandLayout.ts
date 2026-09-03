@@ -25,7 +25,7 @@ export const ROCKY_PLATEAU_HEIGHT = 1.15;
 
 export const PLAYER_SPAWN: IslandSpawnPoint = {
   x: 0,
-  z: -19.5,
+  z: 10,
   groundHeight: BEACH_HEIGHT,
 };
 
@@ -83,39 +83,53 @@ export const TREE_PLACEMENTS: TreePlacement[] = [
 
 export const ROCK_PLACEMENTS: RockPlacement[] = [
   {
-    x: 6.2,
+    x: 7.2,
+    z: -5.0,
+    scale: 1.15,
+    groundHeight: ROCKY_PLATEAU_HEIGHT,
+    rotation: 0.4,
+  },
+  {
+    x: 9.5,
+    z: -3.7,
+    scale: 0.78,
+    groundHeight: ROCKY_PLATEAU_HEIGHT,
+    rotation: 1.3,
+  },
+  {
+    x: 12.1,
     z: -4.2,
-    scale: 1.2,
-    groundHeight: ROCKY_PLATEAU_HEIGHT,
-    rotation: -4.2,
-  },
-  {
-    x: 8.1,
-    z: -2.7,
-    scale: 0.8,
-    groundHeight: ROCKY_PLATEAU_HEIGHT,
-    rotation: -2.7,
-  },
-  {
-    x: 9.7,
-    z: -4.5,
     scale: 1.05,
     groundHeight: ROCKY_PLATEAU_HEIGHT,
-    rotation: -4.5,
+    rotation: 2.2,
   },
   {
-    x: 7.7,
-    z: -5.2,
+    x: 14.5,
+    z: -5.8,
+    scale: 0.7,
+    groundHeight: ROCKY_PLATEAU_HEIGHT,
+    rotation: 0.8,
+  },
+  {
+    x: 12.8,
+    z: -7.4,
+    scale: 0.9,
+    groundHeight: ROCKY_PLATEAU_HEIGHT,
+    rotation: 1.9,
+  },
+  {
+    x: 9.6,
+    z: -7.3,
     scale: 0.65,
     groundHeight: ROCKY_PLATEAU_HEIGHT,
-    rotation: -5.2,
+    rotation: 2.7,
   },
   {
-    x: 10.1,
-    z: -2.4,
-    scale: 0.6,
+    x: 15.0,
+    z: -3.7,
+    scale: 0.58,
     groundHeight: ROCKY_PLATEAU_HEIGHT,
-    rotation: -2.4,
+    rotation: 1.1,
   },
   { x: -2.5, z: -9.8, scale: 1, groundHeight: GRASS_HEIGHT, rotation: -9.8 },
   { x: 3.2, z: 9.2, scale: 0.85, groundHeight: GRASS_HEIGHT, rotation: 9.2 },

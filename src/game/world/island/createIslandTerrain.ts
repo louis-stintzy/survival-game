@@ -77,11 +77,11 @@ export function createIslandTerrain(
 
   const rockyPlateau = MeshBuilder.CreateCylinder(
     "rocky-plateau",
-    { diameter: 8, height: 0.4, tessellation: 8 },
+    { diameter: 11, height: 0.4, tessellation: 9 },
     scene,
   );
-  rockyPlateau.position = new Vector3(8, 0.95, -3.5);
-  rockyPlateau.scaling.z = 0.72;
+  rockyPlateau.position = new Vector3(11, 0.95, -5.5);
+  rockyPlateau.scaling.z = 0.75;
   rockyPlateau.rotation.y = 0.2;
   rockyPlateau.material = materials.rock;
   rockyPlateau.receiveShadows = true;
