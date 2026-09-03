@@ -15,7 +15,7 @@ export function createPlayer(
     { height: PLAYER_HEIGHT, radius: 0.55, tessellation: 8 },
     scene,
   );
-  player.position = player.position = new Vector3(
+  player.position = new Vector3(
     spawnGroundPosition.x,
     spawnGroundPosition.y + PLAYER_HEIGHT / 2,
     spawnGroundPosition.z,

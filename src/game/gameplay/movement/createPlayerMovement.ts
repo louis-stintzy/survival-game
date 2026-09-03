@@ -163,7 +163,7 @@ export function createPlayerMovement(
       player.position.y += Math.sign(remainingHeight) * maximumVerticalStep;
     }
 
-    camera.setTarget(player.position);
+    camera.setTarget(player.position, false, false, true);
   };
 
   /**
