@@ -2,7 +2,7 @@ import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { Scene } from "@babylonjs/core/scene";
 import type { Engine } from "@babylonjs/core/Engines/engine";
 import { createToolModels } from "./models/createToolModels";
-import { createIsland } from "./world/createIsland";
+import { createIsland } from "./world/island/createIsland";
 import { createGameMaterials } from "./rendering/createGameMaterials";
 import { createPlayer } from "./models/createPlayer";
 import { createGameCamera } from "./camera/createGameCamera";

@@ -2,7 +2,7 @@ import type { Scene } from "@babylonjs/core/scene";
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import type { Island } from "../world/createIsland";
+import type { Island } from "../world/island/createIsland";
 import type { ToolModel } from "../models/createToolModels";
 import type { ToolType } from "../definitions/toolDefinitions";
 import {
