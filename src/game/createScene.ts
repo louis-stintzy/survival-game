@@ -36,7 +36,11 @@ export function createScene(engine: Engine): Scene {
     rock: materials.world.rock,
   });
 
-  const player = createPlayer(scene, materials.player.body);
+  const player = createPlayer(
+    scene,
+    materials.player.body,
+    island.playerSpawnGroundPosition,
+  );
 
   const toolModels = createToolModels(scene, player, {
     handle: materials.tools.handle,

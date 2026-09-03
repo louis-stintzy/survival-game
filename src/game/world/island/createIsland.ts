@@ -1,9 +1,11 @@
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import type { Scene } from "@babylonjs/core/scene";
 import type { HarvestableResource } from "../../resources/resourceTypes";
 import { createIslandTerrain } from "./createIslandTerrain";
 import { createIslandResources } from "./createIslandResources";
+import { PLAYER_SPAWN } from "./islandLayout";
 
 interface IslandMaterials {
   water: StandardMaterial;
@@ -20,6 +22,7 @@ export interface Island {
   placementSurfaces: Mesh[];
   shadowCasters: Mesh[];
   harvestableResources: HarvestableResource[];
+  playerSpawnGroundPosition: Vector3;
 }
 
 export function createIsland(scene: Scene, materials: IslandMaterials): Island {
@@ -47,5 +50,10 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
     ],
     shadowCasters: [terrain.rockyPlateau, ...resources.shadowCasters],
     harvestableResources: resources.harvestableResources,
+    playerSpawnGroundPosition: new Vector3(
+      PLAYER_SPAWN.x,
+      PLAYER_SPAWN.groundHeight,
+      PLAYER_SPAWN.z,
+    ),
   };
 }
