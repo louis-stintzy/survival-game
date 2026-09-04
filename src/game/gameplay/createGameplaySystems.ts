@@ -21,7 +21,7 @@ import { createWorkbenchCrafting } from "./crafting/createWorkbenchCrafting";
 import { createPlayerWorldCollision } from "./collision/playerWorldCollision";
 import { createWorldClock } from "./time/createWorldClock";
 
-const WORLD_DAY_DURATION_SECONDS = 15 * 60;
+const WORLD_DAY_DURATION_SECONDS = 30 * 60;
 const INITIAL_WORLD_DAY = 1;
 const INITIAL_WORLD_HOUR = 8;
 

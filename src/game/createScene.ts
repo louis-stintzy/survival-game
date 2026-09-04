@@ -9,6 +9,7 @@ import { createGameCamera } from "./camera/createGameCamera";
 import { createLighting } from "./rendering/createLighting";
 import { createPlacementMaterials } from "./rendering/createPlacementMaterials";
 import { createGameplaySystems } from "./gameplay/createGameplaySystems";
+import { createDayNightLighting } from "./rendering/createDayNightLighting";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 
 export function createScene(engine: Engine): Scene {
@@ -19,9 +20,9 @@ export function createScene(engine: Engine): Scene {
 
   // ----- Environnement -----
 
-  const shadows = createLighting(scene);
+  const lighting = createLighting(scene);
   const addShadowCasters = (meshes: readonly Mesh[]) => {
-    meshes.forEach((mesh) => shadows.addShadowCaster(mesh));
+    meshes.forEach((mesh) => lighting.shadows.addShadowCaster(mesh));
   };
 
   const materials = createGameMaterials(scene);
@@ -69,11 +70,15 @@ export function createScene(engine: Engine): Scene {
     addShadowCasters,
   });
 
+  const updateDayNightLighting = createDayNightLighting(scene, lighting);
+  updateDayNightLighting(gameplay.getWorldTime());
+
   // ----- Game loop ----
 
   scene.onBeforeRenderObservable.add(() => {
     const deltaTimeInSeconds = engine.getDeltaTime() / 1000;
     gameplay.update(deltaTimeInSeconds);
+    updateDayNightLighting(gameplay.getWorldTime());
   });
 
   return scene;
