@@ -5,7 +5,9 @@ import type { WorldTime } from "../gameplay/time/createWorldClock";
 import type { GameLighting } from "./createLighting";
 
 const SUNRISE_HOUR = 5;
-const SUNSET_HOUR = 20;
+const SUNSET_HOUR = 21;
+
+const SUN_SHADOW_DISTANCE = 100;
 
 interface DayNightKeyframe {
   hour: number;
@@ -59,7 +61,7 @@ const DAY_NIGHT_KEYFRAMES: DayNightKeyframe[] = [
   },
 
   {
-    hour: 18,
+    hour: 19,
     sunIntensity: 0.9,
     skyLightIntensity: 0.3,
     sunColor: new Color3(1, 0.62, 0.35),
@@ -69,7 +71,7 @@ const DAY_NIGHT_KEYFRAMES: DayNightKeyframe[] = [
   },
 
   {
-    hour: 20,
+    hour: 21,
     sunIntensity: 0,
     skyLightIntensity: 0.18,
     sunColor: new Color3(1, 0.55, 0.3),
@@ -188,6 +190,13 @@ export function createDayNightLighting(scene: Scene, lighting: GameLighting) {
       progress,
     );
 
-    lighting.sun.direction = getSunDirection(worldTime.hour);
+    const sunDirection = getSunDirection(worldTime.hour);
+
+    lighting.sun.direction = sunDirection;
+
+    // La lumière directionnelle éclaire à distance infinie, mais Babylon utilise
+    // également sa position pour construire la vue servant à la shadow map.
+    // On garde donc cette position cohérente avec la trajectoire du soleil.
+    lighting.sun.position = sunDirection.scale(-SUN_SHADOW_DISTANCE);
   };
 }

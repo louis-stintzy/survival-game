@@ -24,8 +24,10 @@ export function createLighting(scene: Scene): GameLighting {
   skyLight.intensity = 0.45;
   skyLight.groundColor = new Color3(0.25, 0.4, 0.45);
   const shadows = new ShadowGenerator(1024, sun);
-  shadows.useBlurExponentialShadowMap = false;
-  shadows.blurKernel = 24;
+  shadows.useBlurExponentialShadowMap = true;
+  shadows.useKernelBlur = true;
+  shadows.blurKernel = 4;
+  shadows.blurScale = 1;
 
   return {
     sun,
