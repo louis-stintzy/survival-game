@@ -55,7 +55,7 @@ export function createIslandTerrain(
 
   const beach = MeshBuilder.CreateCylinder(
     "beach",
-    { diameter: 52, height: 1.1, tessellation: 16 },
+    { diameter: 72, height: 1.1, tessellation: 20 },
     scene,
   );
   beach.position.y = -0.2;
@@ -66,7 +66,7 @@ export function createIslandTerrain(
 
   const grass = MeshBuilder.CreateCylinder(
     "grass",
-    { diameter: 46, height: 1, tessellation: 15 },
+    { diameter: 60, height: 1, tessellation: 16 },
     scene,
   );
   grass.position.y = 0.25;

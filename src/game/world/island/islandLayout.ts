@@ -25,7 +25,7 @@ export const ROCKY_PLATEAU_HEIGHT = 1.15;
 
 export const PLAYER_SPAWN: IslandSpawnPoint = {
   x: 0,
-  z: -19.5,
+  z: -27,
   groundHeight: BEACH_HEIGHT,
 };
 
@@ -155,6 +155,30 @@ export const TREE_PLACEMENTS: TreePlacement[] = [
   { x: -10.8, z: 7.8, scale: 0.96, rotation: 1.6 },
   { x: -9.5, z: 7.6, scale: 1.05, rotation: 2.7 },
 
+  // ----- Arbres au centre de l'ile -----
+
+  { x: -3.0, z: 0.3, scale: 1.03, rotation: 2.1 },
+  { x: -2.3, z: 1.7, scale: 0.7, rotation: 1.7 },
+  { x: -1.2, z: 1.7, scale: 0.92, rotation: 0.5 },
+  { x: 1.3, z: 1.5, scale: 1.02, rotation: 0.75 },
+
+  { x: 0, z: 0, scale: 1.05, rotation: 2.7 },
+  { x: 1.95, z: -0.8, scale: 1.1, rotation: 0.95 },
+  { x: 3.65, z: 0.35, scale: 1.3, rotation: 1.95 },
+  { x: 6, z: -0.8, scale: 0.8, rotation: 3.3 },
+
+  { x: -0.8, z: -1.75, scale: 1.05, rotation: 2.7 },
+  { x: 0.85, z: -2.35, scale: 0.75, rotation: 0.7 },
+  { x: 1.75, z: -2, scale: 0.95, rotation: 0.65 },
+  { x: 3, z: -2.75, scale: 0.85, rotation: 1.9 },
+  { x: 4.75, z: -2, scale: 0.65, rotation: 0.3 },
+
+  { x: -9.5, z: -2.5, scale: 0.9, rotation: 3.3 },
+  { x: -7, z: -3.5, scale: 0.95, rotation: 2.3 },
+  { x: -8.25, z: -4.25, scale: 1.03, rotation: 0.6 },
+  { x: -6, z: -6, scale: 1.05, rotation: 4.7 },
+  { x: -7.65, z: -7.25, scale: 0.83, rotation: 1.6 },
+
   // ----- Arbres isolés hors de la forêt -----
 
   { x: 6.5, z: 11.0, scale: 0.95, rotation: 0.9 },
@@ -215,4 +239,21 @@ export const ROCK_PLACEMENTS: RockPlacement[] = [
   { x: -2.5, z: -9.8, scale: 1, groundHeight: GRASS_HEIGHT, rotation: -9.8 },
   { x: 3.2, z: 9.2, scale: 0.85, groundHeight: GRASS_HEIGHT, rotation: 9.2 },
   { x: -13.2, z: -4.4, scale: 0.7, groundHeight: GRASS_HEIGHT, rotation: -4.4 },
+
+  // ----- Entre le plateau rocheux et la plage -----
+  {
+    x: 17,
+    z: -11.8,
+    scale: 0.85,
+    groundHeight: GRASS_HEIGHT,
+    rotation: 2.4,
+  },
+  { x: 18.2, z: -8.4, scale: 0.78, groundHeight: GRASS_HEIGHT, rotation: 6.4 },
+  { x: 19, z: -10.1, scale: 0.58, groundHeight: GRASS_HEIGHT, rotation: 10.4 },
+  { x: 20.2, z: -6.4, scale: 0.98, groundHeight: GRASS_HEIGHT, rotation: 4.4 },
+  { x: 21.3, z: -11.4, scale: 0.8, groundHeight: GRASS_HEIGHT, rotation: -3 },
+  { x: 21.35, z: -9, scale: 0.95, groundHeight: GRASS_HEIGHT, rotation: 6.4 },
+  { x: 24, z: -9.4, scale: 0.68, groundHeight: GRASS_HEIGHT, rotation: 0.4 },
+  { x: 24, z: -4.8, scale: 0.48, groundHeight: GRASS_HEIGHT, rotation: 1.3 },
+  { x: 25.2, z: -7, scale: 0.8, groundHeight: GRASS_HEIGHT, rotation: 8.4 },
 ];
