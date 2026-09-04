@@ -7,7 +7,14 @@
     <title>Survival Game — Island Prototype</title>
   </head>
   <body>
-    <canvas id="game-canvas" aria-label="Prototype 3D d'une île low-poly"></canvas>
+    <canvas
+      id="game-canvas"
+      aria-label="Prototype 3D d'une île low-poly"
+    ></canvas>
+    <aside class="world-time" aria-label="Temps du monde">
+      <strong id="world-day">Jour 1</strong>
+      <div id="world-clock">08:00</div>
+    </aside>
     <aside class="inventory" aria-label="Inventaire">
       <div>Bois : <span id="inventory-wood">0</span></div>
       <div>Pierre : <span id="inventory-stone">0</span></div>
@@ -28,23 +35,19 @@
     </aside>
     <aside id="crafting-panel" class="crafting-panel" hidden>
       <strong>ÉTABLI</strong>
-      <div
-        id="crafting-recipe-stone-axe"
-        class="crafting-recipe is-selected"
-      >
+      <div id="crafting-recipe-stone-axe" class="crafting-recipe is-selected">
         <strong id="crafting-recipe-stone-axe-label"></strong>
         <div>
           Bois : <span id="crafting-recipe-stone-axe-wood"></span> — Pierre :
           <span id="crafting-recipe-stone-axe-stone"></span>
         </div>
-        <div>
-          Possédé : <span id="crafting-recipe-stone-axe-owned">0</span>
-        </div>
+        <div>Possédé : <span id="crafting-recipe-stone-axe-owned">0</span></div>
       </div>
       <div id="crafting-recipe-stone-pickaxe" class="crafting-recipe">
         <strong id="crafting-recipe-stone-pickaxe-label"></strong>
         <div>
-          Bois : <span id="crafting-recipe-stone-pickaxe-wood"></span> — Pierre :
+          Bois : <span id="crafting-recipe-stone-pickaxe-wood"></span> — Pierre
+          :
           <span id="crafting-recipe-stone-pickaxe-stone"></span>
         </div>
         <div>
@@ -63,7 +66,11 @@
       <div>Tab : changer de recette</div>
       <div>E : fabriquer</div>
       <div>Échap : fermer</div>
-      <div id="crafting-status" class="crafting-status" aria-live="polite"></div>
+      <div
+        id="crafting-status"
+        class="crafting-status"
+        aria-live="polite"
+      ></div>
     </aside>
     <div id="tool-quickbar" class="tool-quickbar" aria-label="Équipement">
       <div class="tool-slots">
