@@ -61,7 +61,9 @@ export function createWorldClock(options: WorldClockOptions): WorldClock {
   return {
     update(deltaTimeInSeconds: number) {
       if (!Number.isFinite(deltaTimeInSeconds) || deltaTimeInSeconds < 0) {
-        throw new Error("deltaTimeInSeconds must be a finite positive value");
+        throw new Error(
+          "deltaTimeInSeconds must be a finite non-negative value",
+        );
       }
 
       const safeDeltaTime = Math.min(
@@ -122,6 +124,6 @@ function validateHour(hour: number): void {
 
 function validateTimeScale(timeScale: number): void {
   if (!Number.isFinite(timeScale) || timeScale < 0) {
-    throw new Error("timeScale must be a finite positive or zero value");
+    throw new Error("timeScale must be a finite non-negative value");
   }
 }
