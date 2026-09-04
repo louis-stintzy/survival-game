@@ -3,14 +3,17 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Scene } from "@babylonjs/core/scene";
 import type { Engine } from "@babylonjs/core/Engines/engine";
 
+const INITIAL_CAMERA_ALPHA = -Math.PI / 2.15;
+const INITIAL_CAMERA_BETA = Math.PI / 3.2;
+const CAMERA_RADIUS = 30;
 const VIEW_HEIGHT = 28;
 
 export function createGameCamera(scene: Scene, engine: Engine) {
   const camera = new ArcRotateCamera(
     "camera",
-    -Math.PI / 4,
-    Math.PI / 3.2,
-    30,
+    INITIAL_CAMERA_ALPHA,
+    INITIAL_CAMERA_BETA,
+    CAMERA_RADIUS,
     Vector3.Zero(),
     scene,
   );

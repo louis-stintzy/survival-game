@@ -55,7 +55,7 @@ export function createIslandTerrain(
 
   const beach = MeshBuilder.CreateCylinder(
     "beach",
-    { diameter: 36, height: 1.1, tessellation: 14 },
+    { diameter: 72, height: 1.1, tessellation: 20 },
     scene,
   );
   beach.position.y = -0.2;
@@ -66,7 +66,7 @@ export function createIslandTerrain(
 
   const grass = MeshBuilder.CreateCylinder(
     "grass",
-    { diameter: 32, height: 1, tessellation: 13 },
+    { diameter: 60, height: 1, tessellation: 16 },
     scene,
   );
   grass.position.y = 0.25;
@@ -77,11 +77,11 @@ export function createIslandTerrain(
 
   const rockyPlateau = MeshBuilder.CreateCylinder(
     "rocky-plateau",
-    { diameter: 8, height: 0.4, tessellation: 8 },
+    { diameter: 11, height: 0.4, tessellation: 9 },
     scene,
   );
-  rockyPlateau.position = new Vector3(8, 0.95, -3.5);
-  rockyPlateau.scaling.z = 0.72;
+  rockyPlateau.position = new Vector3(11, 0.95, -5.5);
+  rockyPlateau.scaling.z = 0.75;
   rockyPlateau.rotation.y = 0.2;
   rockyPlateau.material = materials.rock;
   rockyPlateau.receiveShadows = true;
