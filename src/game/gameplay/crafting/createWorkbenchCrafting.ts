@@ -1,19 +1,19 @@
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import type { ToolType } from "../../definitions/toolDefinitions";
 import {
-  TOOL_DEFINITIONS,
-  TOOL_TYPES,
-} from "../../definitions/toolDefinitions";
-import { ResourceCost } from "../../definitions/resourceDefinitions";
+  EQUIPMENT_DEFINITIONS,
+  EQUIPMENT_TYPES,
+  type EquipmentType,
+} from "../../definitions/equipmentDefinitions";
+import type { ResourceCost } from "../../definitions/resourceDefinitions";
 
 interface ResourceInventory {
   canAfford(cost: ResourceCost): boolean;
   spend(cost: ResourceCost): boolean;
 }
 
-interface ToolInventory {
-  add(type: ToolType, amount: number): void;
-  getCount(type: ToolType): number;
+interface EquipmentInventory {
+  add(type: EquipmentType, amount: number): void;
+  getCount(type: EquipmentType): number;
 }
 
 interface RecipeElements {
@@ -26,29 +26,30 @@ interface RecipeElements {
 
 export function createWorkbenchCrafting(
   resourceInventory: ResourceInventory,
-  toolInventory: ToolInventory,
-  onToolCrafted: (type: ToolType) => void,
+  equipmentInventory: EquipmentInventory,
+  onEquipmentCrafted: (type: EquipmentType) => void,
 ) {
   const panel = getElement("#crafting-panel");
   const status = getElement("#crafting-status");
   const progress = getElement("#crafting-progress");
   const progressLabel = getElement("#crafting-progress-label");
   const progressBar = getElement<HTMLProgressElement>("#crafting-progress-bar");
-  const recipeElements: Record<ToolType, RecipeElements> = {
+  const recipeElements: Record<EquipmentType, RecipeElements> = {
     stoneAxe: getRecipeElements("stone-axe"),
     stonePickaxe: getRecipeElements("stone-pickaxe"),
+    torch: getRecipeElements("torch"),
   };
 
   let menuOpen = false;
   let activeWorkbench: TransformNode | undefined;
-  let selectedToolType: ToolType = "stoneAxe";
-  let craftingTarget: ToolType | undefined;
+  let selectedEquipmentType: EquipmentType = "stoneAxe";
+  let craftingTarget: EquipmentType | undefined;
   let craftingElapsedSeconds = 0;
   let selectionChangeRequested = false;
   let closeRequested = false;
 
-  TOOL_TYPES.forEach((type) => {
-    const definition = TOOL_DEFINITIONS[type];
+  EQUIPMENT_TYPES.forEach((type) => {
+    const definition = EQUIPMENT_DEFINITIONS[type];
     const elements = recipeElements[type];
     elements.label.textContent = definition.label;
     elements.woodCost.textContent = String(definition.cost.wood ?? 0);
@@ -71,13 +72,13 @@ export function createWorkbenchCrafting(
   function open(workbench: TransformNode) {
     activeWorkbench = workbench;
     menuOpen = true;
-    selectedToolType = "stoneAxe";
+    selectedEquipmentType = EQUIPMENT_TYPES[0];
     selectionChangeRequested = false;
     closeRequested = false;
     resetCraftingProgress();
     setStatus("");
     updateSelection();
-    TOOL_TYPES.forEach(updateOwnedCount);
+    EQUIPMENT_TYPES.forEach(updateOwnedCount);
     panel.hidden = false;
   }
 
@@ -101,14 +102,15 @@ export function createWorkbenchCrafting(
 
     if (selectionChangeRequested) {
       selectionChangeRequested = false;
-      selectedToolType =
-        selectedToolType === "stoneAxe" ? "stonePickaxe" : "stoneAxe";
+      const selectedIndex = EQUIPMENT_TYPES.indexOf(selectedEquipmentType);
+      selectedEquipmentType =
+        EQUIPMENT_TYPES[(selectedIndex + 1) % EQUIPMENT_TYPES.length];
       updateSelection();
       setStatus("");
     }
 
     if (craftingTarget) {
-      const definition = TOOL_DEFINITIONS[craftingTarget];
+      const definition = EQUIPMENT_DEFINITIONS[craftingTarget];
       craftingElapsedSeconds += deltaTimeInSeconds;
       progressBar.value = Math.min(
         craftingElapsedSeconds / definition.craftingDurationSeconds,
@@ -116,14 +118,14 @@ export function createWorkbenchCrafting(
       );
 
       if (craftingElapsedSeconds >= definition.craftingDurationSeconds) {
-        const completedToolType = craftingTarget;
+        const completedEquipmentType = craftingTarget;
         resetCraftingProgress();
 
         // Le paiement à la fin évite tout remboursement lors d'une annulation.
         if (resourceInventory.spend(definition.cost)) {
-          toolInventory.add(completedToolType, 1);
-          updateOwnedCount(completedToolType);
-          onToolCrafted(completedToolType);
+          equipmentInventory.add(completedEquipmentType, 1);
+          updateOwnedCount(completedEquipmentType);
+          onEquipmentCrafted(completedEquipmentType);
           setStatus(`${definition.label} fabriquée`);
         } else {
           setStatus("Ressources insuffisantes");
@@ -134,13 +136,13 @@ export function createWorkbenchCrafting(
 
     if (!interactionPressed) return;
 
-    const definition = TOOL_DEFINITIONS[selectedToolType];
+    const definition = EQUIPMENT_DEFINITIONS[selectedEquipmentType];
     if (!resourceInventory.canAfford(definition.cost)) {
       setStatus("Ressources insuffisantes");
       return;
     }
 
-    craftingTarget = selectedToolType;
+    craftingTarget = selectedEquipmentType;
     craftingElapsedSeconds = 0;
     progressLabel.textContent = `Fabrication de ${definition.label}`;
     progressBar.value = 0;
@@ -156,17 +158,17 @@ export function createWorkbenchCrafting(
   }
 
   function updateSelection() {
-    TOOL_TYPES.forEach((type) => {
+    EQUIPMENT_TYPES.forEach((type) => {
       recipeElements[type].container.classList.toggle(
         "is-selected",
-        type === selectedToolType,
+        type === selectedEquipmentType,
       );
     });
   }
 
-  function updateOwnedCount(type: ToolType) {
+  function updateOwnedCount(type: EquipmentType) {
     recipeElements[type].ownedCount.textContent = String(
-      toolInventory.getCount(type),
+      equipmentInventory.getCount(type),
     );
   }
 

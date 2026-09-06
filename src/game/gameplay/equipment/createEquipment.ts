@@ -1,48 +1,55 @@
-import { ToolModel } from "../../models/createToolModels";
+import type { EquipmentModel } from "../../models/createEquipmentModels";
 import {
-  TOOL_DEFINITIONS,
-  TOOL_TYPES,
+  EQUIPMENT_DEFINITIONS,
+  EQUIPMENT_TYPES,
   type EquippedItem,
-  type ToolType,
-} from "../../definitions/toolDefinitions";
+  type EquipmentType,
+} from "../../definitions/equipmentDefinitions";
 
-interface ToolInventory {
-  getCount(type: ToolType): number;
+interface EquipmentInventory {
+  getCount(type: EquipmentType): number;
 }
 
-export function createToolEquipment(
-  toolInventory: ToolInventory,
-  models: Record<ToolType, ToolModel>,
+const QUICKBAR_ITEMS: Record<string, EquippedItem> = {
+  Digit1: "hands",
+  Digit2: "stoneAxe",
+  Digit3: "stonePickaxe",
+  Digit4: "torch",
+  "1": "hands",
+  "2": "stoneAxe",
+  "3": "stonePickaxe",
+  "4": "torch",
+};
+
+export function createEquipment(
+  equipmentInventory: EquipmentInventory,
+  models: Record<EquipmentType, EquipmentModel>,
 ) {
   const equippedLabel = getElement("#equipped-tool-label");
   const slots: Record<EquippedItem, HTMLElement> = {
     hands: getElement("#tool-slot-hands"),
     stoneAxe: getElement("#tool-slot-stone-axe"),
     stonePickaxe: getElement("#tool-slot-stone-pickaxe"),
+    torch: getElement("#tool-slot-torch"),
   };
-  const countElements: Record<ToolType, HTMLElement> = {
+  const countElements: Record<EquipmentType, HTMLElement> = {
     stoneAxe: getElement("#tool-count-stone-axe"),
     stonePickaxe: getElement("#tool-count-stone-pickaxe"),
+    torch: getElement("#tool-count-torch"),
   };
 
   let equippedItem: EquippedItem = "hands";
 
   window.addEventListener("keydown", (event) => {
     if (event.repeat) return;
-
-    const requestedItem: EquippedItem | undefined =
-      event.code === "Digit1" || event.key === "1"
-        ? "hands"
-        : event.code === "Digit2" || event.key === "2"
-          ? "stoneAxe"
-          : event.code === "Digit3" || event.key === "3"
-            ? "stonePickaxe"
-            : undefined;
+    const requestedItem = QUICKBAR_ITEMS[event.code] ?? QUICKBAR_ITEMS[event.key];
     if (requestedItem) equip(requestedItem);
   });
 
   function equip(item: EquippedItem): boolean {
-    if (item !== "hands" && toolInventory.getCount(item) === 0) return false;
+    if (item !== "hands" && equipmentInventory.getCount(item) === 0) {
+      return false;
+    }
 
     equippedItem = item;
     updatePresentation();
@@ -50,8 +57,8 @@ export function createToolEquipment(
   }
 
   function updatePresentation() {
-    TOOL_TYPES.forEach((type) => {
-      const count = toolInventory.getCount(type);
+    EQUIPMENT_TYPES.forEach((type) => {
+      const count = equipmentInventory.getCount(type);
       countElements[type].textContent = String(count);
       slots[type].classList.toggle("is-unavailable", count === 0);
       models[type].root.setEnabled(equippedItem === type);
@@ -68,12 +75,12 @@ export function createToolEquipment(
   return {
     equip,
     getEquippedItem: () => equippedItem,
-    onToolCrafted: (type: ToolType) => equip(type),
+    onEquipmentCrafted: (type: EquipmentType) => equip(type),
   };
 }
 
 function getEquippedLabel(item: EquippedItem): string {
-  return item === "hands" ? "Mains" : TOOL_DEFINITIONS[item].label;
+  return item === "hands" ? "Mains" : EQUIPMENT_DEFINITIONS[item].label;
 }
 
 function getElement(selector: string): HTMLElement {

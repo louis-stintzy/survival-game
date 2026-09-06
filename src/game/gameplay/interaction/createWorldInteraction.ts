@@ -1,7 +1,7 @@
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { HarvestableResource } from "../../resources/resourceTypes";
-import type { EquippedItem } from "../../definitions/toolDefinitions";
+import type { EquippedItem } from "../../definitions/equipmentDefinitions";
 import { getResourceInteractionPrompt } from "../interaction/createResourceInteraction";
 import { getHarvestDurationSeconds } from "../../resources/harvestingDefinitions";
 

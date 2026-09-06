@@ -98,6 +98,13 @@ export function createGameMaterials(scene: Scene) {
     GAME_PALETTE.tools.head,
   );
 
+  const flame = createMaterial(
+    scene,
+    "tools-flame-material",
+    GAME_PALETTE.tools.flame,
+  );
+  flame.emissiveColor = flame.diffuseColor;
+
   return {
     world: {
       water,
@@ -122,6 +129,7 @@ export function createGameMaterials(scene: Scene) {
     tools: {
       handle,
       head,
+      flame,
     },
   };
 }

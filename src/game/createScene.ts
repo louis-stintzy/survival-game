@@ -1,7 +1,7 @@
 import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { Scene } from "@babylonjs/core/scene";
 import type { Engine } from "@babylonjs/core/Engines/engine";
-import { createToolModels } from "./models/createToolModels";
+import { createEquipmentModels } from "./models/createEquipmentModels";
 import { createIsland } from "./world/island/createIsland";
 import { createGameMaterials } from "./rendering/createGameMaterials";
 import { createPlayer } from "./models/createPlayer";
@@ -44,9 +44,10 @@ export function createScene(engine: Engine): Scene {
     island.playerSpawnGroundPosition,
   );
 
-  const toolModels = createToolModels(scene, player, {
+  const equipmentModels = createEquipmentModels(scene, player, {
     handle: materials.tools.handle,
     head: materials.tools.head,
+    flame: materials.tools.flame,
   });
 
   // Seuls les éléments au-dessus du sol projettent une ombre ; les surfaces
@@ -54,8 +55,7 @@ export function createScene(engine: Engine): Scene {
   addShadowCasters([
     player,
     ...island.shadowCasters,
-    ...toolModels.stoneAxe.meshes,
-    ...toolModels.stonePickaxe.meshes,
+    ...Object.values(equipmentModels).flatMap((model) => model.meshes),
   ]);
 
   // ----- Gameplay -----
@@ -65,7 +65,7 @@ export function createScene(engine: Engine): Scene {
     camera,
     player,
     island,
-    toolModels,
+    equipmentModels,
     buildingMaterials: materials.building,
     placementMaterials,
     addShadowCasters,

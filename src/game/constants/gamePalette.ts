@@ -36,5 +36,6 @@ export const GAME_PALETTE = {
   tools: {
     handle: BROWN,
     head: STONE_GRAY,
+    flame: "#FF9F1C",
   },
 } as const;

@@ -3,8 +3,8 @@ import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Island } from "../world/island/createIsland";
-import type { ToolModel } from "../models/createToolModels";
-import type { ToolType } from "../definitions/toolDefinitions";
+import type { EquipmentModel } from "../models/createEquipmentModels";
+import type { EquipmentType } from "../definitions/equipmentDefinitions";
 import {
   type BuildingMaterials,
   type PlacementMaterials,
@@ -12,8 +12,8 @@ import {
 } from "./building/createBuildingPlacement";
 import { createWorldInteraction } from "./interaction/createWorldInteraction";
 import { createResourceInventory } from "./inventory/createResourceInventory";
-import { createToolInventory } from "./inventory/createToolInventory";
-import { createToolEquipment } from "./equipment/createToolEquipment";
+import { createEquipmentInventory } from "./inventory/createEquipmentInventory";
+import { createEquipment } from "./equipment/createEquipment";
 import { createCameraRotation } from "./movement/createCameraRotation";
 import { createPlayerMovement } from "./movement/createPlayerMovement";
 import { createResourceInteraction } from "./interaction/createResourceInteraction";
@@ -31,7 +31,7 @@ interface GameplaySystemsOptions {
   camera: ArcRotateCamera;
   player: Mesh;
   island: Island;
-  toolModels: Record<ToolType, ToolModel>;
+  equipmentModels: Record<EquipmentType, EquipmentModel>;
   buildingMaterials: BuildingMaterials;
   placementMaterials: PlacementMaterials;
   addShadowCasters: (meshes: readonly Mesh[]) => void;
@@ -43,7 +43,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
     camera,
     player,
     island,
-    toolModels,
+    equipmentModels,
     buildingMaterials,
     placementMaterials,
     addShadowCasters,
@@ -52,8 +52,8 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
   // ----- Etat -----
 
   const resourceInventory = createResourceInventory();
-  const toolInventory = createToolInventory();
-  const toolEquipment = createToolEquipment(toolInventory, toolModels);
+  const equipmentInventory = createEquipmentInventory();
+  const equipment = createEquipment(equipmentInventory, equipmentModels);
   const builtWorkbenches: TransformNode[] = [];
   const builtCollisionMeshes: Mesh[] = [];
 
@@ -88,8 +88,8 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
   );
   const workbenchCrafting = createWorkbenchCrafting(
     resourceInventory,
-    toolInventory,
-    toolEquipment.onToolCrafted,
+    equipmentInventory,
+    equipment.onEquipmentCrafted,
   );
 
   const updateWorldInteraction = createWorldInteraction(
@@ -98,7 +98,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
     builtWorkbenches,
     resourceInteraction,
     workbenchCrafting,
-    toolEquipment.getEquippedItem,
+    equipment.getEquippedItem,
   );
 
   const updateBuildingPlacement = createBuildingPlacement({
