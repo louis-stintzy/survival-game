@@ -70,10 +70,21 @@ export function createEquipment(
     equippedLabel.textContent = `Équipé : ${getEquippedLabel(equippedItem)}`;
   }
 
+  function refresh() {
+    if (
+      equippedItem !== "hands" &&
+      equipmentInventory.getCount(equippedItem) === 0
+    ) {
+      equippedItem = "hands";
+    }
+    updatePresentation();
+  }
+
   updatePresentation();
 
   return {
     equip,
+    refresh,
     getEquippedItem: () => equippedItem,
     onEquipmentCrafted: (type: EquipmentType) => equip(type),
   };

@@ -10,17 +10,29 @@ export function createEquipmentInventory() {
 
   return {
     add(type: EquipmentType, amount: number) {
-      if (!Number.isInteger(amount) || amount <= 0) {
-        throw new Error(
-          "La quantité d'équipements ajoutée doit être un entier positif.",
-        );
-      }
+      validateAmount(amount);
 
       counts[type] += amount;
+    },
+
+    remove(type: EquipmentType, amount: number): boolean {
+      validateAmount(amount);
+      if (counts[type] < amount) return false;
+
+      counts[type] -= amount;
+      return true;
     },
 
     getCount(type: EquipmentType) {
       return counts[type];
     },
   };
+}
+
+function validateAmount(amount: number) {
+  if (!Number.isInteger(amount) || amount <= 0) {
+    throw new Error(
+      "La quantité d'équipements doit être un entier strictement positif.",
+    );
+  }
 }

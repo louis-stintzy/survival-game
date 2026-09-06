@@ -29,6 +29,7 @@
 - Plusieurs exemplaires de chaque équipement peuvent être conservés.
 - Un équipement fraîchement fabriqué est automatiquement équipé.
 - Quickbar : 1 pour les mains, 2 pour la hache, 3 pour la pioche et 4 pour la torche.
+- Une torche équipée peut être posée librement sur le terrain avec un clic gauche ; la pose consomme un exemplaire.
 - Les outils n'ont aucun système de durabilité.
 
 ### Collisions du monde

@@ -66,6 +66,10 @@ export function createScene(engine: Engine): Scene {
     player,
     island,
     equipmentModels,
+    torchMaterials: {
+      handle: materials.tools.handle,
+      flame: materials.tools.flame,
+    },
     buildingMaterials: materials.building,
     placementMaterials,
     addShadowCasters,

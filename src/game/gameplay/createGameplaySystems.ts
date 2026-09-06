@@ -21,6 +21,8 @@ import { createWorkbenchCrafting } from "./crafting/createWorkbenchCrafting";
 import { createPlayerWorldCollision } from "./collision/playerWorldCollision";
 import { createWorldClock } from "./time/createWorldClock";
 import { createWorldTimeDevControls } from "./time/createWorldTimeDevControls";
+import type { TorchMaterials } from "../models/createTorchModel";
+import { createTorchPlacement } from "./placement/createTorchPlacement";
 
 const WORLD_DAY_DURATION_SECONDS = 30 * 60;
 const INITIAL_WORLD_DAY = 1;
@@ -32,6 +34,7 @@ interface GameplaySystemsOptions {
   player: Mesh;
   island: Island;
   equipmentModels: Record<EquipmentType, EquipmentModel>;
+  torchMaterials: TorchMaterials;
   buildingMaterials: BuildingMaterials;
   placementMaterials: PlacementMaterials;
   addShadowCasters: (meshes: readonly Mesh[]) => void;
@@ -44,6 +47,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
     player,
     island,
     equipmentModels,
+    torchMaterials,
     buildingMaterials,
     placementMaterials,
     addShadowCasters,
@@ -120,6 +124,17 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
     },
   });
 
+  createTorchPlacement({
+    scene,
+    player,
+    placementSurfaces: island.walkableSurfaces,
+    equipmentInventory,
+    equipment,
+    materials: torchMaterials,
+    isBuildingModeActive: updateBuildingPlacement.isActive,
+    isCraftingOpen: workbenchCrafting.isOpen,
+  });
+
   return {
     getWorldTime() {
       return worldClock.getTime();
@@ -130,7 +145,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
       updateCameraRotation(deltaTimeInSeconds);
       updatePlayerMovement(deltaTimeInSeconds);
       updateWorldInteraction(deltaTimeInSeconds);
-      updateBuildingPlacement();
+      updateBuildingPlacement.update();
     },
   };
 }

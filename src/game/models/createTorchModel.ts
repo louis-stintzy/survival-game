@@ -17,8 +17,10 @@ export interface TorchModel {
   meshes: Mesh[];
   flameAnchor: TransformNode;
   light: PointLight;
+  baseOffsetY: number;
 }
 
+const TORCH_HANDLE_HEIGHT = 1.15;
 const TORCH_LIGHT_COLOR = new Color3(1, 0.55, 0.25);
 const TORCH_LIGHT_INTENSITY = 1.5;
 const TORCH_LIGHT_RANGE = 8;
@@ -33,7 +35,7 @@ export function createTorchModel(
 
   const handle = MeshBuilder.CreateBox(
     `${name}-handle`,
-    { width: 0.13, height: 1.15, depth: 0.13 },
+    { width: 0.13, height: TORCH_HANDLE_HEIGHT, depth: 0.13 },
     scene,
   );
   handle.material = materials.handle;
@@ -58,5 +60,11 @@ export function createTorchModel(
   light.range = TORCH_LIGHT_RANGE;
   light.parent = flameAnchor;
 
-  return { root, meshes: [handle, flame], flameAnchor, light };
+  return {
+    root,
+    meshes: [handle, flame],
+    flameAnchor,
+    light,
+    baseOffsetY: TORCH_HANDLE_HEIGHT / 2,
+  };
 }
