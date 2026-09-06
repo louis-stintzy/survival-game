@@ -25,6 +25,7 @@ export interface WorldClock {
   update(deltaTimeInSeconds: number): void;
   getTime(): WorldTime;
   setTime(day: number, hour: number): void;
+  advanceHours(hoursToAdvance: number): void;
   setTimeScale(timeScale: number): void;
   getTimeScale(): number;
 }
@@ -58,6 +59,17 @@ export function createWorldClock(options: WorldClockOptions): WorldClock {
   let hour = initialHour;
   let timeScale = initialTimeScale;
 
+  const advanceByHours = (hoursToAdvance: number) => {
+    hour += hoursToAdvance;
+
+    if (hour >= HOURS_PER_DAY) {
+      const elapsedDays = Math.floor(hour / HOURS_PER_DAY);
+
+      day += elapsedDays;
+      hour %= HOURS_PER_DAY;
+    }
+  };
+
   return {
     update(deltaTimeInSeconds: number) {
       if (!Number.isFinite(deltaTimeInSeconds) || deltaTimeInSeconds < 0) {
@@ -65,20 +77,11 @@ export function createWorldClock(options: WorldClockOptions): WorldClock {
           "deltaTimeInSeconds must be a finite non-negative value",
         );
       }
-
       const safeDeltaTime = Math.min(
         deltaTimeInSeconds,
         MAX_WORLD_CLOCK_DELTA_SECONDS,
       );
-
-      hour += safeDeltaTime * gameHoursPerRealSecond * timeScale;
-
-      if (hour >= HOURS_PER_DAY) {
-        const elapsedDays = Math.floor(hour / HOURS_PER_DAY);
-
-        day += elapsedDays;
-        hour %= HOURS_PER_DAY;
-      }
+      advanceByHours(safeDeltaTime * gameHoursPerRealSecond * timeScale);
     },
 
     getTime() {
@@ -91,6 +94,11 @@ export function createWorldClock(options: WorldClockOptions): WorldClock {
 
       day = newDay;
       hour = newHour;
+    },
+
+    advanceHours(hoursToAdvance: number) {
+      validateHoursToAdvance(hoursToAdvance);
+      advanceByHours(hoursToAdvance);
     },
 
     setTimeScale(newTimeScale: number) {
@@ -119,6 +127,12 @@ function validateDay(day: number): void {
 function validateHour(hour: number): void {
   if (!Number.isFinite(hour) || hour < 0 || hour >= HOURS_PER_DAY) {
     throw new Error("hour must be between 0 included and 24 excluded");
+  }
+}
+
+function validateHoursToAdvance(hoursToAdvance: number): void {
+  if (!Number.isFinite(hoursToAdvance) || hoursToAdvance < 0) {
+    throw new Error("hoursToAdvance must be a finite non-negative value");
   }
 }
 

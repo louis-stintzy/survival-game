@@ -106,4 +106,34 @@ describe("createWorldClock", () => {
     // Le delta utilisé est plafonné à 0,25 seconde.
     expect(clock.getTime().hour).toBeCloseTo(8.25);
   });
+
+  test("avance directement de plusieurs heures", () => {
+    const clock = createWorldClock({
+      dayDurationSeconds: 24,
+      initialDay: 1,
+      initialHour: 8,
+    });
+
+    clock.advanceHours(3);
+
+    expect(clock.getTime()).toEqual({
+      day: 1,
+      hour: 11,
+    });
+  });
+
+  test("avance au jour suivant lorsque le saut dépasse minuit", () => {
+    const clock = createWorldClock({
+      dayDurationSeconds: 24,
+      initialDay: 1,
+      initialHour: 23,
+    });
+
+    clock.advanceHours(3);
+
+    expect(clock.getTime()).toEqual({
+      day: 2,
+      hour: 2,
+    });
+  });
 });

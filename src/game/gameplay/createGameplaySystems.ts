@@ -20,6 +20,7 @@ import { createResourceInteraction } from "./interaction/createResourceInteracti
 import { createWorkbenchCrafting } from "./crafting/createWorkbenchCrafting";
 import { createPlayerWorldCollision } from "./collision/playerWorldCollision";
 import { createWorldClock } from "./time/createWorldClock";
+import { createWorldTimeDevControls } from "./time/createWorldTimeDevControls";
 
 const WORLD_DAY_DURATION_SECONDS = 30 * 60;
 const INITIAL_WORLD_DAY = 1;
@@ -63,6 +64,8 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
     initialDay: INITIAL_WORLD_DAY,
     initialHour: INITIAL_WORLD_HOUR,
   });
+
+  createWorldTimeDevControls(worldClock);
 
   // ----- Mouvement -----
 

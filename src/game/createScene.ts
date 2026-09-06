@@ -84,7 +84,6 @@ export function createScene(engine: Engine): Scene {
     gameplay.update(deltaTimeInSeconds);
 
     const worldTime = gameplay.getWorldTime();
-    updateDayNightLighting(gameplay.getWorldTime());
     updateDayNightLighting(worldTime);
     worldTimeHud.update(worldTime);
   });
