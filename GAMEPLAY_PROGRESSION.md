@@ -25,7 +25,7 @@
 
 - Hache de pierre : 2 bois, 1 pierre, 2 secondes de fabrication et équipable.
 - Pioche de pierre : 1 bois, 2 pierres, 2 secondes de fabrication et équipable.
-- Torche : 1 bois, 1,5 seconde de fabrication et équipable, sans effet lumineux pour le moment.
+- Torche : 1 bois, 1,5 seconde de fabrication et équipable ; tenue en main, elle produit une lumière locale chaude.
 - Plusieurs exemplaires de chaque équipement peuvent être conservés.
 - Un équipement fraîchement fabriqué est automatiquement équipé.
 - Quickbar : 1 pour les mains, 2 pour la hache, 3 pour la pioche et 4 pour la torche.
