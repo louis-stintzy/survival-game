@@ -19,6 +19,12 @@ import { createPlayerMovement } from "./movement/createPlayerMovement";
 import { createResourceInteraction } from "./interaction/createResourceInteraction";
 import { createWorkbenchCrafting } from "./crafting/createWorkbenchCrafting";
 import { createPlayerWorldCollision } from "./collision/playerWorldCollision";
+import { createWorldClock } from "./time/createWorldClock";
+import { createWorldTimeDevControls } from "./time/createWorldTimeDevControls";
+
+const WORLD_DAY_DURATION_SECONDS = 30 * 60;
+const INITIAL_WORLD_DAY = 1;
+const INITIAL_WORLD_HOUR = 8;
 
 interface GameplaySystemsOptions {
   scene: Scene;
@@ -50,6 +56,16 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
   const toolEquipment = createToolEquipment(toolInventory, toolModels);
   const builtWorkbenches: TransformNode[] = [];
   const builtCollisionMeshes: Mesh[] = [];
+
+  // ----- Temps -----
+
+  const worldClock = createWorldClock({
+    dayDurationSeconds: WORLD_DAY_DURATION_SECONDS,
+    initialDay: INITIAL_WORLD_DAY,
+    initialHour: INITIAL_WORLD_HOUR,
+  });
+
+  createWorldTimeDevControls(worldClock);
 
   // ----- Mouvement -----
 
@@ -105,7 +121,12 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
   });
 
   return {
+    getWorldTime() {
+      return worldClock.getTime();
+    },
+
     update(deltaTimeInSeconds: number) {
+      worldClock.update(deltaTimeInSeconds);
       updateCameraRotation(deltaTimeInSeconds);
       updatePlayerMovement(deltaTimeInSeconds);
       updateWorldInteraction(deltaTimeInSeconds);

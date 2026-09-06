@@ -6,7 +6,13 @@ import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import type { Scene } from "@babylonjs/core/scene";
 
-export function createLighting(scene: Scene) {
+export interface GameLighting {
+  sun: DirectionalLight;
+  skyLight: HemisphericLight;
+  shadows: ShadowGenerator;
+}
+
+export function createLighting(scene: Scene): GameLighting {
   const sun = new DirectionalLight("sun", new Vector3(-1, -2, -1), scene);
   sun.position = new Vector3(12, 20, 10);
   sun.intensity = 1.5;
@@ -19,7 +25,13 @@ export function createLighting(scene: Scene) {
   skyLight.groundColor = new Color3(0.25, 0.4, 0.45);
   const shadows = new ShadowGenerator(1024, sun);
   shadows.useBlurExponentialShadowMap = true;
-  shadows.blurKernel = 24;
+  shadows.useKernelBlur = true;
+  shadows.blurKernel = 4;
+  shadows.blurScale = 1;
 
-  return shadows;
+  return {
+    sun,
+    skyLight,
+    shadows,
+  };
 }
