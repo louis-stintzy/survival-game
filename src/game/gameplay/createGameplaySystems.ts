@@ -9,7 +9,7 @@ import {
   type BuildingMaterials,
   type PlacementMaterials,
   createBuildingPlacement,
-} from "./building/createBuildingPlacement";
+} from "./placement/createBuildingPlacement";
 import { createWorldInteraction } from "./interaction/createWorldInteraction";
 import { createResourceInventory } from "./inventory/createResourceInventory";
 import { createEquipmentInventory } from "./inventory/createEquipmentInventory";

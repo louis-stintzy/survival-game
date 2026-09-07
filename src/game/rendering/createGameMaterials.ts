@@ -3,6 +3,11 @@ import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { GAME_PALETTE } from "../constants/gamePalette";
 
+// Un StandardMaterial ne prend en compte qu'un nombre limité de sources
+// lumineuses pour le rendu d'un même mesh. On réserve ici de la place
+// au soleil, à la lumière ambiante et à plusieurs torches locales.
+const MAX_SIMULTANEOUS_LIGHTS = 8;
+
 function createMaterial(
   scene: Scene,
   name: string,
@@ -11,6 +16,7 @@ function createMaterial(
   const material = new StandardMaterial(name, scene);
   material.diffuseColor = Color3.FromHexString(color);
   material.specularColor = Color3.Black();
+  material.maxSimultaneousLights = MAX_SIMULTANEOUS_LIGHTS;
   return material;
 }
 
