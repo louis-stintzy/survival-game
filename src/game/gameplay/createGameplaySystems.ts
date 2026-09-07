@@ -124,7 +124,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
     },
   });
 
-  createTorchPlacement({
+  const torchPlacement = createTorchPlacement({
     scene,
     player,
     placementSurfaces: island.walkableSurfaces,
@@ -146,6 +146,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
       updatePlayerMovement(deltaTimeInSeconds);
       updateWorldInteraction(deltaTimeInSeconds);
       updateBuildingPlacement.update();
+      torchPlacement.update();
     },
   };
 }
