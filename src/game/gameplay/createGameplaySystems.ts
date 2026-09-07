@@ -146,7 +146,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
       updatePlayerMovement(deltaTimeInSeconds);
       updateWorldInteraction(deltaTimeInSeconds);
       updateBuildingPlacement.update();
-      torchPlacement.update();
+      torchPlacement.update(deltaTimeInSeconds);
     },
   };
 }

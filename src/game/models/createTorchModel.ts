@@ -22,7 +22,7 @@ export interface TorchModel {
 
 const TORCH_HANDLE_HEIGHT = 1.15;
 const TORCH_LIGHT_COLOR = new Color3(1, 0.55, 0.25);
-const TORCH_LIGHT_INTENSITY = 1.5;
+export const TORCH_LIGHT_INTENSITY = 1.5;
 const TORCH_LIGHT_RANGE = 8;
 
 /** Crée une torche low-poly autonome, réutilisable comme modèle tenu ou posé. */
