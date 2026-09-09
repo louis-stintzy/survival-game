@@ -186,7 +186,12 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     }
   });
 
-  return () => {
+  return {
+    isActive: () => buildingModeActive,
+    update,
+  };
+
+  function update() {
     if (isCraftingOpen()) {
       if (buildingModeActive || activationRequested) closeBuildingMode();
       return;
@@ -261,7 +266,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
         closeBuildingMode();
       }
     }
-  };
+  }
 
   function updateGhostPlacement(): Placement | undefined {
     const ghost = ghosts[selectedBuildingType];

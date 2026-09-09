@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { getHarvestDurationSeconds } from "./harvestingDefinitions";
-import type { EquippedItem } from "../definitions/toolDefinitions";
+import type { EquippedItem } from "../definitions/equipmentDefinitions";
 import { HarvestableResourceType } from "../definitions/resourceDefinitions";
 
 describe("getHarvestDurationSeconds", () => {
@@ -9,6 +9,8 @@ describe("getHarvestDurationSeconds", () => {
   >([
     ["récolte le bois en 3 secondes avec les mains", "wood", "hands", 3],
     ["récolte la pierre en 4 secondes avec les mains", "stone", "hands", 4],
+    ["rend le bois incompatible avec la torche", "wood", "torch", undefined],
+    ["rend la pierre incompatible avec la torche", "stone", "torch", undefined],
     ["récolte le bois en 1,5 seconde avec la hache", "wood", "stoneAxe", 1.5],
     [
       "rend la pierre incompatible avec la hache",

@@ -21,13 +21,15 @@
 - Interaction possible avec E à moins de 2,75 unités.
 - E ouvre le menu de crafting.
 
-### Outils fabriqués à l'établi
+### Équipements fabriqués à l'établi
 
 - Hache de pierre : 2 bois, 1 pierre, 2 secondes de fabrication et équipable.
 - Pioche de pierre : 1 bois, 2 pierres, 2 secondes de fabrication et équipable.
-- Plusieurs exemplaires de chaque outil peuvent être conservés dans l'inventaire outils.
-- Un outil fraîchement fabriqué est automatiquement équipé.
-- Quickbar : 1 pour les mains, 2 pour la hache et 3 pour la pioche.
+- Torche : 1 bois, 1,5 seconde de fabrication et équipable ; tenue en main, elle produit une lumière locale chaude.
+- Plusieurs exemplaires de chaque équipement peuvent être conservés.
+- Un équipement fraîchement fabriqué est automatiquement équipé.
+- Quickbar : 1 pour les mains, 2 pour la hache, 3 pour la pioche et 4 pour la torche.
+- Une torche équipée peut être posée librement sur le terrain avec un clic gauche ; la pose consomme un exemplaire.
 - Les outils n'ont aucun système de durabilité.
 
 ### Collisions du monde

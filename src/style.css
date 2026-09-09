@@ -124,7 +124,7 @@ body,
   font-weight: 700;
 }
 
-.tool-quickbar {
+.equipment-quickbar {
   position: fixed;
   bottom: 1rem;
   left: 50%;
@@ -137,12 +137,12 @@ body,
   pointer-events: none;
 }
 
-.tool-slots {
+.equipment-slots {
   display: flex;
   gap: 0.45rem;
 }
 
-.tool-slot {
+.equipment-slot {
   min-width: 7.5rem;
   padding: 0.4rem 0.55rem;
   border: 2px solid transparent;
@@ -151,16 +151,16 @@ body,
   white-space: nowrap;
 }
 
-.tool-slot.is-equipped {
+.equipment-slot.is-equipped {
   border-color: #a8f0ad;
   background: rgb(168 240 173 / 14%);
 }
 
-.tool-slot.is-unavailable {
+.equipment-slot.is-unavailable {
   opacity: 0.45;
 }
 
-.equipped-tool-label {
+.equipped-item-label {
   margin-top: 0.35rem;
   font-weight: 600;
 }

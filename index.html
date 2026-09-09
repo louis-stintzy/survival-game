@@ -54,6 +54,14 @@
           Possédé : <span id="crafting-recipe-stone-pickaxe-owned">0</span>
         </div>
       </div>
+      <div id="crafting-recipe-torch" class="crafting-recipe">
+        <strong id="crafting-recipe-torch-label"></strong>
+        <div>
+          Bois : <span id="crafting-recipe-torch-wood"></span> — Pierre :
+          <span id="crafting-recipe-torch-stone"></span>
+        </div>
+        <div>Possédé : <span id="crafting-recipe-torch-owned">0</span></div>
+      </div>
       <div id="crafting-progress" class="crafting-progress" hidden>
         <span id="crafting-progress-label"></span>
         <progress
@@ -72,17 +80,35 @@
         aria-live="polite"
       ></div>
     </aside>
-    <div id="tool-quickbar" class="tool-quickbar" aria-label="Équipement">
-      <div class="tool-slots">
-        <div id="tool-slot-hands" class="tool-slot is-equipped">1 — Mains</div>
-        <div id="tool-slot-stone-axe" class="tool-slot is-unavailable">
-          2 — Hache ×<span id="tool-count-stone-axe">0</span>
+    <div
+      id="equipment-quickbar"
+      class="equipment-quickbar"
+      aria-label="Équipement"
+    >
+      <div class="equipment-slots">
+        <div id="equipment-slot-hands" class="equipment-slot is-equipped">
+          1 — Mains
         </div>
-        <div id="tool-slot-stone-pickaxe" class="tool-slot is-unavailable">
-          3 — Pioche ×<span id="tool-count-stone-pickaxe">0</span>
+        <div
+          id="equipment-slot-stone-axe"
+          class="equipment-slot is-unavailable"
+        >
+          2 — Hache ×<span id="equipment-count-stone-axe">0</span>
+        </div>
+        <div
+          id="equipment-slot-stone-pickaxe"
+          class="equipment-slot is-unavailable"
+        >
+          3 — Pioche ×<span id="equipment-count-stone-pickaxe">0</span>
+        </div>
+        <div
+          id="equipment-slot-torch"
+          class="equipment-slot is-unavailable"
+        >
+          4 — Torche ×<span id="equipment-count-torch">0</span>
         </div>
       </div>
-      <div id="equipped-tool-label" class="equipped-tool-label">
+      <div id="equipped-item-label" class="equipped-item-label">
         Équipé : Mains
       </div>
     </div>

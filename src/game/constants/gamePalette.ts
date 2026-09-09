@@ -33,8 +33,9 @@ export const GAME_PALETTE = {
     invalid: "#E6332E",
   },
 
-  tools: {
+  equipment: {
     handle: BROWN,
     head: STONE_GRAY,
+    flame: "#FF9F1C",
   },
 } as const;

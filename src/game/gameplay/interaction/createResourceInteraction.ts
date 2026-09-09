@@ -1,5 +1,5 @@
 import type { HarvestableResourceType } from "../../definitions/resourceDefinitions";
-import type { EquippedItem } from "../../definitions/toolDefinitions";
+import type { EquippedItem } from "../../definitions/equipmentDefinitions";
 import { getHarvestDurationSeconds } from "../../resources/harvestingDefinitions";
 import { HarvestableResource } from "../../resources/resourceTypes";
 

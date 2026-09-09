@@ -1,8 +1,9 @@
 import type { HarvestableResourceType } from "../definitions/resourceDefinitions";
 import {
+  isToolType,
   TOOL_DEFINITIONS,
-  type EquippedItem,
 } from "../definitions/toolDefinitions";
+import type { EquippedItem } from "../definitions/equipmentDefinitions";
 
 export const HARVEST_DURATION_SECONDS: Record<HarvestableResourceType, number> =
   {
@@ -16,6 +17,7 @@ export function getHarvestDurationSeconds(
 ): number | undefined {
   const baseDuration = HARVEST_DURATION_SECONDS[resourceType];
   if (equippedItem === "hands") return baseDuration;
+  if (!isToolType(equippedItem)) return undefined;
 
   const tool = TOOL_DEFINITIONS[equippedItem];
   if (tool.effectiveOn !== resourceType) return undefined;

@@ -3,34 +3,36 @@ import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Scene } from "@babylonjs/core/scene";
-import { ToolType } from "../definitions/toolDefinitions";
+import type { EquipmentType } from "../definitions/equipmentDefinitions";
+import { createTorchModel } from "./createTorchModel";
 
-interface ToolMaterials {
+interface EquipmentMaterials {
   handle: StandardMaterial;
   head: StandardMaterial;
+  flame: StandardMaterial;
 }
 
-export interface ToolModel {
+export interface EquipmentModel {
   root: TransformNode;
   meshes: Mesh[];
 }
 
-export function createToolModels(
+export function createEquipmentModels(
   scene: Scene,
   player: Mesh,
-  materials: ToolMaterials,
-): Record<ToolType, ToolModel> {
+  materials: EquipmentMaterials,
+): Record<EquipmentType, EquipmentModel> {
   const anchor = new TransformNode("player-equipment-anchor", scene);
   anchor.parent = player;
   anchor.position.set(0.8, 0.15, 0.8);
 
   const stoneAxe = createStoneAxe(scene, materials);
   const stonePickaxe = createStonePickaxe(scene, materials);
-  stoneAxe.root.parent = anchor;
-  stonePickaxe.root.parent = anchor;
+  const torch = createTorchModel(scene, "equipped-torch", materials);
+  const models = { stoneAxe, stonePickaxe, torch };
 
-  const models = { stoneAxe, stonePickaxe };
   Object.values(models).forEach((model) => {
+    model.root.parent = anchor;
     model.root.setEnabled(false);
     model.meshes.forEach((mesh) => {
       mesh.isPickable = false;
@@ -40,7 +42,10 @@ export function createToolModels(
   return models;
 }
 
-function createStoneAxe(scene: Scene, materials: ToolMaterials): ToolModel {
+function createStoneAxe(
+  scene: Scene,
+  materials: EquipmentMaterials,
+): EquipmentModel {
   const root = new TransformNode("equipped-stone-axe", scene);
   root.rotation.z = -0.22;
 
@@ -64,7 +69,10 @@ function createStoneAxe(scene: Scene, materials: ToolMaterials): ToolModel {
   return { root, meshes: [handle, head] };
 }
 
-function createStonePickaxe(scene: Scene, materials: ToolMaterials): ToolModel {
+function createStonePickaxe(
+  scene: Scene,
+  materials: EquipmentMaterials,
+): EquipmentModel {
   const root = new TransformNode("equipped-stone-pickaxe", scene);
   root.rotation.z = -0.22;
 
