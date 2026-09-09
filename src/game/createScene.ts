@@ -45,9 +45,9 @@ export function createScene(engine: Engine): Scene {
   );
 
   const equipmentModels = createEquipmentModels(scene, player, {
-    handle: materials.tools.handle,
-    head: materials.tools.head,
-    flame: materials.tools.flame,
+    handle: materials.equipment.handle,
+    head: materials.equipment.head,
+    flame: materials.equipment.flame,
   });
 
   // Seuls les éléments au-dessus du sol projettent une ombre ; les surfaces
@@ -67,8 +67,8 @@ export function createScene(engine: Engine): Scene {
     island,
     equipmentModels,
     torchMaterials: {
-      handle: materials.tools.handle,
-      flame: materials.tools.flame,
+      handle: materials.equipment.handle,
+      flame: materials.equipment.flame,
     },
     buildingMaterials: materials.building,
     placementMaterials,

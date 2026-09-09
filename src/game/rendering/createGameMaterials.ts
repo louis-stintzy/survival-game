@@ -94,20 +94,20 @@ export function createGameMaterials(scene: Scene) {
 
   const handle = createMaterial(
     scene,
-    "tools-handle-material",
-    GAME_PALETTE.tools.handle,
+    "equipment-handle-material",
+    GAME_PALETTE.equipment.handle,
   );
 
   const head = createMaterial(
     scene,
-    "tools-head-material",
-    GAME_PALETTE.tools.head,
+    "equipment-head-material",
+    GAME_PALETTE.equipment.head,
   );
 
   const flame = createMaterial(
     scene,
-    "tools-flame-material",
-    GAME_PALETTE.tools.flame,
+    "equipment-flame-material",
+    GAME_PALETTE.equipment.flame,
   );
   flame.emissiveColor = flame.diffuseColor;
 
@@ -132,7 +132,7 @@ export function createGameMaterials(scene: Scene) {
         stonePlate,
       },
     },
-    tools: {
+    equipment: {
       handle,
       head,
       flame,

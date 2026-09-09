@@ -25,17 +25,17 @@ export function createEquipment(
   equipmentInventory: EquipmentInventory,
   models: Record<EquipmentType, EquipmentModel>,
 ) {
-  const equippedLabel = getElement("#equipped-tool-label");
+  const equippedLabel = getElement("#equipped-item-label");
   const slots: Record<EquippedItem, HTMLElement> = {
-    hands: getElement("#tool-slot-hands"),
-    stoneAxe: getElement("#tool-slot-stone-axe"),
-    stonePickaxe: getElement("#tool-slot-stone-pickaxe"),
-    torch: getElement("#tool-slot-torch"),
+    hands: getElement("#equipment-slot-hands"),
+    stoneAxe: getElement("#equipment-slot-stone-axe"),
+    stonePickaxe: getElement("#equipment-slot-stone-pickaxe"),
+    torch: getElement("#equipment-slot-torch"),
   };
   const countElements: Record<EquipmentType, HTMLElement> = {
-    stoneAxe: getElement("#tool-count-stone-axe"),
-    stonePickaxe: getElement("#tool-count-stone-pickaxe"),
-    torch: getElement("#tool-count-torch"),
+    stoneAxe: getElement("#equipment-count-stone-axe"),
+    stonePickaxe: getElement("#equipment-count-stone-pickaxe"),
+    torch: getElement("#equipment-count-torch"),
   };
 
   let equippedItem: EquippedItem = "hands";
