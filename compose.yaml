@@ -1,0 +1,12 @@
+services:
+  survival-game:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: survival-game:local
+
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:8081:80"
