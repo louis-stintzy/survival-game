@@ -1,0 +1,31 @@
+name: Deploy Survival Game
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_DEPLOY_KEY }}
+          SSH_KNOWN_HOSTS: ${{ vars.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/survival_game_deploy
+          chmod 600 ~/.ssh/survival_game_deploy
+
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy
+        run: |
+          ssh -T \
+            -i ~/.ssh/survival_game_deploy \
+            -o IdentitiesOnly=yes \
+            -p "${{ vars.VPS_PORT }}" \
+            "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}"
