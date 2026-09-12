@@ -3,7 +3,7 @@ name: Deploy Survival Game
 on:
   push:
     branches:
-      - chore/deployment
+      - main
   workflow_dispatch:
 
 jobs:
