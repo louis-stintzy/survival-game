@@ -64,6 +64,27 @@ describe("createSeededRandom", () => {
     expect(random.integer(7, 7)).toBe(7);
   });
 
+  test("accepte la plage uint32 complète", () => {
+    const random = createSeededRandom(12345);
+
+    expect(random.integer(0, 0xffff_ffff)).toBe(4207900869);
+  });
+
+  test("utilise le rejection sampling avant le modulo", () => {
+    const random = createSeededRandom(12345);
+
+    // Pour 2^31 + 1 valeurs, la première sortie (4207900869) est rejetée
+    // et la seconde sortie brute devient le résultat.
+    expect(random.integer(0, 0x8000_0000)).toBe(1317490944);
+    expect(random.next()).toBe(0.484205421525985);
+  });
+
+  test("refuse une plage contenant plus de 2^32 valeurs", () => {
+    const random = createSeededRandom(1);
+
+    expect(() => random.integer(0, 0x1_0000_0000)).toThrow(RangeError);
+  });
+
   test("refuse une seed qui n'est pas un uint32", () => {
     expect(() => createSeededRandom(-1)).toThrow(RangeError);
     expect(() => createSeededRandom(1.5)).toThrow(RangeError);

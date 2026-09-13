@@ -10,7 +10,6 @@ export interface SeededRandom {
    * sinon une valeur pseudo-aléatoire dans [min, max).
    */
   float(min: number, max: number): number;
-  float(min: number, max: number): number;
   /** Retourne un entier pseudo-aléatoire entre les deux bornes incluses. */
   integer(minInclusive: number, maxInclusive: number): number;
 }
@@ -23,12 +22,16 @@ export function createSeededRandom(seed: number): SeededRandom {
   assertUint32(seed, "seed");
   let state = seed >>> 0;
 
-  function next(): number {
+  function nextUint32(): number {
     state = (state + 0x6d2b_79f5) >>> 0;
     let value = state;
     value = Math.imul(value ^ (value >>> 15), value | 1);
     value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
-    return ((value ^ (value >>> 14)) >>> 0) / UINT32_RANGE;
+    return (value ^ (value >>> 14)) >>> 0;
+  }
+
+  function next(): number {
+    return nextUint32() / UINT32_RANGE;
   }
 
   return {
@@ -58,7 +61,20 @@ export function createSeededRandom(seed: number): SeededRandom {
       if (!Number.isSafeInteger(valueCount)) {
         throw new RangeError("L'intervalle de integer() est trop grand.");
       }
-      return minInclusive + Math.floor(next() * valueCount);
+      if (valueCount > UINT32_RANGE) {
+        throw new RangeError(
+          "L'intervalle de integer() ne peut pas dépasser 2^32 valeurs.",
+        );
+      }
+
+      const acceptanceLimit =
+        Math.floor(UINT32_RANGE / valueCount) * valueCount;
+      let value: number;
+      do {
+        value = nextUint32();
+      } while (value >= acceptanceLimit);
+
+      return minInclusive + (value % valueCount);
     },
   };
 }
