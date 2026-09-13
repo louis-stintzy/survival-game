@@ -1,10 +1,15 @@
 const UINT32_MAX = 0xffff_ffff;
 const UINT32_RANGE = 0x1_0000_0000;
+const MAX_UNIT_RANDOM = UINT32_MAX / UINT32_RANGE;
 
 export interface SeededRandom {
   /** Retourne la prochaine valeur pseudo-aléatoire dans l'intervalle [0, 1). */
   next(): number;
-  /** Retourne une valeur pseudo-aléatoire dans l'intervalle [min, max). */
+  /**
+   * Retourne `min` si les bornes sont égales,
+   * sinon une valeur pseudo-aléatoire dans [min, max).
+   */
+  float(min: number, max: number): number;
   float(min: number, max: number): number;
   /** Retourne un entier pseudo-aléatoire entre les deux bornes incluses. */
   integer(minInclusive: number, maxInclusive: number): number;
@@ -68,12 +73,22 @@ function assertFiniteRange(min: number, max: number): void {
   if (!Number.isFinite(min) || !Number.isFinite(max)) {
     throw new RangeError("Les bornes de float() doivent être finies.");
   }
+
   if (min > max) {
     throw new RangeError(
       "La borne minimale de float() ne peut pas dépasser la borne maximale.",
     );
   }
-  if (!Number.isFinite(max - min)) {
+
+  const width = max - min;
+
+  if (!Number.isFinite(width)) {
     throw new RangeError("L'intervalle de float() est trop grand.");
+  }
+
+  if (min !== max && min + MAX_UNIT_RANDOM * width >= max) {
+    throw new RangeError(
+      "L'intervalle de float() est trop étroit pour conserver une borne maximale exclusive.",
+    );
   }
 }

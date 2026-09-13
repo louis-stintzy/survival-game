@@ -79,6 +79,8 @@ describe("createSeededRandom", () => {
     expect(() => random.float(-Number.MAX_VALUE, Number.MAX_VALUE)).toThrow(
       RangeError,
     );
+    expect(() => random.float(0, Number.MIN_VALUE)).toThrow(RangeError);
+    expect(() => random.float(1e16, 1e16 + 2)).toThrow(RangeError);
   });
 
   test("refuse les bornes incohérentes de integer()", () => {
