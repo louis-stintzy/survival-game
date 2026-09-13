@@ -5,8 +5,8 @@ import type { Scene } from "@babylonjs/core/scene";
 import type { HarvestableResource } from "../../resources/resourceTypes";
 import { createIslandTerrain } from "./createIslandTerrain";
 import { createIslandResources } from "./createIslandResources";
-import { PLAYER_SPAWN, RAFT_SPAWN } from "./islandLayout";
 import { createRaft, type Raft } from "../../models/createRaft";
+import { generateIslandTerrain } from "../generation/generateIslandTerrain";
 
 interface IslandMaterials {
   water: StandardMaterial;
@@ -29,26 +29,31 @@ export interface Island {
   raft: Raft;
 }
 
-export function createIsland(scene: Scene, materials: IslandMaterials): Island {
-  const terrain = createIslandTerrain(scene, {
+export function createIsland(
+  scene: Scene,
+  worldSeed: number,
+  materials: IslandMaterials,
+): Island {
+  const terrainData = generateIslandTerrain(worldSeed);
+  const terrain = createIslandTerrain(scene, terrainData, {
     water: materials.water,
     sand: materials.sand,
     grass: materials.grass,
     rock: materials.rock,
   });
 
-  const resources = createIslandResources(scene, {
+  const resources = createIslandResources(scene, terrainData, {
     trunk: materials.trunk,
     leaves: materials.leaves,
     rock: materials.rock,
   });
   const raft = createRaft(scene, "raft", materials.raft);
   raft.root.position.set(
-    RAFT_SPAWN.x,
-    RAFT_SPAWN.groundHeight,
-    RAFT_SPAWN.z,
+    terrainData.raftSpawn.x,
+    terrainData.raftSpawn.groundHeight,
+    terrainData.raftSpawn.z,
   );
-  raft.root.rotation.y = RAFT_SPAWN.rotation;
+  raft.root.rotation.y = terrainData.raftSpawn.rotation;
 
   return {
     walkableSurfaces: [terrain.grass, terrain.beach, terrain.rockyPlateau],
@@ -67,9 +72,9 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
     ],
     harvestableResources: resources.harvestableResources,
     playerSpawnGroundPosition: new Vector3(
-      PLAYER_SPAWN.x,
-      PLAYER_SPAWN.groundHeight,
-      PLAYER_SPAWN.z,
+      terrainData.playerSpawn.x,
+      terrainData.playerSpawn.groundHeight,
+      terrainData.playerSpawn.z,
     ),
     raft,
   };

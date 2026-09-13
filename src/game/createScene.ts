@@ -13,7 +13,7 @@ import { createDayNightLighting } from "./rendering/createDayNightLighting";
 import { createWorldTimeHud } from "./ui/createWorldTimeHud";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 
-export function createScene(engine: Engine): Scene {
+export function createScene(engine: Engine, worldSeed: number): Scene {
   const scene = new Scene(engine);
   scene.clearColor = new Color4(0.56, 0.84, 0.91, 1);
 
@@ -29,7 +29,7 @@ export function createScene(engine: Engine): Scene {
   const materials = createGameMaterials(scene);
   const placementMaterials = createPlacementMaterials(scene);
 
-  const island = createIsland(scene, {
+  const island = createIsland(scene, worldSeed, {
     water: materials.world.water,
     sand: materials.world.sand,
     grass: materials.world.grass,

@@ -1,8 +1,14 @@
 import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import type { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
+import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import type { Scene } from "@babylonjs/core/scene";
+import {
+  TERRAIN_HALF_SIZE,
+  WATER_HEIGHT,
+  type GeneratedIslandTerrain,
+  type TerrainCategory,
+} from "../generation/generateIslandTerrain";
 
 interface IslandTerrainMaterials {
   water: StandardMaterial;
@@ -11,12 +17,6 @@ interface IslandTerrainMaterials {
   rock: StandardMaterial;
 }
 
-/**
- * Surfaces physiques constituant le terrain de l'île.
- *
- * Ces meshes sont ensuite utilisés par les différents systèmes du jeu
- * pour déterminer les surfaces praticables, constructibles ou sélectionnables.
- */
 export interface IslandTerrain {
   water: Mesh;
   beach: Mesh;
@@ -24,72 +24,61 @@ export interface IslandTerrain {
   rockyPlateau: Mesh;
 }
 
-/**
- * Crée les différentes strates physiques du terrain de l'île.
- *
- * L'île est actuellement constituée :
- * - d'une étendue d'eau ;
- * - d'une plage ;
- * - d'une zone principale d'herbe ;
- * - d'un plateau rocheux surélevé.
- *
- * Cette fonction crée uniquement le terrain. Elle ne crée ni les arbres,
- * ni les rochers récoltables, ni les autres éléments de gameplay.
- *
- * @param scene Scène Babylon dans laquelle créer les meshes.
- * @param materials Matériaux visuels utilisés par les différentes surfaces.
- * @returns Les meshes constituant les différentes strates du terrain.
- */
+/** Transforme les données logiques de grille en trois surfaces jointives. */
 export function createIslandTerrain(
   scene: Scene,
+  terrainData: GeneratedIslandTerrain,
   materials: IslandTerrainMaterials,
 ): IslandTerrain {
   const water = MeshBuilder.CreateCylinder(
     "water",
-    { diameter: 100, height: 0.6, tessellation: 48 },
+    { diameter: TERRAIN_HALF_SIZE * 2 + 20, height: 0.6, tessellation: 48 },
     scene,
   );
-  water.position.y = -0.55;
+  water.position.y = WATER_HEIGHT - 0.3;
   water.material = materials.water;
   water.receiveShadows = true;
 
-  const beach = MeshBuilder.CreateCylinder(
-    "beach",
-    { diameter: 72, height: 1.1, tessellation: 20 },
-    scene,
-  );
-  beach.position.y = -0.2;
-  beach.scaling.z = 0.82;
-  beach.rotation.y = 0.08;
-  beach.material = materials.sand;
-  beach.receiveShadows = true;
-
-  const grass = MeshBuilder.CreateCylinder(
-    "grass",
-    { diameter: 60, height: 1, tessellation: 16 },
-    scene,
-  );
-  grass.position.y = 0.25;
-  grass.scaling.z = 0.8;
-  grass.rotation.y = -0.06;
-  grass.material = materials.grass;
-  grass.receiveShadows = true;
-
-  const rockyPlateau = MeshBuilder.CreateCylinder(
+  const beach = createCategoryMesh("beach", "beach", materials.sand);
+  const grass = createCategoryMesh("grass", "grass", materials.grass);
+  const rockyPlateau = createCategoryMesh(
+    "rock",
     "rocky-plateau",
-    { diameter: 11, height: 0.4, tessellation: 9 },
-    scene,
+    materials.rock,
   );
-  rockyPlateau.position = new Vector3(11, 0.95, -5.5);
-  rockyPlateau.scaling.z = 0.75;
-  rockyPlateau.rotation.y = 0.2;
-  rockyPlateau.material = materials.rock;
-  rockyPlateau.receiveShadows = true;
+  return { water, beach, grass, rockyPlateau };
 
-  return {
-    water,
-    beach,
-    grass,
-    rockyPlateau,
-  };
+  function createCategoryMesh(
+    category: TerrainCategory,
+    name: string,
+    material: StandardMaterial,
+  ): Mesh {
+    const positions: number[] = [];
+    const indices: number[] = [];
+
+    terrainData.triangles.forEach((triangle) => {
+      if (triangle.category !== category) return;
+      const firstIndex = positions.length / 3;
+      triangle.vertexIndices.forEach((vertexIndex) => {
+        const vertex = terrainData.vertices[vertexIndex];
+        positions.push(vertex.x, vertex.height, vertex.z);
+      });
+      // Les triangles logiques sont ordonnés pour l'échantillonnage X/Z ; le
+      // winding est inversé ici afin que leurs normales pointent vers le haut.
+      indices.push(firstIndex, firstIndex + 2, firstIndex + 1);
+    });
+
+    const normals: number[] = [];
+    VertexData.ComputeNormals(positions, indices, normals);
+    const vertexData = new VertexData();
+    vertexData.positions = positions;
+    vertexData.indices = indices;
+    vertexData.normals = normals;
+
+    const mesh = new Mesh(name, scene);
+    vertexData.applyToMesh(mesh);
+    mesh.material = material;
+    mesh.receiveShadows = true;
+    return mesh;
+  }
 }

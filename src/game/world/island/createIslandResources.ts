@@ -5,12 +5,15 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import type { Scene } from "@babylonjs/core/scene";
 import type { HarvestableResource } from "../../resources/resourceTypes";
 import {
-  GRASS_HEIGHT,
   ROCK_PLACEMENTS,
   TREE_PLACEMENTS,
   type RockPlacement,
   type TreePlacement,
 } from "./islandLayout";
+import {
+  sampleIslandTerrain,
+  type GeneratedIslandTerrain,
+} from "../generation/generateIslandTerrain";
 
 interface IslandResourceMaterials {
   trunk: StandardMaterial;
@@ -30,6 +33,7 @@ const ROCK_COLLISION_HALF_DEPTH_RATIO = 0.7;
 function createTree(
   scene: Scene,
   placement: TreePlacement,
+  groundHeight: number,
   index: number,
   materials: IslandResourceMaterials,
 ): { meshes: Mesh[]; collisionMeshes: Mesh[] } {
@@ -45,7 +49,7 @@ function createTree(
   );
   trunk.position = new Vector3(
     placement.x,
-    GRASS_HEIGHT + 1.1 * placement.scale,
+    groundHeight + 1.1 * placement.scale,
     placement.z,
   );
   trunk.rotation.y = placement.rotation;
@@ -58,7 +62,7 @@ function createTree(
   );
   crown.position = new Vector3(
     placement.x,
-    GRASS_HEIGHT + 3 * placement.scale,
+    groundHeight + 3 * placement.scale,
     placement.z,
   );
   crown.scaling = new Vector3(0.9, 1.2, 0.9);
@@ -71,6 +75,7 @@ function createTree(
 function createRock(
   scene: Scene,
   placement: RockPlacement,
+  groundHeight: number,
   index: number,
   material: StandardMaterial,
 ): Mesh {
@@ -94,7 +99,7 @@ function createRock(
   const rockHeight = boundingBox.maximumWorld.y - lowestPoint;
   // On pose d'abord le point le plus bas sur le terrain,
   // puis on enfonce légèrement le rocher pour qu'il paraisse naturellement ancré.
-  rock.position.y += placement.groundHeight - lowestPoint;
+  rock.position.y += groundHeight - lowestPoint;
   rock.position.y -= rockHeight * ROCK_GROUND_SINK_RATIO;
   rock.computeWorldMatrix(true);
 
@@ -114,14 +119,25 @@ function createRock(
  */
 export function createIslandResources(
   scene: Scene,
+  terrain: GeneratedIslandTerrain,
   materials: IslandResourceMaterials,
 ): IslandResources {
-  const treeResources: HarvestableResource[] = TREE_PLACEMENTS.map(
+  // Les X/Z restent temporairement ceux du layout historique jusqu'au Lot 9.7.
+  // Chaque ressource est néanmoins filtrée et ancrée sur le terrain généré.
+  const treeResources: HarvestableResource[] = TREE_PLACEMENTS.flatMap(
     (placement, index) => {
-      const tree = createTree(scene, placement, index, materials);
+      const ground = sampleIslandTerrain(terrain, placement.x, placement.z);
+      if (ground?.category !== "grass") return [];
+      const tree = createTree(
+        scene,
+        placement,
+        ground.height,
+        index,
+        materials,
+      );
       return {
         type: "wood",
-        position: new Vector3(placement.x, GRASS_HEIGHT, placement.z),
+        position: new Vector3(placement.x, ground.height, placement.z),
         meshes: tree.meshes,
         collisionMeshes: tree.collisionMeshes,
         movementCollider: {
@@ -129,16 +145,24 @@ export function createIslandResources(
           radius: 0.3 * placement.scale,
         },
         harvested: false,
-      };
+      } satisfies HarvestableResource;
     },
   );
 
-  const rockResources: HarvestableResource[] = ROCK_PLACEMENTS.map(
+  const rockResources: HarvestableResource[] = ROCK_PLACEMENTS.flatMap(
     (placement, index) => {
-      const rock = createRock(scene, placement, index, materials.rock);
+      const ground = sampleIslandTerrain(terrain, placement.x, placement.z);
+      if (!ground || ground.category === "beach") return [];
+      const rock = createRock(
+        scene,
+        placement,
+        ground.height,
+        index,
+        materials.rock,
+      );
       return {
         type: "stone",
-        position: new Vector3(placement.x, placement.groundHeight, placement.z),
+        position: new Vector3(placement.x, ground.height, placement.z),
         meshes: [rock],
         collisionMeshes: [rock],
         movementCollider: {
@@ -148,7 +172,7 @@ export function createIslandResources(
           rotation: placement.rotation,
         },
         harvested: false,
-      };
+      } satisfies HarvestableResource;
     },
   );
 

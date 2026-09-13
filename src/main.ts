@@ -9,7 +9,7 @@ if (!canvas) throw new Error("Le canvas #game-canvas est introuvable.");
 const engine = new Engine(canvas, true);
 const worldSeed = resolveWorldSeed(window.location.search);
 console.info(`[world] Seed: ${worldSeed}`);
-const scene = createScene(engine);
+const scene = createScene(engine, worldSeed);
 
 // Un jeu redessine continuellement la scène afin que les animations et les
 // futures interactions puissent être affichées image après image.

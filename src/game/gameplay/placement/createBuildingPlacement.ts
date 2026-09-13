@@ -20,6 +20,7 @@ const GRID_SIZE = 1;
 const MAX_BUILD_DISTANCE = 6;
 const TERRAIN_RAY_HEIGHT = 10;
 const TERRAIN_RAY_LENGTH = 20;
+const MAX_BUILDING_GROUND_HEIGHT_DIFFERENCE = 0.35;
 const GHOST_ALPHA_INDEX = Number.POSITIVE_INFINITY;
 
 interface ResourceInventory {
@@ -373,10 +374,19 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
       [footprint.x + halfWidth, footprint.z + halfDepth],
     ];
 
-    return points.every(([x, z]) => {
+    const grounds = points.map(([x, z]) => {
       const ground = getGroundAt(x, z);
-      return ground && buildableSurfaceSet.has(ground.surface);
+      return ground && buildableSurfaceSet.has(ground.surface)
+        ? ground
+        : undefined;
     });
+    if (grounds.some((ground) => !ground)) return false;
+
+    const heights = grounds.map((ground) => ground!.point.y);
+    return (
+      Math.max(...heights) - Math.min(...heights) <=
+      MAX_BUILDING_GROUND_HEIGHT_DIFFERENCE
+    );
   }
 
   function getGroundAt(x: number, z: number) {
