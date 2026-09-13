@@ -73,4 +73,7 @@ function assertFiniteRange(min: number, max: number): void {
       "La borne minimale de float() ne peut pas dépasser la borne maximale.",
     );
   }
+  if (!Number.isFinite(max - min)) {
+    throw new RangeError("L'intervalle de float() est trop grand.");
+  }
 }
