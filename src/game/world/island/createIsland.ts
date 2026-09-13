@@ -48,6 +48,7 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
     RAFT_SPAWN.groundHeight,
     RAFT_SPAWN.z,
   );
+  raft.root.rotation.y = RAFT_SPAWN.rotation;
 
   return {
     walkableSurfaces: [terrain.grass, terrain.beach, terrain.rockyPlateau],

@@ -15,6 +15,7 @@ const TERRAIN_RAY_START_HEIGHT = 10;
 const TERRAIN_RAY_LENGTH = 20;
 const DISEMBARK_RADII = [2, 2.5, 3];
 const DISEMBARK_DIRECTION_COUNT = 16;
+const DISEMBARK_CACHE_REFRESH_SECONDS = 0.25;
 const MOVEMENT_KEYS = new Set([
   "z",
   "w",
@@ -62,7 +63,19 @@ export function createRaftNavigation(options: RaftNavigationOptions) {
     ...walkableSurfaces,
     ...navigableSurfaces,
   ]);
+  const { halfWidth, halfLength } = raft.navigationFootprint;
+  const navigationCheckpoints = [
+    { x: 0, z: 0 },
+    { x: -halfWidth, z: -halfLength },
+    { x: -halfWidth, z: halfLength },
+    { x: halfWidth, z: -halfLength },
+    { x: halfWidth, z: halfLength },
+    { x: 0, z: -halfLength },
+    { x: 0, z: halfLength },
+  ];
   let embarked = false;
+  let cachedDisembarkPosition: Vector3 | undefined;
+  let disembarkCacheElapsed = DISEMBARK_CACHE_REFRESH_SECONDS;
 
   window.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
@@ -78,9 +91,12 @@ export function createRaftNavigation(options: RaftNavigationOptions) {
   return {
     raft,
     isEmbarked: () => embarked,
+    canDisembark: () => embarked && cachedDisembarkPosition !== undefined,
     board() {
       if (embarked) return;
       embarked = true;
+      cachedDisembarkPosition = undefined;
+      disembarkCacheElapsed = DISEMBARK_CACHE_REFRESH_SECONDS;
       attachPlayerToRaft();
     },
     tryDisembark,
@@ -118,17 +134,24 @@ export function createRaftNavigation(options: RaftNavigationOptions) {
         .add(cameraRight.scale(rightInput));
       direction.normalize();
 
+      const candidateRotation = Math.atan2(direction.x, direction.z);
       const moved = moveHorizontally(
         direction.x * RAFT_MOVEMENT_SPEED * deltaTimeInSeconds,
         direction.z * RAFT_MOVEMENT_SPEED * deltaTimeInSeconds,
+        candidateRotation,
       );
-      if (moved) raft.root.rotation.y = Math.atan2(direction.x, direction.z);
+      if (moved) raft.root.rotation.y = candidateRotation;
     }
 
     attachPlayerToRaft();
+    updateDisembarkCache(deltaTimeInSeconds);
   }
 
-  function moveHorizontally(movementX: number, movementZ: number) {
+  function moveHorizontally(
+    movementX: number,
+    movementZ: number,
+    candidateRotation: number,
+  ) {
     const distance = Math.hypot(movementX, movementZ);
     const stepCount = Math.max(
       1,
@@ -141,18 +164,37 @@ export function createRaftNavigation(options: RaftNavigationOptions) {
     for (let step = 0; step < stepCount; step += 1) {
       const x = raft.root.position.x + stepX;
       const z = raft.root.position.z + stepZ;
-      const ground = getTopTerrainAt(x, z);
+      const ground = getNavigableGroundForFootprint(
+        x,
+        z,
+        candidateRotation,
+      );
 
-      // L'eau existe sous toute l'île : seul le premier mesh touché depuis le
-      // haut décide si la candidate appartient réellement à l'espace navigable.
-      if (!ground || !navigableSurfaceSet.has(ground.surface)) break;
+      if (!ground) break;
       raft.root.position.set(x, ground.point.y, z);
       moved = true;
+    }
+    if (moved) {
+      cachedDisembarkPosition = undefined;
     }
     return moved;
   }
 
   function tryDisembark(): boolean {
+    // Le cache pilote seulement le prompt : l'action revalide toujours la
+    // candidate afin de tenir compte du terrain et des collisions actuels.
+    const position = findDisembarkPosition();
+    cachedDisembarkPosition = position;
+    disembarkCacheElapsed = 0;
+    if (!position) return false;
+
+    embarked = false;
+    player.position.copyFrom(position);
+    cachedDisembarkPosition = undefined;
+    return true;
+  }
+
+  function findDisembarkPosition(): Vector3 | undefined {
     for (const radius of DISEMBARK_RADII) {
       for (let index = 0; index < DISEMBARK_DIRECTION_COUNT; index += 1) {
         const angle = (index / DISEMBARK_DIRECTION_COUNT) * Math.PI * 2;
@@ -169,12 +211,41 @@ export function createRaftNavigation(options: RaftNavigationOptions) {
 
         // Le joueur n'est détaché qu'après avoir trouvé à la fois une surface
         // praticable supérieure et une position libre des collisions du monde.
-        embarked = false;
-        player.position.set(x, ground.point.y + PLAYER_HALF_HEIGHT, z);
-        return true;
+        return new Vector3(x, ground.point.y + PLAYER_HALF_HEIGHT, z);
       }
     }
-    return false;
+    return undefined;
+  }
+
+  function updateDisembarkCache(deltaTimeInSeconds: number) {
+    disembarkCacheElapsed += deltaTimeInSeconds;
+    if (disembarkCacheElapsed < DISEMBARK_CACHE_REFRESH_SECONDS) return;
+
+    cachedDisembarkPosition = findDisembarkPosition();
+    disembarkCacheElapsed = 0;
+  }
+
+  function getNavigableGroundForFootprint(
+    x: number,
+    z: number,
+    rotation: number,
+  ) {
+    const cosine = Math.cos(rotation);
+    const sine = Math.sin(rotation);
+    let centerGround: ReturnType<typeof getTopTerrainAt>;
+
+    for (const checkpoint of navigationCheckpoints) {
+      const worldX = x + checkpoint.x * cosine + checkpoint.z * sine;
+      const worldZ = z - checkpoint.x * sine + checkpoint.z * cosine;
+      const ground = getTopTerrainAt(worldX, worldZ);
+
+      // L'eau existe sous toute l'île : tous les points de l'empreinte doivent
+      // rencontrer une surface navigable comme première strate depuis le haut.
+      if (!ground || !navigableSurfaceSet.has(ground.surface)) return undefined;
+      if (checkpoint.x === 0 && checkpoint.z === 0) centerGround = ground;
+    }
+
+    return centerGround;
   }
 
   function getTopTerrainAt(x: number, z: number) {

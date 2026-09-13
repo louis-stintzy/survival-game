@@ -9,9 +9,14 @@ export interface Raft {
   root: TransformNode;
   meshes: Mesh[];
   riderOffsetY: number;
+  navigationFootprint: {
+    halfWidth: number;
+    halfLength: number;
+  };
 }
 
 const LOG_LENGTH = 3.4;
+const RAFT_WIDTH = 2.25;
 const LOG_DIAMETER = 0.45;
 const DECK_HEIGHT = 0.16;
 const DECK_Y = LOG_DIAMETER + DECK_HEIGHT / 2;
@@ -44,7 +49,7 @@ export function createRaft(
   const crossPlanks = [-1.05, 1.05].map((z, index) => {
     const plank = MeshBuilder.CreateBox(
       `${name}-cross-plank-${index}`,
-      { width: 2.25, height: DECK_HEIGHT, depth: 0.28 },
+      { width: RAFT_WIDTH, height: DECK_HEIGHT, depth: 0.28 },
       scene,
     );
     plank.position.set(0, DECK_Y, z);
@@ -63,5 +68,9 @@ export function createRaft(
     root,
     meshes,
     riderOffsetY: LOG_DIAMETER + DECK_HEIGHT + PLAYER_HALF_HEIGHT,
+    navigationFootprint: {
+      halfWidth: RAFT_WIDTH / 2,
+      halfLength: LOG_LENGTH / 2,
+    },
   };
 }

@@ -29,6 +29,7 @@ interface WorkbenchCrafting {
 interface RaftInteraction {
   raft: { root: TransformNode };
   isEmbarked(): boolean;
+  canDisembark(): boolean;
   board(): void;
   tryDisembark(): boolean;
 }
@@ -102,7 +103,7 @@ export function createWorldInteraction(
 
       if (waitForInteractionRelease) {
         hidePrompt();
-      } else {
+      } else if (raftInteraction.canDisembark()) {
         updatePrompt(
           {
             kind: "raft",
@@ -111,6 +112,8 @@ export function createWorldInteraction(
           },
           equippedItem,
         );
+      } else {
+        hidePrompt();
       }
 
       if (interactionPressed) {

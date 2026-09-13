@@ -19,6 +19,10 @@ export interface IslandSpawnPoint {
   groundHeight: number;
 }
 
+export interface RaftSpawnPoint extends IslandSpawnPoint {
+  rotation: number;
+}
+
 export const BEACH_HEIGHT = 0.35;
 export const GRASS_HEIGHT = 0.75;
 export const ROCKY_PLATEAU_HEIGHT = 1.15;
@@ -31,10 +35,11 @@ export const PLAYER_SPAWN: IslandSpawnPoint = {
 };
 
 // Position temporaire proche de la plage de départ pour le prototype nautique.
-export const RAFT_SPAWN: IslandSpawnPoint = {
+export const RAFT_SPAWN: RaftSpawnPoint = {
   x: 0,
-  z: -29.7,
+  z: -31.4,
   groundHeight: WATER_HEIGHT,
+  rotation: Math.PI / 2,
 };
 
 export const TREE_PLACEMENTS: TreePlacement[] = [
