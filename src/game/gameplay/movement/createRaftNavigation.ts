@@ -174,9 +174,6 @@ export function createRaftNavigation(options: RaftNavigationOptions) {
       raft.root.position.set(x, ground.point.y, z);
       moved = true;
     }
-    if (moved) {
-      cachedDisembarkPosition = undefined;
-    }
     return moved;
   }
 

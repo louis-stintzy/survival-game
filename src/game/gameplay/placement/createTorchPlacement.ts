@@ -39,6 +39,7 @@ interface TorchPlacementOptions {
   materials: TorchMaterials;
   isBuildingModeActive: () => boolean;
   isCraftingOpen: () => boolean;
+  isPlayerEmbarked: () => boolean;
 }
 
 export function createTorchPlacement(options: TorchPlacementOptions) {
@@ -51,6 +52,7 @@ export function createTorchPlacement(options: TorchPlacementOptions) {
     materials,
     isBuildingModeActive,
     isCraftingOpen,
+    isPlayerEmbarked,
   } = options;
   const canvas = scene.getEngine().getRenderingCanvas();
   if (!canvas) throw new Error("Le canvas Babylon.js est introuvable.");
@@ -64,7 +66,8 @@ export function createTorchPlacement(options: TorchPlacementOptions) {
       event.button !== 0 ||
       equipment.getEquippedItem() !== "torch" ||
       isBuildingModeActive() ||
-      isCraftingOpen()
+      isCraftingOpen() ||
+      isPlayerEmbarked()
     ) {
       return;
     }

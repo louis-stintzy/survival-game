@@ -127,6 +127,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
     buildingMaterials,
     placementMaterials,
     isCraftingOpen: workbenchCrafting.isOpen,
+    isPlayerEmbarked: raftNavigation.isEmbarked,
     onBuildingBuilt: (building) => {
       addShadowCasters(building.meshes);
       builtCollisionMeshes.push(...building.collisionMeshes);
@@ -145,6 +146,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
     materials: torchMaterials,
     isBuildingModeActive: updateBuildingPlacement.isActive,
     isCraftingOpen: workbenchCrafting.isOpen,
+    isPlayerEmbarked: raftNavigation.isEmbarked,
   });
 
   return {
