@@ -6,11 +6,8 @@ describe("createSeededRandom", () => {
     const random = createSeededRandom(12345);
 
     expect(Array.from({ length: 5 }, () => random.next())).toEqual([
-      0.9797282677609473,
-      0.3067522644996643,
-      0.484205421525985,
-      0.817934412509203,
-      0.5094283693470061,
+      0.9797282677609473, 0.3067522644996643, 0.484205421525985,
+      0.817934412509203, 0.5094283693470061,
     ]);
   });
 
@@ -79,6 +76,9 @@ describe("createSeededRandom", () => {
     expect(() => random.float(2, 1)).toThrow(RangeError);
     expect(() => random.float(Number.NaN, 1)).toThrow(RangeError);
     expect(() => random.float(0, Number.POSITIVE_INFINITY)).toThrow(RangeError);
+    expect(() => random.float(-Number.MAX_VALUE, Number.MAX_VALUE)).toThrow(
+      RangeError,
+    );
   });
 
   test("refuse les bornes incohérentes de integer()", () => {
