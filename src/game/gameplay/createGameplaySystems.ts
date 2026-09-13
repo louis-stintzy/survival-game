@@ -23,6 +23,7 @@ import { createWorldClock } from "./time/createWorldClock";
 import { createWorldTimeDevControls } from "./time/createWorldTimeDevControls";
 import type { TorchMaterials } from "../models/createTorchModel";
 import { createTorchPlacement } from "./placement/createTorchPlacement";
+import { createRaftNavigation } from "./movement/createRaftNavigation";
 
 const WORLD_DAY_DURATION_SECONDS = 30 * 60;
 const INITIAL_WORLD_DAY = 1;
@@ -78,11 +79,21 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
     island.harvestableResources,
     builtCollisionMeshes,
   );
+  const raftNavigation = createRaftNavigation({
+    scene,
+    camera,
+    player,
+    raft: island.raft,
+    walkableSurfaces: island.walkableSurfaces,
+    navigableSurfaces: island.navigableSurfaces,
+    getPlayerCollision: getPlayerWorldCollision,
+  });
   const updatePlayerMovement = createPlayerMovement(
     player,
     camera,
     island.walkableSurfaces,
     getPlayerWorldCollision,
+    () => !raftNavigation.isEmbarked(),
   );
 
   // ----- Système -----
@@ -103,6 +114,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
     resourceInteraction,
     workbenchCrafting,
     equipment.getEquippedItem,
+    raftNavigation,
   );
 
   const updateBuildingPlacement = createBuildingPlacement({
@@ -143,6 +155,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
     update(deltaTimeInSeconds: number) {
       worldClock.update(deltaTimeInSeconds);
       updateCameraRotation(deltaTimeInSeconds);
+      raftNavigation.update(deltaTimeInSeconds);
       updatePlayerMovement(deltaTimeInSeconds);
       updateWorldInteraction(deltaTimeInSeconds);
       updateBuildingPlacement.update();

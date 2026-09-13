@@ -53,6 +53,11 @@ export function createGameMaterials(scene: Scene) {
     "world-rock-material",
     GAME_PALETTE.world.rock,
   );
+  const raft = createMaterial(
+    scene,
+    "world-raft-material",
+    GAME_PALETTE.world.raft,
+  );
 
   // ----- Player -----
   const body = createMaterial(
@@ -119,6 +124,7 @@ export function createGameMaterials(scene: Scene) {
       trunk,
       leaves,
       rock,
+      raft,
     },
     player: { body },
     building: {

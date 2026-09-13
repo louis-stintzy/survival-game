@@ -9,6 +9,7 @@ export const GAME_PALETTE = {
     trunk: BROWN,
     leaves: "#1F7A3D",
     rock: STONE_GRAY,
+    raft: BROWN,
   },
 
   player: {

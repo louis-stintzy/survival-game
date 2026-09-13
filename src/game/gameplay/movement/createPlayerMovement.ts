@@ -5,6 +5,7 @@ import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { PlayerCollisionQuery } from "../collision/playerWorldCollision";
 import type { CollisionContact, XZPosition } from "../collision/collisionTypes";
+import { PLAYER_HALF_HEIGHT } from "../../models/createPlayer";
 
 type MoveAttempt =
   | { kind: "moved" }
@@ -21,7 +22,6 @@ type MoveAttempt =
 const MAX_HORIZONTAL_MOVEMENT_STEP = 0.25;
 const PLAYER_MOVEMENT_SPEED = 5;
 const PLAYER_VERTICAL_SPEED = 4;
-const PLAYER_HALF_HEIGHT = 1.1;
 const GROUND_RAY_START_HEIGHT = 10;
 const GROUND_RAY_LENGTH = 20;
 const MOVEMENT_KEYS = new Set([
@@ -84,6 +84,7 @@ export function projectMovementAlongSurface(
  * @param walkableSurfaces Surfaces sur lesquelles le joueur peut se déplacer.
  * @param getCollisionContact Fonction retournant éventuellement la normale
  *                            de l'obstacle rencontré.
+ * @param isMovementEnabled Indique si le déplacement à pied est actif.
  * @returns Une fonction d'update à appeler à chaque frame avec le delta time.
  */
 export function createPlayerMovement(
@@ -93,10 +94,12 @@ export function createPlayerMovement(
   getCollisionContact: (
     query: PlayerCollisionQuery,
   ) => CollisionContact | undefined,
+  isMovementEnabled: () => boolean = () => true,
 ) {
   const pressedKeys = new Set<string>();
   const walkableSurfaceSet = new Set(walkableSurfaces);
   let targetPlayerHeight = player.position.y;
+  let movementWasEnabled = true;
 
   const handleKeyDown = (event: KeyboardEvent) => {
     const key = event.key.toLowerCase();
@@ -115,6 +118,18 @@ export function createPlayerMovement(
   window.addEventListener("blur", () => pressedKeys.clear());
 
   return (deltaTimeInSeconds: number) => {
+    const movementEnabled = isMovementEnabled();
+    if (!movementEnabled) {
+      movementWasEnabled = false;
+      targetPlayerHeight = player.position.y;
+      camera.setTarget(player.position, false, false, true);
+      return;
+    }
+    if (!movementWasEnabled) {
+      targetPlayerHeight = player.position.y;
+      movementWasEnabled = true;
+    }
+
     const forwardInput =
       Number(
         pressedKeys.has("z") ||
