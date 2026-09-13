@@ -26,9 +26,18 @@ interface WorkbenchCrafting {
   getActiveWorkbench(): TransformNode | undefined;
 }
 
+interface RaftInteraction {
+  raft: { root: TransformNode };
+  isEmbarked(): boolean;
+  canDisembark(): boolean;
+  board(): void;
+  tryDisembark(): boolean;
+}
+
 type WorldInteractionTarget =
   | { kind: "resource"; resource: HarvestableResource; distanceSquared: number }
-  | { kind: "workbench"; workbench: TransformNode; distanceSquared: number };
+  | { kind: "workbench"; workbench: TransformNode; distanceSquared: number }
+  | { kind: "raft"; raft: TransformNode; distanceSquared: number };
 
 export function createWorldInteraction(
   player: Mesh,
@@ -37,6 +46,7 @@ export function createWorldInteraction(
   resourceInteraction: ResourceInteraction,
   workbenchCrafting: WorkbenchCrafting,
   getEquippedItem: () => EquippedItem,
+  raftInteraction: RaftInteraction,
 ) {
   const interactionPrompt = getElement("#interaction-prompt");
 
@@ -53,7 +63,7 @@ export function createWorldInteraction(
     if (event.repeat || interactionHeld) return;
 
     // E exprime une intention unique ; le coordinateur décide ensuite si elle
-    // appartient à la récolte continue ou à l'action ponctuelle de l'établi.
+    // appartient à la récolte, à l'établi ou à l'embarquement/débarquement.
     interactionHeld = true;
     interactionPressed = true;
     harvestChainActive = false;
@@ -82,6 +92,38 @@ export function createWorldInteraction(
 
   return (deltaTimeInSeconds: number) => {
     const equippedItem = getEquippedItem();
+
+    if (raftInteraction.isEmbarked()) {
+      resourceInteraction.update(
+        deltaTimeInSeconds,
+        undefined,
+        false,
+        equippedItem,
+      );
+
+      if (waitForInteractionRelease) {
+        hidePrompt();
+      } else if (raftInteraction.canDisembark()) {
+        updatePrompt(
+          {
+            kind: "raft",
+            raft: raftInteraction.raft.root,
+            distanceSquared: 0,
+          },
+          equippedItem,
+        );
+      } else {
+        hidePrompt();
+      }
+
+      if (interactionPressed) {
+        heldTargetKind = "raft";
+        waitForInteractionRelease = interactionHeld;
+        raftInteraction.tryDisembark();
+      }
+      interactionPressed = false;
+      return;
+    }
 
     if (workbenchCrafting.isOpen()) {
       hidePrompt();
@@ -120,8 +162,21 @@ export function createWorldInteraction(
           (resource) =>
             getHarvestDurationSeconds(resource.type, equippedItem) !==
             undefined,
-        ) ?? findNearestTarget(player, resources, workbenches))
-      : findNearestTarget(player, resources, workbenches);
+        ) ??
+        findNearestTarget(
+          player,
+          resources,
+          workbenches,
+          undefined,
+          raftInteraction.raft.root,
+        ))
+      : findNearestTarget(
+          player,
+          resources,
+          workbenches,
+          undefined,
+          raftInteraction.raft.root,
+        );
     updatePrompt(target, equippedItem);
 
     if (waitForInteractionRelease) {
@@ -137,7 +192,11 @@ export function createWorldInteraction(
     }
 
     if (target?.kind === "resource") {
-      if (interactionHeld && heldTargetKind !== "workbench") {
+      if (
+        interactionHeld &&
+        heldTargetKind !== "workbench" &&
+        heldTargetKind !== "raft"
+      ) {
         heldTargetKind = "resource";
         const harvestCompleted = resourceInteraction.update(
           deltaTimeInSeconds,
@@ -162,7 +221,14 @@ export function createWorldInteraction(
         equippedItem,
       );
 
-      if (
+      if (target?.kind === "raft" && interactionPressed) {
+        // Cette pression est consommée par l'embarquement ; le verrou jusqu'au
+        // keyup empêche la même intention de déclencher un débarquement.
+        heldTargetKind = "raft";
+        waitForInteractionRelease = interactionHeld;
+        raftInteraction.board();
+        hidePrompt();
+      } else if (
         target?.kind === "workbench" &&
         interactionHeld &&
         heldTargetKind === "resource"
@@ -191,7 +257,11 @@ export function createWorldInteraction(
         ? getResourceInteractionPrompt(target.resource.type, equippedItem)
         : target?.kind === "workbench"
           ? "E — Utiliser l'établi"
-          : "";
+          : target?.kind === "raft"
+            ? raftInteraction.isEmbarked()
+              ? "E — Débarquer"
+              : "E — Embarquer"
+            : "";
     if (interactionPrompt.textContent !== text) {
       interactionPrompt.textContent = text;
     }
@@ -208,6 +278,7 @@ function findNearestTarget(
   resources: readonly HarvestableResource[],
   workbenches: readonly TransformNode[],
   isResourceCandidate: (resource: HarvestableResource) => boolean = () => true,
+  raft?: TransformNode,
 ): WorldInteractionTarget | undefined {
   const maximumDistanceSquared = INTERACTION_DISTANCE ** 2;
   let nearestTarget: WorldInteractionTarget | undefined;
@@ -232,6 +303,16 @@ function findNearestTarget(
     ) {
       nearestTarget = { kind: "workbench", workbench, distanceSquared };
       nearestDistanceSquared = distanceSquared;
+    }
+  }
+
+  if (raft) {
+    const distanceSquared = getDistanceSquared(player, raft.position);
+    if (
+      distanceSquared < nearestDistanceSquared ||
+      (!nearestTarget && distanceSquared <= nearestDistanceSquared)
+    ) {
+      nearestTarget = { kind: "raft", raft, distanceSquared };
     }
   }
 

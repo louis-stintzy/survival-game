@@ -3,7 +3,8 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Scene } from "@babylonjs/core/scene";
 
-const PLAYER_HEIGHT = 2.2;
+export const PLAYER_HALF_HEIGHT = 1.1;
+const PLAYER_HEIGHT = PLAYER_HALF_HEIGHT * 2;
 
 export function createPlayer(
   scene: Scene,

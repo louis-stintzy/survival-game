@@ -55,6 +55,7 @@ interface BuildingPlacementOptions {
   buildingMaterials: BuildingMaterials;
   placementMaterials: PlacementMaterials;
   isCraftingOpen: () => boolean;
+  isPlayerEmbarked: () => boolean;
   onBuildingBuilt: (building: BuiltBuilding) => void;
 }
 
@@ -95,6 +96,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     buildingMaterials,
     placementMaterials,
     isCraftingOpen,
+    isPlayerEmbarked,
     onBuildingBuilt,
   } = options;
   const canvas = scene.getEngine().getRenderingCanvas();
@@ -143,7 +145,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   window.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
 
-    if (isCraftingOpen() && key === "b") {
+    if ((isCraftingOpen() || isPlayerEmbarked()) && key === "b") {
       event.preventDefault();
       return;
     }
@@ -192,7 +194,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   };
 
   function update() {
-    if (isCraftingOpen()) {
+    if (isCraftingOpen() || isPlayerEmbarked()) {
       if (buildingModeActive || activationRequested) closeBuildingMode();
       return;
     }

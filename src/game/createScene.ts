@@ -36,6 +36,7 @@ export function createScene(engine: Engine): Scene {
     trunk: materials.world.trunk,
     leaves: materials.world.leaves,
     rock: materials.world.rock,
+    raft: materials.world.raft,
   });
 
   const player = createPlayer(
