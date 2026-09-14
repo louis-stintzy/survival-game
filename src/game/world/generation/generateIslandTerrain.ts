@@ -4,17 +4,20 @@ import { createValueNoise2D } from "./valueNoise2D";
 
 export const WATER_HEIGHT = -0.25;
 export const TERRAIN_HALF_SIZE = 40;
-export const TERRAIN_GRID_STEP = 2;
+export const TERRAIN_GRID_STEP = 1;
 export const TERRAIN_MIN_HEIGHT = -1.5;
 export const TERRAIN_MAX_HEIGHT = 2.8;
 export const BEACH_MAX_HEIGHT = 0.25;
 export const ROCK_MIN_HEIGHT = 1.5;
 export const ROCK_MIN_SLOPE = 0.32;
 
-const BASE_RADIUS_X_RANGE = [28, 34] as const;
-const BASE_RADIUS_Z_RANGE = [23, 29] as const;
-const COAST_DEFORMATION_FREQUENCY = 0.045;
-const COAST_DEFORMATION_AMPLITUDE = 0.22;
+const BASE_RADIUS_RANGE = [24, 26] as const;
+const ASPECT_RATIO_RANGE = [0.62, 1.55] as const;
+const PRIMARY_COAST_FREQUENCY = 0.025;
+const PRIMARY_COAST_AMPLITUDE = 0.14;
+const SECONDARY_COAST_FREQUENCY = 0.065;
+const SECONDARY_COAST_AMPLITUDE = 0.055;
+const RELIEF_FULL_STRENGTH_SIGNAL = 0.35;
 const ELEVATION_AMPLITUDE = 2.15;
 const RELIEF_FREQUENCY = 0.075;
 const RELIEF_AMPLITUDE = 0.55;
@@ -57,11 +60,18 @@ export interface GeneratedIslandTerrain {
 /** Génère les données logiques déterministes de l'unique île. */
 export function generateIslandTerrain(seed: number): GeneratedIslandTerrain {
   const random = createSeededRandom(seed);
-  const coastNoise = createValueNoise2D(random.integer(0, 0xffff_ffff));
+  const primaryCoastNoise = createValueNoise2D(
+    random.integer(0, 0xffff_ffff),
+  );
+  const secondaryCoastNoise = createValueNoise2D(
+    random.integer(0, 0xffff_ffff),
+  );
   const reliefNoise = createValueNoise2D(random.integer(0, 0xffff_ffff));
   const detailNoise = createValueNoise2D(random.integer(0, 0xffff_ffff));
-  const radiusX = random.float(...BASE_RADIUS_X_RANGE);
-  const radiusZ = random.float(...BASE_RADIUS_Z_RANGE);
+  const baseRadius = random.float(...BASE_RADIUS_RANGE);
+  const aspectRatio = random.float(...ASPECT_RATIO_RANGE);
+  const radiusX = baseRadius * Math.sqrt(aspectRatio);
+  const radiusZ = baseRadius / Math.sqrt(aspectRatio);
   const rotation = random.float(0, Math.PI * 2);
   const gridSize = (TERRAIN_HALF_SIZE * 2) / TERRAIN_GRID_STEP + 1;
   const vertices: TerrainVertex[] = [];
@@ -109,15 +119,28 @@ export function generateIslandTerrain(seed: number): GeneratedIslandTerrain {
     const rotatedX = x * cosine + z * sine;
     const rotatedZ = -x * sine + z * cosine;
     const normalizedRadius = Math.hypot(rotatedX / radiusX, rotatedZ / radiusZ);
-    const coastOffset =
-      (coastNoise.sample(
-        x * COAST_DEFORMATION_FREQUENCY,
-        z * COAST_DEFORMATION_FREQUENCY,
+    const coastScale =
+      1 +
+      (primaryCoastNoise.sample(
+        x * PRIMARY_COAST_FREQUENCY,
+        z * PRIMARY_COAST_FREQUENCY,
       ) -
         0.5) *
-      2 *
-      COAST_DEFORMATION_AMPLITUDE;
-    const islandSignal = 1 - normalizedRadius + coastOffset;
+        2 *
+        PRIMARY_COAST_AMPLITUDE +
+      (secondaryCoastNoise.sample(
+        x * SECONDARY_COAST_FREQUENCY,
+        z * SECONDARY_COAST_FREQUENCY,
+      ) -
+        0.5) *
+        2 *
+        SECONDARY_COAST_AMPLITUDE;
+    const islandSignal = 1 - normalizedRadius / coastScale;
+    const reliefStrength = clamp(
+      islandSignal / RELIEF_FULL_STRENGTH_SIGNAL,
+      0,
+      1,
+    );
     const relief =
       (reliefNoise.sample(x * RELIEF_FREQUENCY, z * RELIEF_FREQUENCY) - 0.5) *
         2 *
@@ -126,7 +149,9 @@ export function generateIslandTerrain(seed: number): GeneratedIslandTerrain {
         2 *
         DETAIL_AMPLITUDE;
     return clamp(
-      WATER_HEIGHT + islandSignal * ELEVATION_AMPLITUDE + relief,
+      WATER_HEIGHT +
+        islandSignal * ELEVATION_AMPLITUDE +
+        relief * reliefStrength,
       TERRAIN_MIN_HEIGHT,
       TERRAIN_MAX_HEIGHT,
     );

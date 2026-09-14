@@ -22,6 +22,7 @@ type MoveAttempt =
 const MAX_HORIZONTAL_MOVEMENT_STEP = 0.25;
 const PLAYER_MOVEMENT_SPEED = 5;
 const PLAYER_VERTICAL_SPEED = 4;
+const CAMERA_VERTICAL_FOLLOW_SPEED = 1.75;
 const GROUND_RAY_START_HEIGHT = 10;
 const GROUND_RAY_LENGTH = 20;
 const MOVEMENT_KEYS = new Set([
@@ -99,6 +100,8 @@ export function createPlayerMovement(
   const pressedKeys = new Set<string>();
   const walkableSurfaceSet = new Set(walkableSurfaces);
   let targetPlayerHeight = player.position.y;
+  let cameraTargetY = player.position.y;
+  const cameraTarget = player.position.clone();
   let movementWasEnabled = true;
 
   const handleKeyDown = (event: KeyboardEvent) => {
@@ -122,11 +125,12 @@ export function createPlayerMovement(
     if (!movementEnabled) {
       movementWasEnabled = false;
       targetPlayerHeight = player.position.y;
-      camera.setTarget(player.position, false, false, true);
+      synchronizeCameraTarget();
       return;
     }
     if (!movementWasEnabled) {
       targetPlayerHeight = player.position.y;
+      cameraTargetY = player.position.y;
       movementWasEnabled = true;
     }
 
@@ -178,8 +182,27 @@ export function createPlayerMovement(
       player.position.y += Math.sign(remainingHeight) * maximumVerticalStep;
     }
 
-    camera.setTarget(player.position, false, false, true);
+    const remainingCameraHeight = player.position.y - cameraTargetY;
+    const maximumCameraVerticalStep =
+      CAMERA_VERTICAL_FOLLOW_SPEED * deltaTimeInSeconds;
+    if (Math.abs(remainingCameraHeight) <= maximumCameraVerticalStep) {
+      cameraTargetY = player.position.y;
+    } else {
+      cameraTargetY +=
+        Math.sign(remainingCameraHeight) * maximumCameraVerticalStep;
+    }
+    updateCameraTarget();
   };
+
+  function synchronizeCameraTarget(): void {
+    cameraTargetY = player.position.y;
+    updateCameraTarget();
+  }
+
+  function updateCameraTarget(): void {
+    cameraTarget.set(player.position.x, cameraTargetY, player.position.z);
+    camera.setTarget(cameraTarget, false, false, true);
+  }
 
   /**
    * Tente de placer le joueur à une position X/Z précise.

@@ -39,6 +39,17 @@ export function createIslandTerrain(
   water.material = materials.water;
   water.receiveShadows = true;
 
+  const terrainPositions = terrainData.vertices.flatMap((vertex) => [
+    vertex.x,
+    vertex.height,
+    vertex.z,
+  ]);
+  const terrainIndices = terrainData.triangles.flatMap((triangle) =>
+    Array.from(triangle.vertexIndices),
+  );
+  const terrainNormals: number[] = [];
+  VertexData.ComputeNormals(terrainPositions, terrainIndices, terrainNormals);
+
   const beach = createCategoryMesh("beach", "beach", materials.sand);
   const grass = createCategoryMesh("grass", "grass", materials.grass);
   const rockyPlateau = createCategoryMesh(
@@ -55,21 +66,32 @@ export function createIslandTerrain(
   ): Mesh {
     const positions: number[] = [];
     const indices: number[] = [];
+    const normals: number[] = [];
+    const localIndexByVertex = new Map<number, number>();
 
     terrainData.triangles.forEach((triangle) => {
       if (triangle.category !== category) return;
-      const firstIndex = positions.length / 3;
       triangle.vertexIndices.forEach((vertexIndex) => {
+        let localIndex = localIndexByVertex.get(vertexIndex);
+        if (localIndex !== undefined) {
+          indices.push(localIndex);
+          return;
+        }
+
+        localIndex = positions.length / 3;
+        localIndexByVertex.set(vertexIndex, localIndex);
         const vertex = terrainData.vertices[vertexIndex];
         positions.push(vertex.x, vertex.height, vertex.z);
+        const normalOffset = vertexIndex * 3;
+        normals.push(
+          terrainNormals[normalOffset],
+          terrainNormals[normalOffset + 1],
+          terrainNormals[normalOffset + 2],
+        );
+        indices.push(localIndex);
       });
-      // L'ordre logique produit des normales +Y avec ComputeNormals et garde
-      // donc les faces avant visibles depuis le dessus avec le culling normal.
-      indices.push(firstIndex, firstIndex + 1, firstIndex + 2);
     });
 
-    const normals: number[] = [];
-    VertexData.ComputeNormals(positions, indices, normals);
     const vertexData = new VertexData();
     vertexData.positions = positions;
     vertexData.indices = indices;

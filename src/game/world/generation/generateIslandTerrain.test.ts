@@ -122,4 +122,20 @@ describe("generateIslandTerrain", () => {
     expect(treeCount).toBeGreaterThanOrEqual(20);
     expect(rockCount).toBeGreaterThanOrEqual(5);
   });
+
+  test("génère terrain et spawns pour plusieurs seeds connues", () => {
+    [1, 42, 12345, 54321, 99999].forEach((seed) => {
+      const terrain = generateIslandTerrain(seed);
+      expect(terrain.gridSize).toBe(81);
+      expect(terrain.triangles.length).toBeLessThanOrEqual(12_800);
+      expect(
+        sampleIslandTerrain(
+          terrain,
+          terrain.playerSpawn.x,
+          terrain.playerSpawn.z,
+        )?.category,
+      ).toBe("beach");
+      expect(isRaftFootprintAtSea(terrain, terrain.raftSpawn)).toBe(true);
+    });
+  });
 });
