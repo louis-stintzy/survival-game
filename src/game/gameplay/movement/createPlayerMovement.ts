@@ -22,7 +22,8 @@ type MoveAttempt =
 const MAX_HORIZONTAL_MOVEMENT_STEP = 0.25;
 const PLAYER_MOVEMENT_SPEED = 5;
 const PLAYER_VERTICAL_SPEED = 4;
-const CAMERA_VERTICAL_FOLLOW_SPEED = 1.75;
+const CAMERA_VERTICAL_DEAD_ZONE = 0.6;
+const CAMERA_VERTICAL_FOLLOW_SPEED = 0.5;
 const GROUND_RAY_START_HEIGHT = 10;
 const GROUND_RAY_LENGTH = 20;
 const MOVEMENT_KEYS = new Set([
@@ -183,13 +184,14 @@ export function createPlayerMovement(
     }
 
     const remainingCameraHeight = player.position.y - cameraTargetY;
-    const maximumCameraVerticalStep =
-      CAMERA_VERTICAL_FOLLOW_SPEED * deltaTimeInSeconds;
-    if (Math.abs(remainingCameraHeight) <= maximumCameraVerticalStep) {
-      cameraTargetY = player.position.y;
-    } else {
-      cameraTargetY +=
-        Math.sign(remainingCameraHeight) * maximumCameraVerticalStep;
+    if (Math.abs(remainingCameraHeight) > CAMERA_VERTICAL_DEAD_ZONE) {
+      const heightOutsideDeadZone =
+        Math.abs(remainingCameraHeight) - CAMERA_VERTICAL_DEAD_ZONE;
+      const cameraVerticalStep = Math.min(
+        heightOutsideDeadZone,
+        CAMERA_VERTICAL_FOLLOW_SPEED * deltaTimeInSeconds,
+      );
+      cameraTargetY += Math.sign(remainingCameraHeight) * cameraVerticalStep;
     }
     updateCameraTarget();
   };

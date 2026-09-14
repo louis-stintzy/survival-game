@@ -7,8 +7,10 @@ import {
   BEACH_MAX_HEIGHT,
   ROCK_MIN_HEIGHT,
   ROCK_MIN_SLOPE,
+  TERRAIN_HALF_SIZE,
   TERRAIN_MAX_HEIGHT,
   TERRAIN_MIN_HEIGHT,
+  WATER_HEIGHT,
   classifyTerrain,
   generateIslandTerrain,
   isRaftFootprintAtSea,
@@ -43,33 +45,7 @@ describe("generateIslandTerrain", () => {
 
   test("produit des hauteurs proches aux sommets voisins", () => {
     const terrain = generateIslandTerrain(12345);
-    let maximumDifference = 0;
-
-    for (let z = 0; z < terrain.gridSize; z += 1) {
-      for (let x = 0; x < terrain.gridSize; x += 1) {
-        const index = z * terrain.gridSize + x;
-        if (x + 1 < terrain.gridSize) {
-          maximumDifference = Math.max(
-            maximumDifference,
-            Math.abs(
-              terrain.vertices[index].height -
-                terrain.vertices[index + 1].height,
-            ),
-          );
-        }
-        if (z + 1 < terrain.gridSize) {
-          maximumDifference = Math.max(
-            maximumDifference,
-            Math.abs(
-              terrain.vertices[index].height -
-                terrain.vertices[index + terrain.gridSize].height,
-            ),
-          );
-        }
-      }
-    }
-
-    expect(maximumDifference).toBeLessThan(0.65);
+    expect(findMaximumNeighborHeightDifference(terrain)).toBeLessThan(0.65);
   });
 
   test("classe plage, herbe et roche selon les seuils", () => {
@@ -128,6 +104,18 @@ describe("generateIslandTerrain", () => {
       const terrain = generateIslandTerrain(seed);
       expect(terrain.gridSize).toBe(81);
       expect(terrain.triangles.length).toBeLessThanOrEqual(12_800);
+      terrain.vertices.forEach(({ x, z, height }) => {
+        expect(height).toBeGreaterThanOrEqual(TERRAIN_MIN_HEIGHT);
+        expect(height).toBeLessThanOrEqual(TERRAIN_MAX_HEIGHT);
+        if (height > WATER_HEIGHT) {
+          expect(Math.abs(x)).toBeLessThan(TERRAIN_HALF_SIZE);
+          expect(Math.abs(z)).toBeLessThan(TERRAIN_HALF_SIZE);
+        }
+      });
+      expect(
+        findMaximumNeighborHeightDifference(terrain),
+        `seed ${seed}`,
+      ).toBeLessThan(0.9);
       expect(
         sampleIslandTerrain(
           terrain,
@@ -139,3 +127,32 @@ describe("generateIslandTerrain", () => {
     });
   });
 });
+
+function findMaximumNeighborHeightDifference(
+  terrain: ReturnType<typeof generateIslandTerrain>,
+): number {
+  let maximumDifference = 0;
+  for (let z = 0; z < terrain.gridSize; z += 1) {
+    for (let x = 0; x < terrain.gridSize; x += 1) {
+      const index = z * terrain.gridSize + x;
+      if (x + 1 < terrain.gridSize) {
+        maximumDifference = Math.max(
+          maximumDifference,
+          Math.abs(
+            terrain.vertices[index].height - terrain.vertices[index + 1].height,
+          ),
+        );
+      }
+      if (z + 1 < terrain.gridSize) {
+        maximumDifference = Math.max(
+          maximumDifference,
+          Math.abs(
+            terrain.vertices[index].height -
+              terrain.vertices[index + terrain.gridSize].height,
+          ),
+        );
+      }
+    }
+  }
+  return maximumDifference;
+}

@@ -6,23 +6,29 @@ export const WATER_HEIGHT = -0.25;
 export const TERRAIN_HALF_SIZE = 40;
 export const TERRAIN_GRID_STEP = 1;
 export const TERRAIN_MIN_HEIGHT = -1.5;
-export const TERRAIN_MAX_HEIGHT = 2.8;
+export const TERRAIN_MAX_HEIGHT = 4;
 export const BEACH_MAX_HEIGHT = 0.25;
 export const ROCK_MIN_HEIGHT = 1.5;
 export const ROCK_MIN_SLOPE = 0.32;
 
-const BASE_RADIUS_RANGE = [24, 26] as const;
-const ASPECT_RATIO_RANGE = [0.62, 1.55] as const;
+const MAJOR_RADIUS_RANGE = [20, 30] as const;
+const MINOR_TO_MAJOR_RATIO_RANGE = [0.45, 0.95] as const;
+const SECONDARY_LOBE_COUNT_RANGE = [0, 2] as const;
+const LOBE_DISTANCE_RATIO_RANGE = [0.35, 0.7] as const;
+const LOBE_RADIUS_RATIO_RANGE = [0.28, 0.42] as const;
+const LOBE_ASPECT_RATIO_RANGE = [0.65, 1] as const;
 const PRIMARY_COAST_FREQUENCY = 0.025;
 const PRIMARY_COAST_AMPLITUDE = 0.14;
 const SECONDARY_COAST_FREQUENCY = 0.065;
 const SECONDARY_COAST_AMPLITUDE = 0.055;
-const RELIEF_FULL_STRENGTH_SIGNAL = 0.35;
-const ELEVATION_AMPLITUDE = 2.15;
-const RELIEF_FREQUENCY = 0.075;
-const RELIEF_AMPLITUDE = 0.55;
+const SHORE_TRANSITION_SIGNAL = 0.32;
+const RELIEF_START_SIGNAL = 0.28;
+const RELIEF_FULL_STRENGTH_SIGNAL = 0.58;
+const LAND_BASE_HEIGHT = 0.8;
+const RELIEF_FREQUENCY = 0.045;
+const RELIEF_AMPLITUDE = 1.8;
 const DETAIL_FREQUENCY = 0.15;
-const DETAIL_AMPLITUDE = 0.18;
+const DETAIL_AMPLITUDE = 0.14;
 const SPAWN_MAX_SLOPE = 0.22;
 const RAFT_MIN_DISTANCE = 2;
 const RAFT_MAX_DISTANCE = 2.75;
@@ -68,11 +74,23 @@ export function generateIslandTerrain(seed: number): GeneratedIslandTerrain {
   );
   const reliefNoise = createValueNoise2D(random.integer(0, 0xffff_ffff));
   const detailNoise = createValueNoise2D(random.integer(0, 0xffff_ffff));
-  const baseRadius = random.float(...BASE_RADIUS_RANGE);
-  const aspectRatio = random.float(...ASPECT_RATIO_RANGE);
-  const radiusX = baseRadius * Math.sqrt(aspectRatio);
-  const radiusZ = baseRadius / Math.sqrt(aspectRatio);
+  const majorRadius = random.float(...MAJOR_RADIUS_RANGE);
+  const minorRadius =
+    majorRadius * random.float(...MINOR_TO_MAJOR_RATIO_RANGE);
   const rotation = random.float(0, Math.PI * 2);
+  const lobeCount = random.integer(...SECONDARY_LOBE_COUNT_RANGE);
+  const lobes = Array.from({ length: lobeCount }, () => {
+    const angle = random.float(0, Math.PI * 2);
+    const distance = minorRadius * random.float(...LOBE_DISTANCE_RATIO_RANGE);
+    const radius = majorRadius * random.float(...LOBE_RADIUS_RATIO_RANGE);
+    return {
+      centerX: Math.cos(angle) * distance,
+      centerZ: Math.sin(angle) * distance,
+      radiusX: radius,
+      radiusZ: radius * random.float(...LOBE_ASPECT_RATIO_RANGE),
+      rotation: random.float(0, Math.PI * 2),
+    };
+  });
   const gridSize = (TERRAIN_HALF_SIZE * 2) / TERRAIN_GRID_STEP + 1;
   const vertices: TerrainVertex[] = [];
 
@@ -114,11 +132,6 @@ export function generateIslandTerrain(seed: number): GeneratedIslandTerrain {
   return terrain;
 
   function calculateHeight(x: number, z: number): number {
-    const cosine = Math.cos(rotation);
-    const sine = Math.sin(rotation);
-    const rotatedX = x * cosine + z * sine;
-    const rotatedZ = -x * sine + z * cosine;
-    const normalizedRadius = Math.hypot(rotatedX / radiusX, rotatedZ / radiusZ);
     const coastScale =
       1 +
       (primaryCoastNoise.sample(
@@ -135,11 +148,37 @@ export function generateIslandTerrain(seed: number): GeneratedIslandTerrain {
         0.5) *
         2 *
         SECONDARY_COAST_AMPLITUDE;
-    const islandSignal = 1 - normalizedRadius / coastScale;
-    const reliefStrength = clamp(
-      islandSignal / RELIEF_FULL_STRENGTH_SIGNAL,
-      0,
-      1,
+    // Le maximum unit l'ellipse principale et ses lobes chevauchants sans
+    // introduire de masses terrestres isolées.
+    const islandSignal = Math.max(
+      calculateEllipseSignal(
+        x,
+        z,
+        0,
+        0,
+        majorRadius,
+        minorRadius,
+        rotation,
+        coastScale,
+      ),
+      ...lobes.map((lobe) =>
+        calculateEllipseSignal(
+          x,
+          z,
+          lobe.centerX,
+          lobe.centerZ,
+          lobe.radiusX,
+          lobe.radiusZ,
+          lobe.rotation,
+          coastScale,
+        ),
+      ),
+    );
+    const shoreBlend = smoothstep(0, SHORE_TRANSITION_SIGNAL, islandSignal);
+    const reliefStrength = smoothstep(
+      RELIEF_START_SIGNAL,
+      RELIEF_FULL_STRENGTH_SIGNAL,
+      islandSignal,
     );
     const relief =
       (reliefNoise.sample(x * RELIEF_FREQUENCY, z * RELIEF_FREQUENCY) - 0.5) *
@@ -148,11 +187,13 @@ export function generateIslandTerrain(seed: number): GeneratedIslandTerrain {
       (detailNoise.sample(x * DETAIL_FREQUENCY, z * DETAIL_FREQUENCY) - 0.5) *
         2 *
         DETAIL_AMPLITUDE;
+    if (islandSignal <= 0) return WATER_HEIGHT;
+
     return clamp(
       WATER_HEIGHT +
-        islandSignal * ELEVATION_AMPLITUDE +
+        (LAND_BASE_HEIGHT - WATER_HEIGHT) * shoreBlend +
         relief * reliefStrength,
-      TERRAIN_MIN_HEIGHT,
+      WATER_HEIGHT + Number.EPSILON,
       TERRAIN_MAX_HEIGHT,
     );
   }
@@ -302,6 +343,30 @@ export function isRaftFootprintAtSea(
     const z = spawn.z - localX * sine + localZ * cosine;
     return sampleIslandTerrain(terrain, x, z) === undefined;
   });
+}
+
+function calculateEllipseSignal(
+  x: number,
+  z: number,
+  centerX: number,
+  centerZ: number,
+  radiusX: number,
+  radiusZ: number,
+  rotation: number,
+  coastScale: number,
+): number {
+  const cosine = Math.cos(rotation);
+  const sine = Math.sin(rotation);
+  const offsetX = x - centerX;
+  const offsetZ = z - centerZ;
+  const rotatedX = offsetX * cosine + offsetZ * sine;
+  const rotatedZ = -offsetX * sine + offsetZ * cosine;
+  return 1 - Math.hypot(rotatedX / radiusX, rotatedZ / radiusZ) / coastScale;
+}
+
+function smoothstep(minimum: number, maximum: number, value: number): number {
+  const amount = clamp((value - minimum) / (maximum - minimum), 0, 1);
+  return amount * amount * (3 - 2 * amount);
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {
