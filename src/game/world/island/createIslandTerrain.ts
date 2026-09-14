@@ -63,9 +63,9 @@ export function createIslandTerrain(
         const vertex = terrainData.vertices[vertexIndex];
         positions.push(vertex.x, vertex.height, vertex.z);
       });
-      // Les triangles logiques sont ordonnés pour l'échantillonnage X/Z ; le
-      // winding est inversé ici afin que leurs normales pointent vers le haut.
-      indices.push(firstIndex, firstIndex + 2, firstIndex + 1);
+      // L'ordre logique produit des normales +Y avec ComputeNormals et garde
+      // donc les faces avant visibles depuis le dessus avec le culling normal.
+      indices.push(firstIndex, firstIndex + 1, firstIndex + 2);
     });
 
     const normals: number[] = [];
