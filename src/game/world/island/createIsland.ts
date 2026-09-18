@@ -3,15 +3,20 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import type { Scene } from "@babylonjs/core/scene";
 import type { HarvestableResource } from "../../resources/resourceTypes";
-import { createIslandTerrain } from "./createIslandTerrain";
 import { createIslandResources } from "./createIslandResources";
 import { PLAYER_SPAWN, RAFT_SPAWN } from "./islandLayout";
-import { createRaft, type Raft } from "../../models/createRaft";
+import {
+  createRaft,
+  type Raft,
+} from "../../models/createRaft";
+import { RAFT_NAVIGATION_FOOTPRINT } from "../../models/raftGeometry";
+import { createBaseTerrainData } from "../terrain/createBaseTerrainData";
+import { sampleTerrain } from "../terrain/sampleTerrain";
+import { createTerrainMeshes } from "../terrain/createTerrainMeshes";
+import type { TerrainSampler } from "../terrain/terrainTypes";
+import { validateTemporaryIslandSpawns } from "./validateTemporaryIslandSpawns";
 
 interface IslandMaterials {
-  water: StandardMaterial;
-  sand: StandardMaterial;
-  grass: StandardMaterial;
   trunk: StandardMaterial;
   leaves: StandardMaterial;
   rock: StandardMaterial;
@@ -19,10 +24,10 @@ interface IslandMaterials {
 }
 
 export interface Island {
-  walkableSurfaces: Mesh[];
-  navigableSurfaces: Mesh[];
-  buildableSurfaces: Mesh[];
-  placementSurfaces: Mesh[];
+  terrainMesh: Mesh;
+  waterMesh: Mesh;
+  sampleTerrain: TerrainSampler;
+  waterHeight: number;
   shadowCasters: Mesh[];
   harvestableResources: HarvestableResource[];
   playerSpawnGroundPosition: Vector3;
@@ -30,45 +35,41 @@ export interface Island {
 }
 
 export function createIsland(scene: Scene, materials: IslandMaterials): Island {
-  const terrain = createIslandTerrain(scene, {
-    water: materials.water,
-    sand: materials.sand,
-    grass: materials.grass,
-    rock: materials.rock,
-  });
+  const terrainData = createBaseTerrainData();
+  const { terrainMesh, waterMesh } = createTerrainMeshes(scene, terrainData);
+  const sample: TerrainSampler = (x, z) => sampleTerrain(terrainData, x, z);
+  const { playerGround } = validateTemporaryIslandSpawns(
+    sample,
+    RAFT_NAVIGATION_FOOTPRINT,
+  );
 
-  const resources = createIslandResources(scene, {
-    trunk: materials.trunk,
-    leaves: materials.leaves,
-    rock: materials.rock,
-  });
+  const resources = createIslandResources(
+    scene,
+    {
+      trunk: materials.trunk,
+      leaves: materials.leaves,
+      rock: materials.rock,
+    },
+    sample,
+  );
   const raft = createRaft(scene, "raft", materials.raft);
   raft.root.position.set(
     RAFT_SPAWN.x,
-    RAFT_SPAWN.groundHeight,
+    terrainData.waterHeight,
     RAFT_SPAWN.z,
   );
   raft.root.rotation.y = RAFT_SPAWN.rotation;
 
   return {
-    walkableSurfaces: [terrain.grass, terrain.beach, terrain.rockyPlateau],
-    navigableSurfaces: [terrain.water],
-    buildableSurfaces: [terrain.grass],
-    placementSurfaces: [
-      terrain.grass,
-      terrain.beach,
-      terrain.rockyPlateau,
-      terrain.water,
-    ],
-    shadowCasters: [
-      terrain.rockyPlateau,
-      ...resources.shadowCasters,
-      ...raft.meshes,
-    ],
+    terrainMesh,
+    waterMesh,
+    sampleTerrain: sample,
+    waterHeight: terrainData.waterHeight,
+    shadowCasters: [terrainMesh, ...resources.shadowCasters, ...raft.meshes],
     harvestableResources: resources.harvestableResources,
     playerSpawnGroundPosition: new Vector3(
       PLAYER_SPAWN.x,
-      PLAYER_SPAWN.groundHeight,
+      playerGround.height,
       PLAYER_SPAWN.z,
     ),
     raft,

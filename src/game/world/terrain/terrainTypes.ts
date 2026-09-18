@@ -16,3 +16,8 @@ export interface TerrainSample {
   surface: TerrainSurface;
   isLand: boolean;
 }
+
+export type TerrainSampler = (
+  x: number,
+  z: number,
+) => TerrainSample | undefined;

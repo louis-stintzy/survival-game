@@ -30,9 +30,6 @@ export function createScene(engine: Engine): Scene {
   const placementMaterials = createPlacementMaterials(scene);
 
   const island = createIsland(scene, {
-    water: materials.world.water,
-    sand: materials.world.sand,
-    grass: materials.world.grass,
     trunk: materials.world.trunk,
     leaves: materials.world.leaves,
     rock: materials.world.rock,

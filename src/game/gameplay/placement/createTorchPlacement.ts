@@ -1,4 +1,3 @@
-import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { Scene } from "@babylonjs/core/scene";
 import type {
@@ -11,6 +10,7 @@ import {
   type TorchModel,
   type TorchMaterials,
 } from "../../models/createTorchModel";
+import type { TerrainSampler } from "../../world/terrain/terrainTypes";
 
 const MAX_TORCH_PLACEMENT_DISTANCE = 5;
 const MAX_ACTIVE_TORCH_DISTANCE = 24;
@@ -33,7 +33,8 @@ interface Equipment {
 interface TorchPlacementOptions {
   scene: Scene;
   player: Mesh;
-  placementSurfaces: readonly AbstractMesh[];
+  terrainMesh: Mesh;
+  sampleTerrain: TerrainSampler;
   equipmentInventory: EquipmentInventory;
   equipment: Equipment;
   materials: TorchMaterials;
@@ -46,7 +47,8 @@ export function createTorchPlacement(options: TorchPlacementOptions) {
   const {
     scene,
     player,
-    placementSurfaces,
+    terrainMesh,
+    sampleTerrain,
     equipmentInventory,
     equipment,
     materials,
@@ -57,7 +59,6 @@ export function createTorchPlacement(options: TorchPlacementOptions) {
   const canvas = scene.getEngine().getRenderingCanvas();
   if (!canvas) throw new Error("Le canvas Babylon.js est introuvable.");
 
-  const placementSurfaceSet = new Set(placementSurfaces);
   const placedTorches: TorchModel[] = [];
   let placedTorchCount = 0;
 
@@ -76,9 +77,12 @@ export function createTorchPlacement(options: TorchPlacementOptions) {
     const hit = scene.pick(
       event.clientX - bounds.left,
       event.clientY - bounds.top,
-      (mesh) => placementSurfaceSet.has(mesh),
+      (mesh) => mesh === terrainMesh,
     );
     if (!hit?.pickedPoint) return;
+
+    const ground = sampleTerrain(hit.pickedPoint.x, hit.pickedPoint.z);
+    if (!ground?.isLand) return;
 
     const distanceX = hit.pickedPoint.x - player.position.x;
     const distanceZ = hit.pickedPoint.z - player.position.z;
@@ -99,8 +103,11 @@ export function createTorchPlacement(options: TorchPlacementOptions) {
       `placed-torch-${placedTorchCount++}`,
       materials,
     );
-    torch.root.position.copyFrom(hit.pickedPoint);
-    torch.root.position.y += torch.baseOffsetY;
+    torch.root.position.set(
+      hit.pickedPoint.x,
+      ground.height + torch.baseOffsetY,
+      hit.pickedPoint.z,
+    );
     torch.meshes.forEach((mesh) => {
       mesh.isPickable = false;
       mesh.receiveShadows = true;

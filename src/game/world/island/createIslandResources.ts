@@ -4,8 +4,8 @@ import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import type { Scene } from "@babylonjs/core/scene";
 import type { HarvestableResource } from "../../resources/resourceTypes";
+import type { TerrainSampler } from "../terrain/terrainTypes";
 import {
-  GRASS_HEIGHT,
   ROCK_PLACEMENTS,
   TREE_PLACEMENTS,
   type RockPlacement,
@@ -31,6 +31,7 @@ function createTree(
   scene: Scene,
   placement: TreePlacement,
   index: number,
+  groundHeight: number,
   materials: IslandResourceMaterials,
 ): { meshes: Mesh[]; collisionMeshes: Mesh[] } {
   const trunk = MeshBuilder.CreateCylinder(
@@ -45,7 +46,7 @@ function createTree(
   );
   trunk.position = new Vector3(
     placement.x,
-    GRASS_HEIGHT + 1.1 * placement.scale,
+    groundHeight + 1.1 * placement.scale,
     placement.z,
   );
   trunk.rotation.y = placement.rotation;
@@ -58,7 +59,7 @@ function createTree(
   );
   crown.position = new Vector3(
     placement.x,
-    GRASS_HEIGHT + 3 * placement.scale,
+    groundHeight + 3 * placement.scale,
     placement.z,
   );
   crown.scaling = new Vector3(0.9, 1.2, 0.9);
@@ -72,6 +73,7 @@ function createRock(
   scene: Scene,
   placement: RockPlacement,
   index: number,
+  groundHeight: number,
   material: StandardMaterial,
 ): Mesh {
   const rock = MeshBuilder.CreatePolyhedron(
@@ -94,7 +96,7 @@ function createRock(
   const rockHeight = boundingBox.maximumWorld.y - lowestPoint;
   // On pose d'abord le point le plus bas sur le terrain,
   // puis on enfonce légèrement le rocher pour qu'il paraisse naturellement ancré.
-  rock.position.y += placement.groundHeight - lowestPoint;
+  rock.position.y += groundHeight - lowestPoint;
   rock.position.y -= rockHeight * ROCK_GROUND_SINK_RATIO;
   rock.computeWorldMatrix(true);
 
@@ -110,45 +112,69 @@ function createRock(
  *
  * @param scene Scène Babylon dans laquelle créer les ressources.
  * @param materials Matériaux utilisés pour les arbres et les rochers.
+ * @param sampleTerrain Source des surfaces autorisées et hauteurs réelles.
  * @returns Les ressources récoltables et les meshes devant projeter une ombre.
  */
 export function createIslandResources(
   scene: Scene,
   materials: IslandResourceMaterials,
+  sampleTerrain: TerrainSampler,
 ): IslandResources {
-  const treeResources: HarvestableResource[] = TREE_PLACEMENTS.map(
+  const treeResources: HarvestableResource[] = TREE_PLACEMENTS.flatMap(
     (placement, index) => {
-      const tree = createTree(scene, placement, index, materials);
-      return {
-        type: "wood",
-        position: new Vector3(placement.x, GRASS_HEIGHT, placement.z),
-        meshes: tree.meshes,
-        collisionMeshes: tree.collisionMeshes,
-        movementCollider: {
-          kind: "circle",
-          radius: 0.3 * placement.scale,
+      const ground = sampleTerrain(placement.x, placement.z);
+      if (ground?.surface !== "grass") return [];
+
+      const tree = createTree(
+        scene,
+        placement,
+        index,
+        ground.height,
+        materials,
+      );
+      return [
+        {
+          type: "wood",
+          position: new Vector3(placement.x, ground.height, placement.z),
+          meshes: tree.meshes,
+          collisionMeshes: tree.collisionMeshes,
+          movementCollider: {
+            kind: "circle",
+            radius: 0.3 * placement.scale,
+          },
+          harvested: false,
         },
-        harvested: false,
-      };
+      ];
     },
   );
 
-  const rockResources: HarvestableResource[] = ROCK_PLACEMENTS.map(
+  const rockResources: HarvestableResource[] = ROCK_PLACEMENTS.flatMap(
     (placement, index) => {
-      const rock = createRock(scene, placement, index, materials.rock);
-      return {
-        type: "stone",
-        position: new Vector3(placement.x, placement.groundHeight, placement.z),
-        meshes: [rock],
-        collisionMeshes: [rock],
-        movementCollider: {
-          kind: "orientedBox",
-          halfWidth: ROCK_COLLISION_HALF_WIDTH_RATIO * placement.scale,
-          halfDepth: ROCK_COLLISION_HALF_DEPTH_RATIO * placement.scale,
-          rotation: placement.rotation,
+      const ground = sampleTerrain(placement.x, placement.z);
+      if (ground?.surface !== "grass" && ground?.surface !== "rock") return [];
+
+      const rock = createRock(
+        scene,
+        placement,
+        index,
+        ground.height,
+        materials.rock,
+      );
+      return [
+        {
+          type: "stone",
+          position: new Vector3(placement.x, ground.height, placement.z),
+          meshes: [rock],
+          collisionMeshes: [rock],
+          movementCollider: {
+            kind: "orientedBox",
+            halfWidth: ROCK_COLLISION_HALF_WIDTH_RATIO * placement.scale,
+            halfDepth: ROCK_COLLISION_HALF_DEPTH_RATIO * placement.scale,
+            rotation: placement.rotation,
+          },
+          harvested: false,
         },
-        harvested: false,
-      };
+      ];
     },
   );
 

@@ -8,6 +8,8 @@ import { GAME_PALETTE } from "../../constants/gamePalette";
 import { createTerrainMeshData } from "./createTerrainMeshData";
 import type { TerrainData } from "./terrainTypes";
 
+const MAX_SIMULTANEOUS_LIGHTS = 8;
+
 export interface TerrainMeshes {
   terrainMesh: Mesh;
   waterMesh: Mesh;
@@ -52,6 +54,7 @@ function createTerrainMaterial(scene: Scene): StandardMaterial {
   const material = new StandardMaterial("terrain-vertex-color-material", scene);
   material.diffuseColor = Color3.White();
   material.specularColor = Color3.Black();
+  material.maxSimultaneousLights = MAX_SIMULTANEOUS_LIGHTS;
   return material;
 }
 
@@ -60,5 +63,6 @@ function createWaterMaterial(scene: Scene): StandardMaterial {
   material.diffuseColor = Color3.FromHexString(GAME_PALETTE.world.water);
   material.specularColor = Color3.Black();
   material.alpha = 0.92;
+  material.maxSimultaneousLights = MAX_SIMULTANEOUS_LIGHTS;
   return material;
 }

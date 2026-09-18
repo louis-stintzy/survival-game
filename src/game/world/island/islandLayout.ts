@@ -9,36 +9,27 @@ export interface RockPlacement {
   x: number;
   z: number;
   scale: number;
-  groundHeight: number;
   rotation: number;
 }
 
 export interface IslandSpawnPoint {
   x: number;
   z: number;
-  groundHeight: number;
 }
 
 export interface RaftSpawnPoint extends IslandSpawnPoint {
   rotation: number;
 }
 
-export const BEACH_HEIGHT = 0.35;
-export const GRASS_HEIGHT = 0.75;
-export const ROCKY_PLATEAU_HEIGHT = 1.15;
-export const WATER_HEIGHT = -0.25;
-
 export const PLAYER_SPAWN: IslandSpawnPoint = {
   x: 0,
-  z: -27,
-  groundHeight: BEACH_HEIGHT,
+  z: -26,
 };
 
 // Position temporaire proche de la plage de départ pour le prototype nautique.
 export const RAFT_SPAWN: RaftSpawnPoint = {
   x: 0,
-  z: -31.4,
-  groundHeight: WATER_HEIGHT,
+  z: -28.3,
   rotation: Math.PI / 2,
 };
 
@@ -204,69 +195,61 @@ export const ROCK_PLACEMENTS: RockPlacement[] = [
     x: 7.2,
     z: -5.0,
     scale: 1.15,
-    groundHeight: ROCKY_PLATEAU_HEIGHT,
     rotation: 0.4,
   },
   {
     x: 9.5,
     z: -3.7,
     scale: 0.78,
-    groundHeight: ROCKY_PLATEAU_HEIGHT,
     rotation: 1.3,
   },
   {
     x: 12.1,
     z: -4.2,
     scale: 1.05,
-    groundHeight: ROCKY_PLATEAU_HEIGHT,
     rotation: 2.2,
   },
   {
     x: 14.5,
     z: -5.8,
     scale: 0.7,
-    groundHeight: ROCKY_PLATEAU_HEIGHT,
     rotation: 0.8,
   },
   {
     x: 12.8,
     z: -7.4,
     scale: 0.9,
-    groundHeight: ROCKY_PLATEAU_HEIGHT,
     rotation: 1.9,
   },
   {
     x: 9.6,
     z: -7.3,
     scale: 0.65,
-    groundHeight: ROCKY_PLATEAU_HEIGHT,
     rotation: 2.7,
   },
   {
     x: 15.0,
     z: -3.7,
     scale: 0.58,
-    groundHeight: ROCKY_PLATEAU_HEIGHT,
     rotation: 1.1,
   },
-  { x: -2.5, z: -9.8, scale: 1, groundHeight: GRASS_HEIGHT, rotation: -9.8 },
-  { x: 3.2, z: 9.2, scale: 0.85, groundHeight: GRASS_HEIGHT, rotation: 9.2 },
-  { x: -13.2, z: -4.4, scale: 0.7, groundHeight: GRASS_HEIGHT, rotation: -4.4 },
+  { x: -2.5, z: -9.8, scale: 1, rotation: -9.8 },
+  { x: 3.2, z: 9.2, scale: 0.85, rotation: 9.2 },
+  { x: -13.2, z: -4.4, scale: 0.7, rotation: -4.4 },
 
   // ----- Entre le plateau rocheux et la plage -----
   {
     x: 17,
     z: -11.8,
     scale: 0.85,
-    groundHeight: GRASS_HEIGHT,
     rotation: 2.4,
   },
-  { x: 18.2, z: -8.4, scale: 0.78, groundHeight: GRASS_HEIGHT, rotation: 6.4 },
-  { x: 19, z: -10.1, scale: 0.58, groundHeight: GRASS_HEIGHT, rotation: 10.4 },
-  { x: 20.2, z: -6.4, scale: 0.98, groundHeight: GRASS_HEIGHT, rotation: 4.4 },
-  { x: 21.3, z: -11.4, scale: 0.8, groundHeight: GRASS_HEIGHT, rotation: -3 },
-  { x: 21.35, z: -9, scale: 0.95, groundHeight: GRASS_HEIGHT, rotation: 6.4 },
-  { x: 24, z: -9.4, scale: 0.68, groundHeight: GRASS_HEIGHT, rotation: 0.4 },
-  { x: 24, z: -4.8, scale: 0.48, groundHeight: GRASS_HEIGHT, rotation: 1.3 },
-  { x: 25.2, z: -7, scale: 0.8, groundHeight: GRASS_HEIGHT, rotation: 8.4 },
+  { x: 18.2, z: -8.4, scale: 0.78, rotation: 6.4 },
+  { x: 19, z: -10.1, scale: 0.58, rotation: 10.4 },
+  { x: 20.2, z: -6.4, scale: 0.98, rotation: 4.4 },
+  { x: 21.3, z: -11.4, scale: 0.8, rotation: -3 },
+  { x: 21.35, z: -9, scale: 0.95, rotation: 6.4 },
+  { x: 24, z: -9.4, scale: 0.68, rotation: 0.4 },
+  { x: 24, z: -4.8, scale: 0.48, rotation: 1.3 },
+  { x: 25.2, z: -7, scale: 0.8, rotation: 8.4 },
 ];

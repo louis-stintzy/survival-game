@@ -1,18 +1,14 @@
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
-import { Ray } from "@babylonjs/core/Culling/ray";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
-import type { Scene } from "@babylonjs/core/scene";
 import type { Raft } from "../../models/createRaft";
 import { PLAYER_HALF_HEIGHT } from "../../models/createPlayer";
 import type { PlayerCollisionQuery } from "../collision/playerWorldCollision";
 import type { CollisionContact } from "../collision/collisionTypes";
+import type { TerrainSampler } from "../../world/terrain/terrainTypes";
 
 const RAFT_MOVEMENT_SPEED = 6;
 const MAX_HORIZONTAL_MOVEMENT_STEP = 0.25;
-const TERRAIN_RAY_START_HEIGHT = 10;
-const TERRAIN_RAY_LENGTH = 20;
 const DISEMBARK_RADII = [2, 2.5, 3];
 const DISEMBARK_DIRECTION_COUNT = 16;
 const DISEMBARK_CACHE_REFRESH_SECONDS = 0.25;
@@ -30,12 +26,11 @@ const MOVEMENT_KEYS = new Set([
 ]);
 
 interface RaftNavigationOptions {
-  scene: Scene;
   camera: ArcRotateCamera;
   player: Mesh;
   raft: Raft;
-  walkableSurfaces: readonly AbstractMesh[];
-  navigableSurfaces: readonly AbstractMesh[];
+  sampleTerrain: TerrainSampler;
+  waterHeight: number;
   getPlayerCollision: (
     query: PlayerCollisionQuery,
   ) => CollisionContact | undefined;
@@ -43,26 +38,19 @@ interface RaftNavigationOptions {
 
 /**
  * Pilote l'unique radeau du prototype et maintient le joueur à son bord.
- * La navigation et le débarquement partagent le même raycast vertical afin
- * que la strate de terrain visible depuis le haut reste la source de vérité.
+ * La navigation et le débarquement interrogent le même TerrainSampler afin
+ * que rendu Babylon et règles de déplacement restent découplés.
  */
 export function createRaftNavigation(options: RaftNavigationOptions) {
   const {
-    scene,
     camera,
     player,
     raft,
-    walkableSurfaces,
-    navigableSurfaces,
+    sampleTerrain,
+    waterHeight,
     getPlayerCollision,
   } = options;
   const pressedKeys = new Set<string>();
-  const walkableSurfaceSet = new Set(walkableSurfaces);
-  const navigableSurfaceSet = new Set(navigableSurfaces);
-  const terrainSurfaceSet = new Set([
-    ...walkableSurfaces,
-    ...navigableSurfaces,
-  ]);
   const { halfWidth, halfLength } = raft.navigationFootprint;
   const navigationCheckpoints = [
     { x: 0, z: 0 },
@@ -164,14 +152,10 @@ export function createRaftNavigation(options: RaftNavigationOptions) {
     for (let step = 0; step < stepCount; step += 1) {
       const x = raft.root.position.x + stepX;
       const z = raft.root.position.z + stepZ;
-      const ground = getNavigableGroundForFootprint(
-        x,
-        z,
-        candidateRotation,
-      );
+      const navigable = isNavigableFootprint(x, z, candidateRotation);
 
-      if (!ground) break;
-      raft.root.position.set(x, ground.point.y, z);
+      if (!navigable) break;
+      raft.root.position.set(x, waterHeight, z);
       moved = true;
     }
     return moved;
@@ -197,8 +181,8 @@ export function createRaftNavigation(options: RaftNavigationOptions) {
         const angle = (index / DISEMBARK_DIRECTION_COUNT) * Math.PI * 2;
         const x = raft.root.position.x + Math.cos(angle) * radius;
         const z = raft.root.position.z + Math.sin(angle) * radius;
-        const ground = getTopTerrainAt(x, z);
-        if (!ground || !walkableSurfaceSet.has(ground.surface)) continue;
+        const ground = sampleTerrain(x, z);
+        if (!ground?.isLand) continue;
 
         const collision = getPlayerCollision({
           candidate: { x, z },
@@ -208,7 +192,7 @@ export function createRaftNavigation(options: RaftNavigationOptions) {
 
         // Le joueur n'est détaché qu'après avoir trouvé à la fois une surface
         // praticable supérieure et une position libre des collisions du monde.
-        return new Vector3(x, ground.point.y + PLAYER_HALF_HEIGHT, z);
+        return new Vector3(x, ground.height + PLAYER_HALF_HEIGHT, z);
       }
     }
     return undefined;
@@ -222,38 +206,22 @@ export function createRaftNavigation(options: RaftNavigationOptions) {
     disembarkCacheElapsed = 0;
   }
 
-  function getNavigableGroundForFootprint(
+  function isNavigableFootprint(
     x: number,
     z: number,
     rotation: number,
   ) {
     const cosine = Math.cos(rotation);
     const sine = Math.sin(rotation);
-    let centerGround: ReturnType<typeof getTopTerrainAt>;
-
     for (const checkpoint of navigationCheckpoints) {
       const worldX = x + checkpoint.x * cosine + checkpoint.z * sine;
       const worldZ = z - checkpoint.x * sine + checkpoint.z * cosine;
-      const ground = getTopTerrainAt(worldX, worldZ);
+      const ground = sampleTerrain(worldX, worldZ);
 
-      // L'eau existe sous toute l'île : tous les points de l'empreinte doivent
-      // rencontrer une surface navigable comme première strate depuis le haut.
-      if (!ground || !navigableSurfaceSet.has(ground.surface)) return undefined;
-      if (checkpoint.x === 0 && checkpoint.z === 0) centerGround = ground;
+      if (ground?.surface !== "water") return false;
     }
 
-    return centerGround;
-  }
-
-  function getTopTerrainAt(x: number, z: number) {
-    const ray = new Ray(
-      new Vector3(x, TERRAIN_RAY_START_HEIGHT, z),
-      Vector3.Down(),
-      TERRAIN_RAY_LENGTH,
-    );
-    const hit = scene.pickWithRay(ray, (mesh) => terrainSurfaceSet.has(mesh));
-    if (!hit?.pickedPoint || !hit.pickedMesh) return undefined;
-    return { point: hit.pickedPoint, surface: hit.pickedMesh };
+    return true;
   }
 
   function attachPlayerToRaft() {

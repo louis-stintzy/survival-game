@@ -1,11 +1,10 @@
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
-import { Ray } from "@babylonjs/core/Culling/ray";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { PlayerCollisionQuery } from "../collision/playerWorldCollision";
 import type { CollisionContact, XZPosition } from "../collision/collisionTypes";
 import { PLAYER_HALF_HEIGHT } from "../../models/createPlayer";
+import type { TerrainSampler } from "../../world/terrain/terrainTypes";
 
 type MoveAttempt =
   | { kind: "moved" }
@@ -22,8 +21,6 @@ type MoveAttempt =
 const MAX_HORIZONTAL_MOVEMENT_STEP = 0.25;
 const PLAYER_MOVEMENT_SPEED = 5;
 const PLAYER_VERTICAL_SPEED = 4;
-const GROUND_RAY_START_HEIGHT = 10;
-const GROUND_RAY_LENGTH = 20;
 const MOVEMENT_KEYS = new Set([
   "z",
   "w",
@@ -76,12 +73,12 @@ export function projectMovementAlongSurface(
  *   pendant une frame anormalement longue ;
  * - projeté le long de la surface rencontrée lorsqu'une collision
  *   permet un glissement ;
- * - validé verticalement par un raycast vers les surfaces praticables.
+ * - validé verticalement par la source de vérité logique du terrain.
  *
  * @param player Mesh représentant le joueur.
  * @param camera Caméra utilisée pour convertir les entrées clavier
  *               en directions relatives à l'écran.
- * @param walkableSurfaces Surfaces sur lesquelles le joueur peut se déplacer.
+ * @param sampleTerrain Échantillonne le terrain à une coordonnée X/Z.
  * @param getCollisionContact Fonction retournant éventuellement la normale
  *                            de l'obstacle rencontré.
  * @param isMovementEnabled Indique si le déplacement à pied est actif.
@@ -90,14 +87,13 @@ export function projectMovementAlongSurface(
 export function createPlayerMovement(
   player: Mesh,
   camera: ArcRotateCamera,
-  walkableSurfaces: readonly AbstractMesh[],
+  sampleTerrain: TerrainSampler,
   getCollisionContact: (
     query: PlayerCollisionQuery,
   ) => CollisionContact | undefined,
   isMovementEnabled: () => boolean = () => true,
 ) {
   const pressedKeys = new Set<string>();
-  const walkableSurfaceSet = new Set(walkableSurfaces);
   let targetPlayerHeight = player.position.y;
   let movementWasEnabled = true;
 
@@ -203,21 +199,12 @@ export function createPlayerMovement(
       return { kind: "collision", contact: collisionContact };
     }
 
-    // Ce rayon vertical cherche la vraie surface praticable sous chaque position
-    // candidate : collision et ancrage au terrain valident le même déplacement.
-    const groundRay = new Ray(
-      new Vector3(x, GROUND_RAY_START_HEIGHT, z),
-      Vector3.Down(),
-      GROUND_RAY_LENGTH,
-    );
-    const groundHit = player
-      .getScene()
-      .pickWithRay(groundRay, (mesh) => walkableSurfaceSet.has(mesh));
-    if (!groundHit?.pickedPoint) return { kind: "noGround" };
+    const ground = sampleTerrain(x, z);
+    if (!ground?.isLand) return { kind: "noGround" };
 
     player.position.x = x;
     player.position.z = z;
-    targetPlayerHeight = groundHit.pickedPoint.y + PLAYER_HALF_HEIGHT;
+    targetPlayerHeight = ground.height + PLAYER_HALF_HEIGHT;
     return { kind: "moved" };
   }
 
