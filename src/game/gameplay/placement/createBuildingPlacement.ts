@@ -132,6 +132,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   let rotationRequested = false;
   let buildRequested = false;
   let rotationStep = 0;
+  let movementDiagnosticPending = false;
   let currentPlacement: Placement | undefined;
   let lastGhostValidity: boolean | undefined;
   let lastStatus = "";
@@ -169,9 +170,16 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
 
   canvas.addEventListener("pointerdown", (event) => {
     if (buildingModeActive && event.button === 0) {
+      logPickingDiagnostic("pointerdown");
       buildRequested = true;
       event.preventDefault();
     }
+  });
+
+  canvas.addEventListener("pointermove", () => {
+    if (!buildingModeActive || !movementDiagnosticPending) return;
+    movementDiagnosticPending = false;
+    logPickingDiagnostic("first-pointermove");
   });
 
   return {
@@ -196,6 +204,8 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
         disableGhosts();
         updateBuildingPanel();
         buildingPanel.hidden = false;
+        movementDiagnosticPending = true;
+        logPickingDiagnostic("activation");
       }
     }
 
@@ -414,9 +424,37 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     selectionChangeRequested = false;
     rotationRequested = false;
     buildRequested = false;
+    movementDiagnosticPending = false;
     currentPlacement = undefined;
     disableGhosts();
     buildingPanel.hidden = true;
+  }
+
+  function logPickingDiagnostic(context: string) {
+    const unrestrictedPick = scene.pick(scene.pointerX, scene.pointerY);
+    const terrainPick = scene.pick(
+      scene.pointerX,
+      scene.pointerY,
+      (mesh) => mesh === terrainMesh,
+    );
+
+    console.info("[building-pick]", {
+      context,
+      pointerX: scene.pointerX,
+      pointerY: scene.pointerY,
+      unrestrictedPick: {
+        hit: unrestrictedPick?.hit ?? false,
+        meshName: unrestrictedPick?.pickedMesh?.name ?? null,
+      },
+      terrainPick: {
+        hit: terrainPick?.hit ?? false,
+        meshName: terrainPick?.pickedMesh?.name ?? null,
+      },
+      terrainMesh: {
+        name: terrainMesh.name,
+        isPickable: terrainMesh.isPickable,
+      },
+    });
   }
 }
 

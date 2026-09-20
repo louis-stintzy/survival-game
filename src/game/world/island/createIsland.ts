@@ -65,7 +65,7 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
     waterMesh,
     sampleTerrain: sample,
     waterHeight: terrainData.waterHeight,
-    shadowCasters: [terrainMesh, ...resources.shadowCasters, ...raft.meshes],
+    shadowCasters: [...resources.shadowCasters, ...raft.meshes],
     harvestableResources: resources.harvestableResources,
     playerSpawnGroundPosition: new Vector3(
       PLAYER_SPAWN.x,

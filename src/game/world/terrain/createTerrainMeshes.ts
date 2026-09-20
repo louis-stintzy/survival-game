@@ -9,7 +9,7 @@ import { createTerrainMeshData } from "./createTerrainMeshData";
 import type { TerrainData } from "./terrainTypes";
 
 const MAX_SIMULTANEOUS_LIGHTS = 8;
-const WATER_VISUAL_SIZE_MULTIPLIER = 2;
+const WATER_VISUAL_SIZE_MULTIPLIER = 5;
 
 export interface TerrainMeshes {
   terrainMesh: Mesh;
