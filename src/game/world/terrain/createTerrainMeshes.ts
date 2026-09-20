@@ -9,6 +9,7 @@ import { createTerrainMeshData } from "./createTerrainMeshData";
 import type { TerrainData } from "./terrainTypes";
 
 const MAX_SIMULTANEOUS_LIGHTS = 8;
+const WATER_VISUAL_SIZE_MULTIPLIER = 2;
 
 export interface TerrainMeshes {
   terrainMesh: Mesh;
@@ -36,16 +37,19 @@ export function createTerrainMeshes(
   terrainMesh.useVertexColors = true;
   terrainMesh.hasVertexAlpha = false;
   terrainMesh.receiveShadows = true;
+  terrainMesh.isPickable = true;
 
-  const terrainSize = terrain.halfSize * 2;
+  const waterVisualSize =
+    terrain.halfSize * 2 * WATER_VISUAL_SIZE_MULTIPLIER;
   const waterMesh = MeshBuilder.CreateGround(
     "terrain-water",
-    { width: terrainSize, height: terrainSize, subdivisions: 1 },
+    { width: waterVisualSize, height: waterVisualSize, subdivisions: 1 },
     scene,
   );
   waterMesh.position.y = terrain.waterHeight;
   waterMesh.material = createWaterMaterial(scene);
   waterMesh.receiveShadows = true;
+  waterMesh.isPickable = false;
 
   return { terrainMesh, waterMesh };
 }
@@ -62,7 +66,7 @@ function createWaterMaterial(scene: Scene): StandardMaterial {
   const material = new StandardMaterial("terrain-water-material", scene);
   material.diffuseColor = Color3.FromHexString(GAME_PALETTE.world.water);
   material.specularColor = Color3.Black();
-  material.alpha = 0.92;
+  material.alpha = 0.7;
   material.maxSimultaneousLights = MAX_SIMULTANEOUS_LIGHTS;
   return material;
 }

@@ -132,7 +132,6 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   let rotationRequested = false;
   let buildRequested = false;
   let rotationStep = 0;
-  let pointerPosition: { x: number; y: number } | undefined;
   let currentPlacement: Placement | undefined;
   let lastGhostValidity: boolean | undefined;
   let lastStatus = "";
@@ -166,14 +165,6 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
       rotationRequested = true;
       event.preventDefault();
     }
-  });
-
-  canvas.addEventListener("pointermove", (event) => {
-    const bounds = canvas.getBoundingClientRect();
-    pointerPosition = {
-      x: event.clientX - bounds.left,
-      y: event.clientY - bounds.top,
-    };
   });
 
   canvas.addEventListener("pointerdown", (event) => {
@@ -267,15 +258,9 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
 
   function updateGhostPlacement(): Placement | undefined {
     const ghost = ghosts[selectedBuildingType];
-    if (!pointerPosition) {
-      ghost.root.setEnabled(false);
-      updateStatus("Terrain introuvable", false);
-      return undefined;
-    }
-
     const pointerHit = scene.pick(
-      pointerPosition.x,
-      pointerPosition.y,
+      scene.pointerX,
+      scene.pointerY,
       (mesh) => mesh === terrainMesh,
     );
     if (!pointerHit?.pickedPoint) {

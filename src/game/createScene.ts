@@ -48,8 +48,8 @@ export function createScene(engine: Engine): Scene {
     flame: materials.equipment.flame,
   });
 
-  // Seuls les éléments au-dessus du sol projettent une ombre ; les surfaces
-  // de l'île les reçoivent pour mieux ancrer les formes dans le diorama.
+  // Le terrain et les éléments du monde projettent leurs ombres afin d'ancrer
+  // le relief et les formes dans le diorama.
   addShadowCasters([
     player,
     ...island.shadowCasters,

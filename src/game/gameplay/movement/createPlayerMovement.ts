@@ -20,7 +20,6 @@ type MoveAttempt =
  */
 const MAX_HORIZONTAL_MOVEMENT_STEP = 0.25;
 const PLAYER_MOVEMENT_SPEED = 5;
-const PLAYER_VERTICAL_SPEED = 4;
 const MOVEMENT_KEYS = new Set([
   "z",
   "w",
@@ -94,8 +93,6 @@ export function createPlayerMovement(
   isMovementEnabled: () => boolean = () => true,
 ) {
   const pressedKeys = new Set<string>();
-  let targetPlayerHeight = player.position.y;
-  let movementWasEnabled = true;
 
   const handleKeyDown = (event: KeyboardEvent) => {
     const key = event.key.toLowerCase();
@@ -116,14 +113,8 @@ export function createPlayerMovement(
   return (deltaTimeInSeconds: number) => {
     const movementEnabled = isMovementEnabled();
     if (!movementEnabled) {
-      movementWasEnabled = false;
-      targetPlayerHeight = player.position.y;
       camera.setTarget(player.position, false, false, true);
       return;
-    }
-    if (!movementWasEnabled) {
-      targetPlayerHeight = player.position.y;
-      movementWasEnabled = true;
     }
 
     const forwardInput =
@@ -164,16 +155,6 @@ export function createPlayerMovement(
       moveHorizontally(movement.x, movement.z);
     }
 
-    // Une vitesse multipliée par le delta time lisse Y de la même manière,
-    // quel que soit le nombre d'images affichées chaque seconde.
-    const remainingHeight = targetPlayerHeight - player.position.y;
-    const maximumVerticalStep = PLAYER_VERTICAL_SPEED * deltaTimeInSeconds;
-    if (Math.abs(remainingHeight) <= maximumVerticalStep) {
-      player.position.y = targetPlayerHeight;
-    } else {
-      player.position.y += Math.sign(remainingHeight) * maximumVerticalStep;
-    }
-
     camera.setTarget(player.position, false, false, true);
   };
 
@@ -203,8 +184,8 @@ export function createPlayerMovement(
     if (!ground?.isLand) return { kind: "noGround" };
 
     player.position.x = x;
+    player.position.y = ground.height + PLAYER_HALF_HEIGHT;
     player.position.z = z;
-    targetPlayerHeight = ground.height + PLAYER_HALF_HEIGHT;
     return { kind: "moved" };
   }
 

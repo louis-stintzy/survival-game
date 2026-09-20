@@ -42,8 +42,7 @@ export function createBaseTerrainData(): TerrainData {
 }
 
 function calculateBaseHeight(x: number, z: number): number {
-  const islandSignal =
-    1 - Math.hypot(x / ISLAND_RADIUS_X, z / ISLAND_RADIUS_Z);
+  const islandSignal = 1 - Math.hypot(x / ISLAND_RADIUS_X, z / ISLAND_RADIUS_Z);
   const landBlend = smoothstep(
     COAST_TRANSITION_START,
     COAST_TRANSITION_END,
