@@ -1,3 +1,4 @@
+import "@babylonjs/core/Culling/ray";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { Scene } from "@babylonjs/core/scene";
 import type {
@@ -86,10 +87,7 @@ export function createTorchPlacement(options: TorchPlacementOptions) {
 
     const distanceX = hit.pickedPoint.x - player.position.x;
     const distanceZ = hit.pickedPoint.z - player.position.z;
-    if (
-      distanceX ** 2 + distanceZ ** 2 >
-      MAX_TORCH_PLACEMENT_DISTANCE ** 2
-    ) {
+    if (distanceX ** 2 + distanceZ ** 2 > MAX_TORCH_PLACEMENT_DISTANCE ** 2) {
       return;
     }
 
@@ -134,7 +132,9 @@ export function createTorchPlacement(options: TorchPlacementOptions) {
           (torch.root.position.x - player.position.x) ** 2 +
           (torch.root.position.z - player.position.z) ** 2,
       }))
-      .filter(({ distanceSquared }) => distanceSquared <= maximumDistanceSquared)
+      .filter(
+        ({ distanceSquared }) => distanceSquared <= maximumDistanceSquared,
+      )
       .sort((first, second) => first.distanceSquared - second.distanceSquared)
       .slice(0, activeLightLimit)
       .map(({ torch }) => torch);
