@@ -1,10 +1,7 @@
-import type {
-  TerracedCell,
-  TerracedTerrainData,
-} from "./terracedTerrainTypes";
+import type { TerracedCell, TerracedTerrainData } from "./terracedTerrainTypes";
 
-export const BASE_TERRACED_ROW_COUNT = 49;
-export const BASE_TERRACED_COLUMN_COUNT = 49;
+export const BASE_TERRACED_ROW_COUNT = 101;
+export const BASE_TERRACED_COLUMN_COUNT = 101;
 export const BASE_TERRACED_CELL_SIZE = 1.65;
 export const BASE_TERRACED_HEIGHT_STEP = 0.4;
 export const BASE_TERRACED_WATER_HEIGHT = 0.3;
@@ -55,6 +52,11 @@ function createCell(
   if (distanceFromCenter > 1) return { level: 0, surface: "water" };
   if (distanceFromCenter > BEACH_START) {
     return { level: 1, surface: "sand" };
+  }
+
+  // TEST TEMPORAIRE : crée une falaise level 2 → level 4.
+  if (Math.abs(x) <= 2 && z >= 11 && z <= 13) {
+    return { level: 4, surface: "grass" };
   }
 
   let level = 4;

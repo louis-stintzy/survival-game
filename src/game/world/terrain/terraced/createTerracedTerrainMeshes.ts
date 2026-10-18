@@ -9,7 +9,7 @@ import { createTerracedTerrainGeometry } from "./createTerracedTerrainGeometry";
 import type { TerracedTerrainData } from "./terracedTerrainTypes";
 
 const MAX_SIMULTANEOUS_LIGHTS = 8;
-const WATER_VISUAL_SIZE_MULTIPLIER = 5;
+const WATER_VISUAL_SIZE_MULTIPLIER = 1.5;
 
 export interface TerracedTerrainMeshes {
   terrainMesh: Mesh;

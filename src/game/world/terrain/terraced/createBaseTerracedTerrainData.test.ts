@@ -7,11 +7,13 @@ import {
 } from "./createBaseTerracedTerrainData";
 
 describe("createBaseTerracedTerrainData", () => {
-  test("crée une grille déterministe de 49 × 49 cellules", () => {
+  test("crée une grille déterministe de 101 × 101 cellules", () => {
     const terrain = createBaseTerracedTerrainData();
 
-    expect(terrain.rowCount).toBe(49);
-    expect(terrain.columnCount).toBe(49);
+    expect(terrain.rowCount).toBe(101);
+    expect(terrain.columnCount).toBe(101);
+    expect(terrain.rowCount * terrain.cellSize).toBeCloseTo(166.65);
+    expect(terrain.columnCount * terrain.cellSize).toBeCloseTo(166.65);
     expect(terrain.cells).toHaveLength(
       BASE_TERRACED_ROW_COUNT * BASE_TERRACED_COLUMN_COUNT,
     );

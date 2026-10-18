@@ -1,7 +1,10 @@
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
-import type { PlayerCollisionQuery } from "../collision/playerWorldCollision";
+import {
+  PLAYER_COLLISION_RADIUS,
+  type PlayerCollisionQuery,
+} from "../collision/playerWorldCollision";
 import type { CollisionContact, XZPosition } from "../collision/collisionTypes";
 import { PLAYER_HALF_HEIGHT } from "../../models/createPlayer";
 import type { TerrainSampler } from "../../world/terrain/terrainTypes";
@@ -21,6 +24,17 @@ type MoveAttempt =
  */
 const MAX_HORIZONTAL_MOVEMENT_STEP = 0.25;
 const PLAYER_MOVEMENT_SPEED = 5;
+const PLAYER_DIAGONAL_FOOTPRINT_OFFSET = PLAYER_COLLISION_RADIUS / Math.SQRT2;
+const PLAYER_FOOTPRINT_OFFSETS = [
+  { x: PLAYER_COLLISION_RADIUS, z: 0 },
+  { x: -PLAYER_COLLISION_RADIUS, z: 0 },
+  { x: 0, z: PLAYER_COLLISION_RADIUS },
+  { x: 0, z: -PLAYER_COLLISION_RADIUS },
+  { x: PLAYER_DIAGONAL_FOOTPRINT_OFFSET, z: PLAYER_DIAGONAL_FOOTPRINT_OFFSET },
+  { x: PLAYER_DIAGONAL_FOOTPRINT_OFFSET, z: -PLAYER_DIAGONAL_FOOTPRINT_OFFSET },
+  { x: -PLAYER_DIAGONAL_FOOTPRINT_OFFSET, z: PLAYER_DIAGONAL_FOOTPRINT_OFFSET },
+  { x: -PLAYER_DIAGONAL_FOOTPRINT_OFFSET, z: -PLAYER_DIAGONAL_FOOTPRINT_OFFSET },
+] as const;
 const MOVEMENT_KEYS = new Set([
   "z",
   "w",
@@ -69,6 +83,22 @@ export function canTraverseTerrainLevels(
   candidateLevel: number,
 ): boolean {
   return candidateLevel - currentLevel < 2;
+}
+
+/** Vérifie si le pourtour de la capsule rencontrerait une terrasse trop haute. */
+export function isPlayerFootprintBlockedByCliff(
+  candidateX: number,
+  candidateZ: number,
+  currentLevel: number,
+  sampleTerrain: TerrainSampler,
+): boolean {
+  return PLAYER_FOOTPRINT_OFFSETS.some(({ x, z }) => {
+    const ground = sampleTerrain(candidateX + x, candidateZ + z);
+    return (
+      ground?.isLand === true &&
+      !canTraverseTerrainLevels(currentLevel, ground.level)
+    );
+  });
 }
 
 /**
@@ -194,7 +224,13 @@ export function createPlayerMovement(
     const currentGround = sampleTerrain(reference.x, reference.z);
     if (
       !currentGround?.isLand ||
-      !canTraverseTerrainLevels(currentGround.level, ground.level)
+      !canTraverseTerrainLevels(currentGround.level, ground.level) ||
+      isPlayerFootprintBlockedByCliff(
+        x,
+        z,
+        currentGround.level,
+        sampleTerrain,
+      )
     ) {
       return { kind: "terrainCliff" };
     }

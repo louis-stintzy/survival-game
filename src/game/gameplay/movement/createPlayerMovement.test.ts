@@ -1,8 +1,10 @@
 import { describe, expect, test } from "vitest";
 import {
   canTraverseTerrainLevels,
+  isPlayerFootprintBlockedByCliff,
   projectMovementAlongSurface,
 } from "./createPlayerMovement";
+import type { TerrainSampler } from "../../world/terrain/terrainTypes";
 import {
   circlesOverlap,
   getCirclesContact,
@@ -95,4 +97,38 @@ describe("canTraverseTerrainLevels", () => {
       );
     },
   );
+});
+
+describe("isPlayerFootprintBlockedByCliff", () => {
+  test("détecte une falaise avant que le centre entre dans sa cellule", () => {
+    const sampleTerrain: TerrainSampler = (x) => ({
+      height: x >= 0.4 ? 1.6 : 0.8,
+      level: x >= 0.4 ? 4 : 2,
+      surface: "grass",
+      isLand: true,
+    });
+
+    expect(sampleTerrain(0, 0)?.level).toBe(2);
+    expect(
+      isPlayerFootprintBlockedByCliff(0, 0, 2, sampleTerrain),
+    ).toBe(true);
+  });
+
+  test("n'empêche ni une marche +1 ni une descente importante", () => {
+    const levelThree: TerrainSampler = () => ({
+      height: 1.2,
+      level: 3,
+      surface: "grass",
+      isLand: true,
+    });
+    const levelOne: TerrainSampler = () => ({
+      height: 0.4,
+      level: 1,
+      surface: "grass",
+      isLand: true,
+    });
+
+    expect(isPlayerFootprintBlockedByCliff(0, 0, 2, levelThree)).toBe(false);
+    expect(isPlayerFootprintBlockedByCliff(0, 0, 4, levelOne)).toBe(false);
+  });
 });
