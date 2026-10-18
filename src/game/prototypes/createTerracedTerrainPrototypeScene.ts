@@ -4,22 +4,18 @@ import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
-import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import { Scene } from "@babylonjs/core/scene";
 import { createGameCamera } from "../camera/createGameCamera";
 import { GAME_PALETTE } from "../constants/gamePalette";
 import { createCameraRotation } from "../gameplay/movement/createCameraRotation";
 import { createPlayer } from "../models/createPlayer";
 import { createLighting } from "../rendering/createLighting";
-import { createTerracedTerrainGeometry } from "../world/terrain/terraced/createTerracedTerrainGeometry";
+import { createTerracedTerrainMeshes } from "../world/terrain/terraced/createTerracedTerrainMeshes";
 import { sampleTerracedTerrain } from "../world/terrain/terraced/sampleTerracedTerrain";
 import { createTerracedPlayerMovement } from "./createTerracedPlayerMovement";
-import {
-  TERRACED_TERRAIN_DATA,
-} from "./terracedTerrainPrototypeData";
+import { TERRACED_TERRAIN_DATA } from "./terracedTerrainPrototypeData";
 
 const MAX_SIMULTANEOUS_LIGHTS = 8;
-const WATER_VISUAL_SIZE = 60;
 
 export function createTerracedTerrainPrototypeScene(engine: Engine): Scene {
   const scene = new Scene(engine);
@@ -27,33 +23,7 @@ export function createTerracedTerrainPrototypeScene(engine: Engine): Scene {
   const camera = createGameCamera(scene, engine);
   const lighting = createLighting(scene);
 
-  const geometry = createTerracedTerrainGeometry(TERRACED_TERRAIN_DATA);
-  const vertexData = new VertexData();
-  vertexData.positions = geometry.positions;
-  vertexData.indices = geometry.indices;
-  vertexData.colors = geometry.colors;
-  vertexData.normals = geometry.normals;
-
-  const terrain = new Mesh("terraced-terrain-prototype", scene);
-  vertexData.applyToMesh(terrain);
-  terrain.material = createMaterial(scene, "terraced-terrain-material", "#FFFFFF");
-  terrain.useVertexColors = true;
-  terrain.hasVertexAlpha = false;
-  terrain.receiveShadows = true;
-
-  const water = MeshBuilder.CreateGround(
-    "terraced-water",
-    { width: WATER_VISUAL_SIZE, height: WATER_VISUAL_SIZE },
-    scene,
-  );
-  water.position.y = TERRACED_TERRAIN_DATA.waterHeight;
-  water.material = createMaterial(
-    scene,
-    "terraced-water-material",
-    GAME_PALETTE.world.water,
-    0.7,
-  );
-  water.receiveShadows = true;
+  createTerracedTerrainMeshes(scene, TERRACED_TERRAIN_DATA);
 
   const references = createScaleReferences(scene);
   references.shadowCasters.forEach((mesh) =>
