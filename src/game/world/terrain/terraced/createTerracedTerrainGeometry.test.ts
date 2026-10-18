@@ -1,6 +1,9 @@
 import { describe, expect, test } from "vitest";
 import { createTerracedTerrainGeometry } from "./createTerracedTerrainGeometry";
-import type { TerracedCell } from "./terracedTerrainPrototypeData";
+import type {
+  TerracedCell,
+  TerracedTerrainData,
+} from "./terracedTerrainTypes";
 
 describe("createTerracedTerrainGeometry", () => {
   test("une colonne isolée génère un dessus et quatre côtés", () => {
@@ -31,7 +34,7 @@ describe("createTerracedTerrainGeometry", () => {
     expect(interfaceVertexCount).toBe(2 * 4);
   });
 
-  test("produit des buffers finis avec des indices valides", () => {
+  test("produit des nombres finis et des indices valides", () => {
     const geometry = createGeometry([
       [0, 1, 0],
       [1, 3, 1],
@@ -52,33 +55,47 @@ describe("createTerracedTerrainGeometry", () => {
     ).toBe(true);
   });
 
-  test("colore le dessus depuis la surface indépendamment du niveau", () => {
-    const grass = createTerracedTerrainGeometry({
-      cells: [[{ level: 4, surface: "grass" }]],
-      cellSize: 1,
-      heightStep: 1,
-    });
-    const rock = createTerracedTerrainGeometry({
-      cells: [[{ level: 4, surface: "rock" }]],
-      cellSize: 1,
-      heightStep: 1,
-    });
+  test("conserve une couleur nette par face et par surface", () => {
+    const grass = createTerracedTerrainGeometry(
+      createTerrain([[{ level: 4, surface: "grass" }]]),
+    );
+    const rock = createTerracedTerrainGeometry(
+      createTerrain([[{ level: 4, surface: "rock" }]]),
+    );
 
     expect(grass.colors.slice(0, 4)).not.toEqual(rock.colors.slice(0, 4));
+    for (let vertex = 1; vertex < 4; vertex += 1) {
+      expect(grass.colors.slice(vertex * 4, vertex * 4 + 4)).toEqual(
+        grass.colors.slice(0, 4),
+      );
+    }
   });
 });
 
 function createGeometry(levels: readonly (readonly number[])[]) {
-  return createTerracedTerrainGeometry({
-    cells: levels.map((row) =>
-      row.map(
-        (level): TerracedCell => ({
-          level,
-          surface: level === 0 ? "water" : "grass",
-        }),
+  return createTerracedTerrainGeometry(
+    createTerrain(
+      levels.map((row) =>
+        row.map(
+          (level): TerracedCell => ({
+            level,
+            surface: level === 0 ? "water" : "grass",
+          }),
+        ),
       ),
     ),
+  );
+}
+
+function createTerrain(
+  rows: readonly (readonly TerracedCell[])[],
+): TerracedTerrainData {
+  return {
+    rowCount: rows.length,
+    columnCount: rows[0]?.length ?? 0,
     cellSize: 1,
     heightStep: 1,
-  });
+    waterHeight: 0.3,
+    cells: rows.flat(),
+  };
 }

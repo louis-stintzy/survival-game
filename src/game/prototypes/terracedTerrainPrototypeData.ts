@@ -1,9 +1,7 @@
-export type TerracedSurface = "water" | "sand" | "grass" | "rock";
-
-export interface TerracedCell {
-  level: number;
-  surface: TerracedSurface;
-}
+import type {
+  TerracedCell,
+  TerracedTerrainData,
+} from "../world/terrain/terraced/terracedTerrainTypes";
 
 export const TERRACED_CELL_SIZE = 1.65;
 export const TERRACED_HEIGHT_STEP = 0.4;
@@ -23,7 +21,7 @@ const R5 = { level: 5, surface: "rock" } as const;
  * Carte fixe du spike. Les codes associent explicitement une surface et un
  * niveau indépendants : G4 est de l'herbe haute, R2 de la roche basse.
  */
-export const TERRACED_CELLS: readonly (readonly TerracedCell[])[] = [
+const TERRACED_CELL_ROWS: readonly (readonly TerracedCell[])[] = [
   [W, W, W, W, W, W, W, W, W, W, W, W],
   [W, W, S1, S1, S1, S1, S1, S1, S1, W, W, W],
   [W, S1, S1, G1, G2, G2, G2, G2, S1, S1, W, W],
@@ -37,3 +35,12 @@ export const TERRACED_CELLS: readonly (readonly TerracedCell[])[] = [
   [W, W, W, S1, S1, S1, S1, S1, S1, W, W, W],
   [W, W, W, W, W, W, W, W, W, W, W, W],
 ] as const;
+
+export const TERRACED_TERRAIN_DATA: TerracedTerrainData = {
+  rowCount: TERRACED_CELL_ROWS.length,
+  columnCount: TERRACED_CELL_ROWS[0].length,
+  cellSize: TERRACED_CELL_SIZE,
+  heightStep: TERRACED_HEIGHT_STEP,
+  waterHeight: TERRACED_WATER_HEIGHT,
+  cells: TERRACED_CELL_ROWS.flat(),
+};

@@ -1,20 +1,23 @@
 import { describe, expect, test } from "vitest";
-import type { TerracedCell } from "./terracedTerrainPrototypeData";
 import { sampleTerracedTerrain } from "./sampleTerracedTerrain";
+import type { TerracedTerrainData } from "./terracedTerrainTypes";
 
-const CELLS: readonly (readonly TerracedCell[])[] = [
-  [
+const TERRAIN: TerracedTerrainData = {
+  rowCount: 2,
+  columnCount: 2,
+  cellSize: 1,
+  heightStep: 0.5,
+  waterHeight: 0.3,
+  cells: [
     { level: 0, surface: "water" },
     { level: 4, surface: "grass" },
-  ],
-  [
     { level: 2, surface: "rock" },
     { level: 1, surface: "sand" },
   ],
-];
+};
 
 describe("sampleTerracedTerrain", () => {
-  test("retrouve la cellule et sa hauteur depuis son centre", () => {
+  test("utilise l'index row-major au centre d'une cellule", () => {
     const sample = sampleAt(-0.5, 0.5);
 
     expect(sample).toEqual({
@@ -51,5 +54,5 @@ describe("sampleTerracedTerrain", () => {
 });
 
 function sampleAt(x: number, z: number) {
-  return sampleTerracedTerrain(CELLS, 1, 0.5, x, z);
+  return sampleTerracedTerrain(TERRAIN, x, z);
 }

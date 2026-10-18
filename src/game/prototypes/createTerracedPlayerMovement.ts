@@ -2,7 +2,7 @@ import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { PLAYER_HALF_HEIGHT } from "../models/createPlayer";
-import type { TerracedTerrainSampler } from "./sampleTerracedTerrain";
+import type { TerracedTerrainSampler } from "../world/terrain/terraced/terracedTerrainTypes";
 
 export const TERRACED_PLAYER_SPEED = 5;
 export const TERRACED_UPHILL_SPEED_MULTIPLIER = 0.5;

@@ -11,14 +11,11 @@ import { GAME_PALETTE } from "../constants/gamePalette";
 import { createCameraRotation } from "../gameplay/movement/createCameraRotation";
 import { createPlayer } from "../models/createPlayer";
 import { createLighting } from "../rendering/createLighting";
-import { createTerracedTerrainGeometry } from "./createTerracedTerrainGeometry";
+import { createTerracedTerrainGeometry } from "../world/terrain/terraced/createTerracedTerrainGeometry";
+import { sampleTerracedTerrain } from "../world/terrain/terraced/sampleTerracedTerrain";
 import { createTerracedPlayerMovement } from "./createTerracedPlayerMovement";
-import { sampleTerracedTerrain } from "./sampleTerracedTerrain";
 import {
-  TERRACED_CELL_SIZE,
-  TERRACED_CELLS,
-  TERRACED_HEIGHT_STEP,
-  TERRACED_WATER_HEIGHT,
+  TERRACED_TERRAIN_DATA,
 } from "./terracedTerrainPrototypeData";
 
 const MAX_SIMULTANEOUS_LIGHTS = 8;
@@ -30,11 +27,7 @@ export function createTerracedTerrainPrototypeScene(engine: Engine): Scene {
   const camera = createGameCamera(scene, engine);
   const lighting = createLighting(scene);
 
-  const geometry = createTerracedTerrainGeometry({
-    cells: TERRACED_CELLS,
-    cellSize: TERRACED_CELL_SIZE,
-    heightStep: TERRACED_HEIGHT_STEP,
-  });
+  const geometry = createTerracedTerrainGeometry(TERRACED_TERRAIN_DATA);
   const vertexData = new VertexData();
   vertexData.positions = geometry.positions;
   vertexData.indices = geometry.indices;
@@ -53,7 +46,7 @@ export function createTerracedTerrainPrototypeScene(engine: Engine): Scene {
     { width: WATER_VISUAL_SIZE, height: WATER_VISUAL_SIZE },
     scene,
   );
-  water.position.y = TERRACED_WATER_HEIGHT;
+  water.position.y = TERRACED_TERRAIN_DATA.waterHeight;
   water.material = createMaterial(
     scene,
     "terraced-water-material",
@@ -68,13 +61,7 @@ export function createTerracedTerrainPrototypeScene(engine: Engine): Scene {
   );
 
   const sampleTerrain = (x: number, z: number) =>
-    sampleTerracedTerrain(
-      TERRACED_CELLS,
-      TERRACED_CELL_SIZE,
-      TERRACED_HEIGHT_STEP,
-      x,
-      z,
-    );
+    sampleTerracedTerrain(TERRACED_TERRAIN_DATA, x, z);
   const updateCameraRotation = createCameraRotation(camera);
   const updatePlayerMovement = createTerracedPlayerMovement(
     references.player,
@@ -175,14 +162,18 @@ function createScaleReferences(scene: Scene): {
 }
 
 function getCellCenter(column: number, row: number) {
-  const columnCount = TERRACED_CELLS[0].length;
-  const rowCount = TERRACED_CELLS.length;
+  const {
+    columnCount,
+    rowCount,
+    cellSize,
+    heightStep,
+    cells,
+  } = TERRACED_TERRAIN_DATA;
+  const cell = cells[row * columnCount + column];
   return {
-    x: (-columnCount * TERRACED_CELL_SIZE) / 2 +
-      (column + 0.5) * TERRACED_CELL_SIZE,
-    y: TERRACED_CELLS[row][column].level * TERRACED_HEIGHT_STEP,
-    z: (-rowCount * TERRACED_CELL_SIZE) / 2 +
-      (row + 0.5) * TERRACED_CELL_SIZE,
+    x: (-columnCount * cellSize) / 2 + (column + 0.5) * cellSize,
+    y: cell.level * heightStep,
+    z: (-rowCount * cellSize) / 2 + (row + 0.5) * cellSize,
   };
 }
 

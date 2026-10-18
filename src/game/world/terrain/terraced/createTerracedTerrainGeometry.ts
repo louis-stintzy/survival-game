@@ -1,20 +1,14 @@
-import { GAME_PALETTE } from "../constants/gamePalette";
+import { GAME_PALETTE } from "../../../constants/gamePalette";
 import type {
-  TerracedCell,
   TerracedSurface,
-} from "./terracedTerrainPrototypeData";
+  TerracedTerrainData,
+} from "./terracedTerrainTypes";
 
 export interface TerracedTerrainGeometry {
   positions: number[];
   indices: number[];
   colors: number[];
   normals: number[];
-}
-
-interface TerracedTerrainGeometryOptions {
-  cells: readonly (readonly TerracedCell[])[];
-  cellSize: number;
-  heightStep: number;
 }
 
 type FaceColor = readonly [number, number, number, number];
@@ -28,45 +22,49 @@ const COLORS = {
 } as const;
 
 /**
- * Construit un seul mesh de terrasses à sommets volontairement dupliqués.
- * Chaque face garde ainsi une couleur et une normale constantes, sans lissage
- * entre dessus, côtés, sable, terre ou roche.
+ * Construit les buffers d'un terrain terrassé unique. Les sommets sont
+ * dupliqués par face afin de conserver couleurs nettes et normales planes.
+ * Seuls les dessus terrestres et les côtés réellement exposés sont produits.
  */
 export function createTerracedTerrainGeometry(
-  options: TerracedTerrainGeometryOptions,
+  terrain: TerracedTerrainData,
 ): TerracedTerrainGeometry {
-  const { cells, cellSize, heightStep } = options;
+  if (terrain.cells.length !== terrain.rowCount * terrain.columnCount) {
+    throw new Error(
+      "Le nombre de cellules doit correspondre à rowCount * columnCount.",
+    );
+  }
+
   const positions: number[] = [];
   const indices: number[] = [];
   const colors: number[] = [];
   const normals: number[] = [];
-  const rowCount = cells.length;
-  const columnCount = cells[0]?.length ?? 0;
-  const minimumX = (-columnCount * cellSize) / 2;
-  const minimumZ = (-rowCount * cellSize) / 2;
+  const minimumX = (-terrain.columnCount * terrain.cellSize) / 2;
+  const minimumZ = (-terrain.rowCount * terrain.cellSize) / 2;
 
-  for (let row = 0; row < rowCount; row += 1) {
-    if (cells[row].length !== columnCount) {
-      throw new Error("La grille de terrasses doit être rectangulaire.");
-    }
+  for (let row = 0; row < terrain.rowCount; row += 1) {
+    for (let column = 0; column < terrain.columnCount; column += 1) {
+      const cell = getCell(row, column);
+      if (!cell) continue;
 
-    for (let column = 0; column < columnCount; column += 1) {
-      const cell = cells[row][column];
       const { level, surface } = cell;
       if (!Number.isInteger(level) || level < 0) {
-        throw new Error("Chaque niveau de terrasse doit être un entier positif ou nul.");
+        throw new Error(
+          "Chaque niveau de terrasse doit être un entier positif ou nul.",
+        );
       }
       if (surface === "water") continue;
+      const landSurface = surface;
 
-      const x0 = minimumX + column * cellSize;
-      const x1 = x0 + cellSize;
-      const z0 = minimumZ + row * cellSize;
-      const z1 = z0 + cellSize;
-      const topY = level * heightStep;
+      const x0 = minimumX + column * terrain.cellSize;
+      const x1 = x0 + terrain.cellSize;
+      const z0 = minimumZ + row * terrain.cellSize;
+      const z1 = z0 + terrain.cellSize;
+      const topY = level * terrain.heightStep;
 
       addQuad(
         [x0, topY, z0, x1, topY, z0, x1, topY, z1, x0, topY, z1],
-        getTopColor(surface),
+        getTopColor(landSurface),
         [0, 1, 0],
       );
 
@@ -80,15 +78,13 @@ export function createTerracedTerrainGeometry(
         neighborColumn: number,
         direction: "north" | "south" | "east" | "west",
       ): void {
-        const neighborLevel = cells[neighborRow]?.[neighborColumn]?.level ?? 0;
+        const neighborLevel = getCell(neighborRow, neighborColumn)?.level ?? 0;
         if (neighborLevel >= level) return;
 
-        // Seules les couches réellement exposées sont créées : aucun cube
-        // complet ni aucune face interne entre deux colonnes n'est conservé.
         for (let layer = neighborLevel; layer < level; layer += 1) {
-          const bottomY = layer * heightStep;
-          const upperY = (layer + 1) * heightStep;
-          const sideColor = getSideColor(surface, level, layer);
+          const bottomY = layer * terrain.heightStep;
+          const upperY = (layer + 1) * terrain.heightStep;
+          const sideColor = getSideColor(landSurface, level, layer);
           switch (direction) {
             case "north":
               addQuad(
@@ -126,6 +122,18 @@ export function createTerracedTerrainGeometry(
 
   return { positions, indices, colors, normals };
 
+  function getCell(row: number, column: number) {
+    if (
+      row < 0 ||
+      row >= terrain.rowCount ||
+      column < 0 ||
+      column >= terrain.columnCount
+    ) {
+      return undefined;
+    }
+    return terrain.cells[row * terrain.columnCount + column];
+  }
+
   function addQuad(
     coordinates: readonly number[],
     color: FaceColor,
@@ -148,14 +156,14 @@ export function createTerracedTerrainGeometry(
   }
 }
 
-function getTopColor(surface: TerracedSurface): FaceColor {
+function getTopColor(surface: Exclude<TerracedSurface, "water">): FaceColor {
   if (surface === "sand") return COLORS.sand;
   if (surface === "rock") return COLORS.rock;
   return COLORS.grass;
 }
 
 function getSideColor(
-  surface: TerracedSurface,
+  surface: Exclude<TerracedSurface, "water">,
   level: number,
   layer: number,
 ): FaceColor {
