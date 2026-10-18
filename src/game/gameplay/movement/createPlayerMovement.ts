@@ -7,7 +7,10 @@ import {
 } from "../collision/playerWorldCollision";
 import type { CollisionContact, XZPosition } from "../collision/collisionTypes";
 import { PLAYER_HALF_HEIGHT } from "../../models/createPlayer";
-import type { TerrainSampler } from "../../world/terrain/terrainTypes";
+import type {
+  TerrainSample,
+  TerrainSampler,
+} from "../../world/terrain/terrainTypes";
 
 type MoveAttempt =
   | { kind: "moved" }
@@ -90,15 +93,41 @@ export function isPlayerFootprintBlockedByCliff(
   candidateX: number,
   candidateZ: number,
   currentLevel: number,
+  movementX: number,
+  movementZ: number,
   sampleTerrain: TerrainSampler,
 ): boolean {
   return PLAYER_FOOTPRINT_OFFSETS.some(({ x, z }) => {
+    if (x * movementX + z * movementZ < 0) return false;
+
     const ground = sampleTerrain(candidateX + x, candidateZ + z);
     return (
       ground?.isLand === true &&
       !canTraverseTerrainLevels(currentLevel, ground.level)
     );
   });
+}
+
+/**
+ * Retarde une descente tant qu'une partie du pourtour repose encore sur une
+ * terrasse plus haute. La hauteur courante n'est jamais augmentée ici.
+ */
+export function resolvePlayerVerticalPosition(
+  candidateX: number,
+  candidateZ: number,
+  currentPlayerY: number,
+  candidateGround: TerrainSample,
+  sampleTerrain: TerrainSampler,
+): number {
+  const candidatePlayerY = candidateGround.height + PLAYER_HALF_HEIGHT;
+  if (candidatePlayerY >= currentPlayerY) return candidatePlayerY;
+
+  const stillOverHigherGround = PLAYER_FOOTPRINT_OFFSETS.some(({ x, z }) => {
+    const ground = sampleTerrain(candidateX + x, candidateZ + z);
+    return ground?.isLand === true && ground.height > candidateGround.height;
+  });
+
+  return stillOverHigherGround ? currentPlayerY : candidatePlayerY;
 }
 
 /**
@@ -229,6 +258,8 @@ export function createPlayerMovement(
         x,
         z,
         currentGround.level,
+        x - reference.x,
+        z - reference.z,
         sampleTerrain,
       )
     ) {
@@ -236,7 +267,13 @@ export function createPlayerMovement(
     }
 
     player.position.x = x;
-    player.position.y = ground.height + PLAYER_HALF_HEIGHT;
+    player.position.y = resolvePlayerVerticalPosition(
+      x,
+      z,
+      player.position.y,
+      ground,
+      sampleTerrain,
+    );
     player.position.z = z;
     return { kind: "moved" };
   }

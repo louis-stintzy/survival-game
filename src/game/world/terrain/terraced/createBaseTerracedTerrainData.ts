@@ -54,11 +54,6 @@ function createCell(
     return { level: 1, surface: "sand" };
   }
 
-  // TEST TEMPORAIRE : crée une falaise level 2 → level 4.
-  if (Math.abs(x) <= 2 && z >= 11 && z <= 13) {
-    return { level: 4, surface: "grass" };
-  }
-
   let level = 4;
   if (distanceFromCenter > MIDDLE_TERRACE_START) level = 2;
   else if (distanceFromCenter > HIGH_TERRACE_START) level = 3;
