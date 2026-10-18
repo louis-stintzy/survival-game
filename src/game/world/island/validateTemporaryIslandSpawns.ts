@@ -14,8 +14,8 @@ export function validateTemporaryIslandSpawns(
   footprint: RaftFootprint,
 ) {
   const playerGround = sampleTerrain(PLAYER_SPAWN.x, PLAYER_SPAWN.z);
-  if (playerGround?.surface !== "beach") {
-    throw new Error("Le spawn joueur temporaire doit être sur la plage.");
+  if (playerGround?.surface !== "sand") {
+    throw new Error("Le spawn joueur temporaire doit être sur le sable.");
   }
 
   const spawnDistance = Math.hypot(

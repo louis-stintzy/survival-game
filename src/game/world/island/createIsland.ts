@@ -10,9 +10,9 @@ import {
   type Raft,
 } from "../../models/createRaft";
 import { RAFT_NAVIGATION_FOOTPRINT } from "../../models/raftGeometry";
-import { createBaseTerrainData } from "../terrain/createBaseTerrainData";
-import { sampleTerrain } from "../terrain/sampleTerrain";
-import { createTerrainMeshes } from "../terrain/createTerrainMeshes";
+import { createBaseTerracedTerrainData } from "../terrain/terraced/createBaseTerracedTerrainData";
+import { createTerracedTerrainMeshes } from "../terrain/terraced/createTerracedTerrainMeshes";
+import { sampleTerracedTerrain } from "../terrain/terraced/sampleTerracedTerrain";
 import type { TerrainSampler } from "../terrain/terrainTypes";
 import { validateTemporaryIslandSpawns } from "./validateTemporaryIslandSpawns";
 
@@ -35,9 +35,13 @@ export interface Island {
 }
 
 export function createIsland(scene: Scene, materials: IslandMaterials): Island {
-  const terrainData = createBaseTerrainData();
-  const { terrainMesh, waterMesh } = createTerrainMeshes(scene, terrainData);
-  const sample: TerrainSampler = (x, z) => sampleTerrain(terrainData, x, z);
+  const terrainData = createBaseTerracedTerrainData();
+  const { terrainMesh, waterMesh } = createTerracedTerrainMeshes(
+    scene,
+    terrainData,
+  );
+  const sample: TerrainSampler = (x, z) =>
+    sampleTerracedTerrain(terrainData, x, z);
   const { playerGround } = validateTemporaryIslandSpawns(
     sample,
     RAFT_NAVIGATION_FOOTPRINT,

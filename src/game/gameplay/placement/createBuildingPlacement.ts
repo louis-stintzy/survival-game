@@ -14,10 +14,10 @@ import type { ResourceCost } from "../../definitions/resourceDefinitions";
 import { PLAYER_COLLISION_RADIUS } from "../collision/playerWorldCollision";
 import { circleOverlapsHorizontalBounds } from "../collision/horizontalBoundsCollision";
 import type { TerrainSampler } from "../../world/terrain/terrainTypes";
+import { isBuildableTerrace } from "./buildingTerrainValidation";
 
 const GRID_SIZE = 1;
 const MAX_BUILD_DISTANCE = 6;
-const MAX_BUILDING_GROUND_HEIGHT_DIFFERENCE = 0.35;
 const GHOST_ALPHA_INDEX = Number.POSITIVE_INFINITY;
 
 interface ResourceInventory {
@@ -355,13 +355,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     ];
 
     const grounds = points.map(([x, z]) => sampleTerrain(x, z));
-    if (grounds.some((ground) => ground?.surface !== "grass")) return false;
-
-    const heights = grounds.map((ground) => ground!.height);
-    return (
-      Math.max(...heights) - Math.min(...heights) <=
-      MAX_BUILDING_GROUND_HEIGHT_DIFFERENCE
-    );
+    return isBuildableTerrace(grounds);
   }
 
   function resourceBlocks(resource: HarvestableResource, footprint: Footprint) {

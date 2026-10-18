@@ -23,13 +23,13 @@ export interface RaftSpawnPoint extends IslandSpawnPoint {
 
 export const PLAYER_SPAWN: IslandSpawnPoint = {
   x: 0,
-  z: -26,
+  z: 29.7,
 };
 
 // Position temporaire proche de la plage de départ pour le prototype nautique.
 export const RAFT_SPAWN: RaftSpawnPoint = {
   x: 0,
-  z: -28.3,
+  z: 31.7,
   rotation: Math.PI / 2,
 };
 

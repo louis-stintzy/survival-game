@@ -1,5 +1,8 @@
 import { describe, expect, test } from "vitest";
-import { projectMovementAlongSurface } from "./createPlayerMovement";
+import {
+  canTraverseTerrainLevels,
+  projectMovementAlongSurface,
+} from "./createPlayerMovement";
 import {
   circlesOverlap,
   getCirclesContact,
@@ -75,4 +78,21 @@ describe("projectMovementAlongSurface", () => {
       ),
     ).toBe(false);
   });
+});
+
+describe("canTraverseTerrainLevels", () => {
+  test.each([
+    [2, 2, true],
+    [2, 3, true],
+    [2, 4, false],
+    [2, 1, true],
+    [4, 1, true],
+  ])(
+    "niveau courant %i vers niveau candidat %i retourne %s",
+    (currentLevel, candidateLevel, expected) => {
+      expect(canTraverseTerrainLevels(currentLevel, candidateLevel)).toBe(
+        expected,
+      );
+    },
+  );
 });

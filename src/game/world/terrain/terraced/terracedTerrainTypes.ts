@@ -1,4 +1,9 @@
-export type TerracedSurface = "water" | "sand" | "grass" | "rock";
+import type {
+  TerrainSample,
+  TerrainSurface,
+} from "../terrainTypes";
+
+export type TerracedSurface = TerrainSurface;
 
 export interface TerracedCell {
   level: number;
@@ -18,13 +23,9 @@ export interface TerracedTerrainData {
   cells: readonly TerracedCell[];
 }
 
-export interface TerracedTerrainSample {
+export interface TerracedTerrainSample extends TerrainSample {
   row: number;
   column: number;
-  level: number;
-  height: number;
-  surface: TerracedSurface;
-  isLand: boolean;
 }
 
 export type TerracedTerrainSampler = (

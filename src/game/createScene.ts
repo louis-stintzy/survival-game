@@ -48,8 +48,7 @@ export function createScene(engine: Engine): Scene {
     flame: materials.equipment.flame,
   });
 
-  // Le terrain et les éléments du monde projettent leurs ombres afin d'ancrer
-  // le relief et les formes dans le diorama.
+  // Les éléments du monde projettent leurs ombres sur le terrain terrassé.
   addShadowCasters([
     player,
     ...island.shadowCasters,

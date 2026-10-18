@@ -9,6 +9,7 @@ import type { TerrainSampler } from "../../world/terrain/terrainTypes";
 type MoveAttempt =
   | { kind: "moved" }
   | { kind: "collision"; contact: CollisionContact }
+  | { kind: "terrainCliff" }
   | { kind: "noGround" };
 
 /**
@@ -60,6 +61,14 @@ export function projectMovementAlongSurface(
     x: movementX - normalX * dot,
     z: movementZ - normalZ * dot,
   };
+}
+
+/** Une marche de zéro ou un niveau et toute descente sont franchissables. */
+export function canTraverseTerrainLevels(
+  currentLevel: number,
+  candidateLevel: number,
+): boolean {
+  return candidateLevel - currentLevel < 2;
 }
 
 /**
@@ -182,6 +191,13 @@ export function createPlayerMovement(
 
     const ground = sampleTerrain(x, z);
     if (!ground?.isLand) return { kind: "noGround" };
+    const currentGround = sampleTerrain(reference.x, reference.z);
+    if (
+      !currentGround?.isLand ||
+      !canTraverseTerrainLevels(currentGround.level, ground.level)
+    ) {
+      return { kind: "terrainCliff" };
+    }
 
     player.position.x = x;
     player.position.y = ground.height + PLAYER_HALF_HEIGHT;
@@ -220,6 +236,10 @@ export function createPlayerMovement(
       return false;
     }
 
+    if (moveAttempt.kind === "terrainCliff") {
+      return tryTerrainCliffSlide(movementX, movementZ, reference);
+    }
+
     const slideMovement = projectMovementAlongSurface(
       movementX,
       movementZ,
@@ -234,6 +254,32 @@ export function createPlayerMovement(
     );
 
     return slideAttempt.kind === "moved";
+  }
+
+  /** Tente au plus une composante afin de longer le bord d'une terrasse. */
+  function tryTerrainCliffSlide(
+    movementX: number,
+    movementZ: number,
+    reference: XZPosition,
+  ): boolean {
+    const alternatives = [
+      { x: movementX, z: 0 },
+      { x: 0, z: movementZ },
+    ].sort(
+      (first, second) =>
+        Math.hypot(second.x, second.z) - Math.hypot(first.x, first.z),
+    );
+
+    for (const movement of alternatives) {
+      if (movement.x === 0 && movement.z === 0) continue;
+      const attempt = tryMoveTo(
+        player.position.x + movement.x,
+        player.position.z + movement.z,
+        reference,
+      );
+      if (attempt.kind === "moved") return true;
+    }
+    return false;
   }
 
   /**
