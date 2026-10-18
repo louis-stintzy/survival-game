@@ -10,8 +10,10 @@ import { GAME_PALETTE } from "../constants/gamePalette";
 import { createCameraRotation } from "../gameplay/movement/createCameraRotation";
 import { createPlayer } from "../models/createPlayer";
 import { createLighting } from "../rendering/createLighting";
+import { createBaseTerracedTerrainData } from "../world/terrain/terraced/createBaseTerracedTerrainData";
 import { createTerracedTerrainMeshes } from "../world/terrain/terraced/createTerracedTerrainMeshes";
 import { sampleTerracedTerrain } from "../world/terrain/terraced/sampleTerracedTerrain";
+import type { TerracedTerrainData } from "../world/terrain/terraced/terracedTerrainTypes";
 import { createTerracedPlayerMovement } from "./createTerracedPlayerMovement";
 import { TERRACED_TERRAIN_DATA } from "./terracedTerrainPrototypeData";
 
@@ -22,16 +24,21 @@ export function createTerracedTerrainPrototypeScene(engine: Engine): Scene {
   scene.clearColor = new Color4(0.56, 0.84, 0.91, 1);
   const camera = createGameCamera(scene, engine);
   const lighting = createLighting(scene);
+  const showBaseTerrain =
+    new URLSearchParams(window.location.search).get("terrain") === "base";
+  const terrainData = showBaseTerrain
+    ? createBaseTerracedTerrainData()
+    : TERRACED_TERRAIN_DATA;
 
-  createTerracedTerrainMeshes(scene, TERRACED_TERRAIN_DATA);
+  createTerracedTerrainMeshes(scene, terrainData);
 
-  const references = createScaleReferences(scene);
+  const references = createScaleReferences(scene, terrainData, showBaseTerrain);
   references.shadowCasters.forEach((mesh) =>
     lighting.shadows.addShadowCaster(mesh),
   );
 
   const sampleTerrain = (x: number, z: number) =>
-    sampleTerracedTerrain(TERRACED_TERRAIN_DATA, x, z);
+    sampleTerracedTerrain(terrainData, x, z);
   const updateCameraRotation = createCameraRotation(camera);
   const updatePlayerMovement = createTerracedPlayerMovement(
     references.player,
@@ -47,7 +54,11 @@ export function createTerracedTerrainPrototypeScene(engine: Engine): Scene {
   return scene;
 }
 
-function createScaleReferences(scene: Scene): {
+function createScaleReferences(
+  scene: Scene,
+  terrain: TerracedTerrainData,
+  playerOnly: boolean,
+): {
   player: Mesh;
   shadowCasters: Mesh[];
 } {
@@ -56,12 +67,16 @@ function createScaleReferences(scene: Scene): {
     "terraced-player-material",
     GAME_PALETTE.player.body,
   );
-  const playerGround = getCellCenter(3, 6);
+  const playerGround = playerOnly
+    ? findCentralLandCell(terrain)
+    : getCellCenter(terrain, 3, 6);
   const player = createPlayer(
     scene,
     playerMaterial,
     new Vector3(playerGround.x, playerGround.y, playerGround.z),
   );
+  const meshes: Mesh[] = [player];
+  if (playerOnly) return { player, shadowCasters: meshes };
 
   const trunkMaterial = createMaterial(
     scene,
@@ -78,14 +93,12 @@ function createScaleReferences(scene: Scene): {
     "terraced-rock-material",
     GAME_PALETTE.world.rock,
   );
-  const meshes: Mesh[] = [player];
-
   [
     [4, 3, 0.85],
     [3, 7, 1],
     [8, 8, 0.75],
   ].forEach(([column, row, scale], index) => {
-    const ground = getCellCenter(column, row);
+    const ground = getCellCenter(terrain, column, row);
     const trunk = MeshBuilder.CreateCylinder(
       `terraced-tree-trunk-${index}`,
       {
@@ -115,7 +128,7 @@ function createScaleReferences(scene: Scene): {
     [8, 6, 1],
     [7, 8, 0.65],
   ].forEach(([column, row, scale], index) => {
-    const ground = getCellCenter(column, row);
+    const ground = getCellCenter(terrain, column, row);
     const rock = MeshBuilder.CreatePolyhedron(
       `terraced-rock-${index}`,
       { type: 1, size: scale },
@@ -131,14 +144,37 @@ function createScaleReferences(scene: Scene): {
   return { player, shadowCasters: meshes };
 }
 
-function getCellCenter(column: number, row: number) {
+function findCentralLandCell(terrain: TerracedTerrainData) {
+  const centerColumn = (terrain.columnCount - 1) / 2;
+  const centerRow = (terrain.rowCount - 1) / 2;
+  let closest: { column: number; row: number; distance: number } | undefined;
+
+  terrain.cells.forEach((cell, index) => {
+    if (cell.surface === "water") return;
+    const row = Math.floor(index / terrain.columnCount);
+    const column = index % terrain.columnCount;
+    const distance = Math.hypot(column - centerColumn, row - centerRow);
+    if (!closest || distance < closest.distance) {
+      closest = { column, row, distance };
+    }
+  });
+
+  if (!closest) throw new Error("Le terrain terrassé ne contient aucune terre.");
+  return getCellCenter(terrain, closest.column, closest.row);
+}
+
+function getCellCenter(
+  terrain: TerracedTerrainData,
+  column: number,
+  row: number,
+) {
   const {
     columnCount,
     rowCount,
     cellSize,
     heightStep,
     cells,
-  } = TERRACED_TERRAIN_DATA;
+  } = terrain;
   const cell = cells[row * columnCount + column];
   return {
     x: (-columnCount * cellSize) / 2 + (column + 0.5) * cellSize,
