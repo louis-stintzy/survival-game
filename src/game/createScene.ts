@@ -30,9 +30,6 @@ export function createScene(engine: Engine): Scene {
   const placementMaterials = createPlacementMaterials(scene);
 
   const island = createIsland(scene, {
-    water: materials.world.water,
-    sand: materials.world.sand,
-    grass: materials.world.grass,
     trunk: materials.world.trunk,
     leaves: materials.world.leaves,
     rock: materials.world.rock,
@@ -51,8 +48,7 @@ export function createScene(engine: Engine): Scene {
     flame: materials.equipment.flame,
   });
 
-  // Seuls les éléments au-dessus du sol projettent une ombre ; les surfaces
-  // de l'île les reçoivent pour mieux ancrer les formes dans le diorama.
+  // Les éléments du monde projettent leurs ombres sur le terrain terrassé.
   addShadowCasters([
     player,
     ...island.shadowCasters,

@@ -1,15 +1,21 @@
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
-import { Ray } from "@babylonjs/core/Culling/ray";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
-import type { PlayerCollisionQuery } from "../collision/playerWorldCollision";
+import {
+  PLAYER_COLLISION_RADIUS,
+  type PlayerCollisionQuery,
+} from "../collision/playerWorldCollision";
 import type { CollisionContact, XZPosition } from "../collision/collisionTypes";
 import { PLAYER_HALF_HEIGHT } from "../../models/createPlayer";
+import type {
+  TerrainSample,
+  TerrainSampler,
+} from "../../world/terrain/terrainTypes";
 
 type MoveAttempt =
   | { kind: "moved" }
   | { kind: "collision"; contact: CollisionContact }
+  | { kind: "terrainCliff" }
   | { kind: "noGround" };
 
 /**
@@ -21,9 +27,17 @@ type MoveAttempt =
  */
 const MAX_HORIZONTAL_MOVEMENT_STEP = 0.25;
 const PLAYER_MOVEMENT_SPEED = 5;
-const PLAYER_VERTICAL_SPEED = 4;
-const GROUND_RAY_START_HEIGHT = 10;
-const GROUND_RAY_LENGTH = 20;
+const PLAYER_DIAGONAL_FOOTPRINT_OFFSET = PLAYER_COLLISION_RADIUS / Math.SQRT2;
+const PLAYER_FOOTPRINT_OFFSETS = [
+  { x: PLAYER_COLLISION_RADIUS, z: 0 },
+  { x: -PLAYER_COLLISION_RADIUS, z: 0 },
+  { x: 0, z: PLAYER_COLLISION_RADIUS },
+  { x: 0, z: -PLAYER_COLLISION_RADIUS },
+  { x: PLAYER_DIAGONAL_FOOTPRINT_OFFSET, z: PLAYER_DIAGONAL_FOOTPRINT_OFFSET },
+  { x: PLAYER_DIAGONAL_FOOTPRINT_OFFSET, z: -PLAYER_DIAGONAL_FOOTPRINT_OFFSET },
+  { x: -PLAYER_DIAGONAL_FOOTPRINT_OFFSET, z: PLAYER_DIAGONAL_FOOTPRINT_OFFSET },
+  { x: -PLAYER_DIAGONAL_FOOTPRINT_OFFSET, z: -PLAYER_DIAGONAL_FOOTPRINT_OFFSET },
+] as const;
 const MOVEMENT_KEYS = new Set([
   "z",
   "w",
@@ -66,6 +80,56 @@ export function projectMovementAlongSurface(
   };
 }
 
+/** Une marche de zéro ou un niveau et toute descente sont franchissables. */
+export function canTraverseTerrainLevels(
+  currentLevel: number,
+  candidateLevel: number,
+): boolean {
+  return candidateLevel - currentLevel < 2;
+}
+
+/** Vérifie si le pourtour de la capsule rencontrerait une terrasse trop haute. */
+export function isPlayerFootprintBlockedByCliff(
+  candidateX: number,
+  candidateZ: number,
+  currentLevel: number,
+  movementX: number,
+  movementZ: number,
+  sampleTerrain: TerrainSampler,
+): boolean {
+  return PLAYER_FOOTPRINT_OFFSETS.some(({ x, z }) => {
+    if (x * movementX + z * movementZ < 0) return false;
+
+    const ground = sampleTerrain(candidateX + x, candidateZ + z);
+    return (
+      ground?.isLand === true &&
+      !canTraverseTerrainLevels(currentLevel, ground.level)
+    );
+  });
+}
+
+/**
+ * Retarde une descente tant qu'une partie du pourtour repose encore sur une
+ * terrasse plus haute. La hauteur courante n'est jamais augmentée ici.
+ */
+export function resolvePlayerVerticalPosition(
+  candidateX: number,
+  candidateZ: number,
+  currentPlayerY: number,
+  candidateGround: TerrainSample,
+  sampleTerrain: TerrainSampler,
+): number {
+  const candidatePlayerY = candidateGround.height + PLAYER_HALF_HEIGHT;
+  if (candidatePlayerY >= currentPlayerY) return candidatePlayerY;
+
+  const stillOverHigherGround = PLAYER_FOOTPRINT_OFFSETS.some(({ x, z }) => {
+    const ground = sampleTerrain(candidateX + x, candidateZ + z);
+    return ground?.isLand === true && ground.height > candidateGround.height;
+  });
+
+  return stillOverHigherGround ? currentPlayerY : candidatePlayerY;
+}
+
 /**
  * Crée le système de déplacement du joueur.
  *
@@ -76,12 +140,12 @@ export function projectMovementAlongSurface(
  *   pendant une frame anormalement longue ;
  * - projeté le long de la surface rencontrée lorsqu'une collision
  *   permet un glissement ;
- * - validé verticalement par un raycast vers les surfaces praticables.
+ * - validé verticalement par la source de vérité logique du terrain.
  *
  * @param player Mesh représentant le joueur.
  * @param camera Caméra utilisée pour convertir les entrées clavier
  *               en directions relatives à l'écran.
- * @param walkableSurfaces Surfaces sur lesquelles le joueur peut se déplacer.
+ * @param sampleTerrain Échantillonne le terrain à une coordonnée X/Z.
  * @param getCollisionContact Fonction retournant éventuellement la normale
  *                            de l'obstacle rencontré.
  * @param isMovementEnabled Indique si le déplacement à pied est actif.
@@ -90,16 +154,13 @@ export function projectMovementAlongSurface(
 export function createPlayerMovement(
   player: Mesh,
   camera: ArcRotateCamera,
-  walkableSurfaces: readonly AbstractMesh[],
+  sampleTerrain: TerrainSampler,
   getCollisionContact: (
     query: PlayerCollisionQuery,
   ) => CollisionContact | undefined,
   isMovementEnabled: () => boolean = () => true,
 ) {
   const pressedKeys = new Set<string>();
-  const walkableSurfaceSet = new Set(walkableSurfaces);
-  let targetPlayerHeight = player.position.y;
-  let movementWasEnabled = true;
 
   const handleKeyDown = (event: KeyboardEvent) => {
     const key = event.key.toLowerCase();
@@ -120,14 +181,8 @@ export function createPlayerMovement(
   return (deltaTimeInSeconds: number) => {
     const movementEnabled = isMovementEnabled();
     if (!movementEnabled) {
-      movementWasEnabled = false;
-      targetPlayerHeight = player.position.y;
       camera.setTarget(player.position, false, false, true);
       return;
-    }
-    if (!movementWasEnabled) {
-      targetPlayerHeight = player.position.y;
-      movementWasEnabled = true;
     }
 
     const forwardInput =
@@ -168,16 +223,6 @@ export function createPlayerMovement(
       moveHorizontally(movement.x, movement.z);
     }
 
-    // Une vitesse multipliée par le delta time lisse Y de la même manière,
-    // quel que soit le nombre d'images affichées chaque seconde.
-    const remainingHeight = targetPlayerHeight - player.position.y;
-    const maximumVerticalStep = PLAYER_VERTICAL_SPEED * deltaTimeInSeconds;
-    if (Math.abs(remainingHeight) <= maximumVerticalStep) {
-      player.position.y = targetPlayerHeight;
-    } else {
-      player.position.y += Math.sign(remainingHeight) * maximumVerticalStep;
-    }
-
     camera.setTarget(player.position, false, false, true);
   };
 
@@ -203,21 +248,33 @@ export function createPlayerMovement(
       return { kind: "collision", contact: collisionContact };
     }
 
-    // Ce rayon vertical cherche la vraie surface praticable sous chaque position
-    // candidate : collision et ancrage au terrain valident le même déplacement.
-    const groundRay = new Ray(
-      new Vector3(x, GROUND_RAY_START_HEIGHT, z),
-      Vector3.Down(),
-      GROUND_RAY_LENGTH,
-    );
-    const groundHit = player
-      .getScene()
-      .pickWithRay(groundRay, (mesh) => walkableSurfaceSet.has(mesh));
-    if (!groundHit?.pickedPoint) return { kind: "noGround" };
+    const ground = sampleTerrain(x, z);
+    if (!ground?.isLand) return { kind: "noGround" };
+    const currentGround = sampleTerrain(reference.x, reference.z);
+    if (
+      !currentGround?.isLand ||
+      !canTraverseTerrainLevels(currentGround.level, ground.level) ||
+      isPlayerFootprintBlockedByCliff(
+        x,
+        z,
+        currentGround.level,
+        x - reference.x,
+        z - reference.z,
+        sampleTerrain,
+      )
+    ) {
+      return { kind: "terrainCliff" };
+    }
 
     player.position.x = x;
+    player.position.y = resolvePlayerVerticalPosition(
+      x,
+      z,
+      player.position.y,
+      ground,
+      sampleTerrain,
+    );
     player.position.z = z;
-    targetPlayerHeight = groundHit.pickedPoint.y + PLAYER_HALF_HEIGHT;
     return { kind: "moved" };
   }
 
@@ -252,6 +309,10 @@ export function createPlayerMovement(
       return false;
     }
 
+    if (moveAttempt.kind === "terrainCliff") {
+      return tryTerrainCliffSlide(movementX, movementZ, reference);
+    }
+
     const slideMovement = projectMovementAlongSurface(
       movementX,
       movementZ,
@@ -266,6 +327,32 @@ export function createPlayerMovement(
     );
 
     return slideAttempt.kind === "moved";
+  }
+
+  /** Tente au plus une composante afin de longer le bord d'une terrasse. */
+  function tryTerrainCliffSlide(
+    movementX: number,
+    movementZ: number,
+    reference: XZPosition,
+  ): boolean {
+    const alternatives = [
+      { x: movementX, z: 0 },
+      { x: 0, z: movementZ },
+    ].sort(
+      (first, second) =>
+        Math.hypot(second.x, second.z) - Math.hypot(first.x, first.z),
+    );
+
+    for (const movement of alternatives) {
+      if (movement.x === 0 && movement.z === 0) continue;
+      const attempt = tryMoveTo(
+        player.position.x + movement.x,
+        player.position.z + movement.z,
+        reference,
+      );
+      if (attempt.kind === "moved") return true;
+    }
+    return false;
   }
 
   /**

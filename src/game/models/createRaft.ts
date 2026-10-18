@@ -4,6 +4,11 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Scene } from "@babylonjs/core/scene";
 import { PLAYER_HALF_HEIGHT } from "./createPlayer";
+import {
+  RAFT_LOG_LENGTH,
+  RAFT_NAVIGATION_FOOTPRINT,
+  RAFT_WIDTH,
+} from "./raftGeometry";
 
 export interface Raft {
   root: TransformNode;
@@ -15,8 +20,6 @@ export interface Raft {
   };
 }
 
-const LOG_LENGTH = 3.4;
-const RAFT_WIDTH = 2.25;
 const LOG_DIAMETER = 0.45;
 const DECK_HEIGHT = 0.16;
 const DECK_Y = LOG_DIAMETER + DECK_HEIGHT / 2;
@@ -33,7 +36,7 @@ export function createRaft(
     const log = MeshBuilder.CreateCylinder(
       `${name}-log-${index}`,
       {
-        height: LOG_LENGTH,
+        height: RAFT_LOG_LENGTH,
         diameter: LOG_DIAMETER,
         tessellation: 8,
       },
@@ -68,9 +71,6 @@ export function createRaft(
     root,
     meshes,
     riderOffsetY: LOG_DIAMETER + DECK_HEIGHT + PLAYER_HALF_HEIGHT,
-    navigationFootprint: {
-      halfWidth: RAFT_WIDTH / 2,
-      halfLength: LOG_LENGTH / 2,
-    },
+    navigationFootprint: RAFT_NAVIGATION_FOOTPRINT,
   };
 }

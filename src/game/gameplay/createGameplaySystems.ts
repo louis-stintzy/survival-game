@@ -80,18 +80,17 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
     builtCollisionMeshes,
   );
   const raftNavigation = createRaftNavigation({
-    scene,
     camera,
     player,
     raft: island.raft,
-    walkableSurfaces: island.walkableSurfaces,
-    navigableSurfaces: island.navigableSurfaces,
+    sampleTerrain: island.sampleTerrain,
+    waterHeight: island.waterHeight,
     getPlayerCollision: getPlayerWorldCollision,
   });
   const updatePlayerMovement = createPlayerMovement(
     player,
     camera,
-    island.walkableSurfaces,
+    island.sampleTerrain,
     getPlayerWorldCollision,
     () => !raftNavigation.isEmbarked(),
   );
@@ -120,8 +119,8 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
   const updateBuildingPlacement = createBuildingPlacement({
     scene,
     player,
-    placementSurfaces: island.placementSurfaces,
-    buildableSurfaces: island.buildableSurfaces,
+    terrainMesh: island.terrainMesh,
+    sampleTerrain: island.sampleTerrain,
     resources: island.harvestableResources,
     resourceInventory,
     buildingMaterials,
@@ -140,7 +139,8 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
   const torchPlacement = createTorchPlacement({
     scene,
     player,
-    placementSurfaces: island.walkableSurfaces,
+    terrainMesh: island.terrainMesh,
+    sampleTerrain: island.sampleTerrain,
     equipmentInventory,
     equipment,
     materials: torchMaterials,

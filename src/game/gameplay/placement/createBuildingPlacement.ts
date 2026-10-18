@@ -1,10 +1,8 @@
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import "@babylonjs/core/Culling/ray";
 import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
-import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Scene } from "@babylonjs/core/scene";
-import { Ray } from "@babylonjs/core/Culling/ray";
 import type { HarvestableResource } from "../../resources/resourceTypes";
 import {
   BUILDING_DEFINITIONS,
@@ -15,11 +13,11 @@ import { createWorkbench } from "../../models/createWorkbench";
 import type { ResourceCost } from "../../definitions/resourceDefinitions";
 import { PLAYER_COLLISION_RADIUS } from "../collision/playerWorldCollision";
 import { circleOverlapsHorizontalBounds } from "../collision/horizontalBoundsCollision";
+import type { TerrainSampler } from "../../world/terrain/terrainTypes";
+import { isBuildableTerrace } from "./buildingTerrainValidation";
 
 const GRID_SIZE = 1;
 const MAX_BUILD_DISTANCE = 6;
-const TERRAIN_RAY_HEIGHT = 10;
-const TERRAIN_RAY_LENGTH = 20;
 const GHOST_ALPHA_INDEX = Number.POSITIVE_INFINITY;
 
 interface ResourceInventory {
@@ -48,8 +46,8 @@ export interface PlacementMaterials {
 interface BuildingPlacementOptions {
   scene: Scene;
   player: Mesh;
-  placementSurfaces: readonly AbstractMesh[];
-  buildableSurfaces: readonly AbstractMesh[];
+  terrainMesh: Mesh;
+  sampleTerrain: TerrainSampler;
   resources: readonly HarvestableResource[];
   resourceInventory: ResourceInventory;
   buildingMaterials: BuildingMaterials;
@@ -89,8 +87,8 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   const {
     scene,
     player,
-    placementSurfaces,
-    buildableSurfaces,
+    terrainMesh,
+    sampleTerrain,
     resources,
     resourceInventory,
     buildingMaterials,
@@ -107,8 +105,6 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   const buildingCostWood = getElement("#building-cost-wood");
   const buildingCostStone = getElement("#building-cost-stone");
   const buildingStatus = getElement("#building-status");
-  const placementSurfaceSet = new Set(placementSurfaces);
-  const buildableSurfaceSet = new Set(buildableSurfaces);
   const builtFootprints: Footprint[] = [];
 
   const ghosts: Record<BuildingType, BuildingGeometry> = {
@@ -137,7 +133,6 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
   let rotationRequested = false;
   let buildRequested = false;
   let rotationStep = 0;
-  let pointerPosition: { x: number; y: number } | undefined;
   let currentPlacement: Placement | undefined;
   let lastGhostValidity: boolean | undefined;
   let lastStatus = "";
@@ -171,14 +166,6 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
       rotationRequested = true;
       event.preventDefault();
     }
-  });
-
-  canvas.addEventListener("pointermove", (event) => {
-    const bounds = canvas.getBoundingClientRect();
-    pointerPosition = {
-      x: event.clientX - bounds.left,
-      y: event.clientY - bounds.top,
-    };
   });
 
   canvas.addEventListener("pointerdown", (event) => {
@@ -272,16 +259,10 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
 
   function updateGhostPlacement(): Placement | undefined {
     const ghost = ghosts[selectedBuildingType];
-    if (!pointerPosition) {
-      ghost.root.setEnabled(false);
-      updateStatus("Terrain introuvable", false);
-      return undefined;
-    }
-
     const pointerHit = scene.pick(
-      pointerPosition.x,
-      pointerPosition.y,
-      (mesh) => placementSurfaceSet.has(mesh),
+      scene.pointerX,
+      scene.pointerY,
+      (mesh) => mesh === terrainMesh,
     );
     if (!pointerHit?.pickedPoint) {
       ghost.root.setEnabled(false);
@@ -291,7 +272,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
 
     const x = Math.round(pointerHit.pickedPoint.x / GRID_SIZE) * GRID_SIZE;
     const z = Math.round(pointerHit.pickedPoint.z / GRID_SIZE) * GRID_SIZE;
-    const centerGround = getGroundAt(x, z);
+    const centerGround = sampleTerrain(x, z);
     if (!centerGround) {
       ghost.root.setEnabled(false);
       updateStatus("Terrain introuvable", false);
@@ -306,7 +287,7 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
     const validation = validatePlacement(footprint);
     const placement = {
       ...footprint,
-      y: centerGround.point.y,
+      y: centerGround.height,
       rotation,
       valid: validation.valid,
     };
@@ -373,21 +354,8 @@ export function createBuildingPlacement(options: BuildingPlacementOptions) {
       [footprint.x + halfWidth, footprint.z + halfDepth],
     ];
 
-    return points.every(([x, z]) => {
-      const ground = getGroundAt(x, z);
-      return ground && buildableSurfaceSet.has(ground.surface);
-    });
-  }
-
-  function getGroundAt(x: number, z: number) {
-    const ray = new Ray(
-      new Vector3(x, TERRAIN_RAY_HEIGHT, z),
-      Vector3.Down(),
-      TERRAIN_RAY_LENGTH,
-    );
-    const hit = scene.pickWithRay(ray, (mesh) => placementSurfaceSet.has(mesh));
-    if (!hit?.pickedPoint || !hit.pickedMesh) return undefined;
-    return { point: hit.pickedPoint, surface: hit.pickedMesh };
+    const grounds = points.map(([x, z]) => sampleTerrain(x, z));
+    return isBuildableTerrace(grounds);
   }
 
   function resourceBlocks(resource: HarvestableResource, footprint: Footprint) {
