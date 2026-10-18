@@ -1,22 +1,39 @@
-export const TERRACED_CELL_SIZE = 1.5;
-export const TERRACED_HEIGHT_STEP = 0.55;
+export type TerracedSurface = "water" | "sand" | "grass" | "rock";
+
+export interface TerracedCell {
+  level: number;
+  surface: TerracedSurface;
+}
+
+export const TERRACED_CELL_SIZE = 1.65;
+export const TERRACED_HEIGHT_STEP = 0.4;
 export const TERRACED_WATER_HEIGHT = 0.3;
 
+const W = { level: 0, surface: "water" } as const;
+const S1 = { level: 1, surface: "sand" } as const;
+const G1 = { level: 1, surface: "grass" } as const;
+const G2 = { level: 2, surface: "grass" } as const;
+const G3 = { level: 3, surface: "grass" } as const;
+const G4 = { level: 4, surface: "grass" } as const;
+const R2 = { level: 2, surface: "rock" } as const;
+const R4 = { level: 4, surface: "rock" } as const;
+const R5 = { level: 5, surface: "rock" } as const;
+
 /**
- * Chaque entier est une hauteur de colonne ; zéro représente l'eau sans sol
- * émergé. La hauteur monde vaut exactement `niveau * TERRACED_HEIGHT_STEP`.
+ * Carte fixe du spike. Les codes associent explicitement une surface et un
+ * niveau indépendants : G4 est de l'herbe haute, R2 de la roche basse.
  */
-export const TERRACED_LEVELS: readonly (readonly number[])[] = [
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0],
-  [0, 1, 1, 1, 2, 2, 2, 2, 1, 1, 0, 0],
-  [0, 1, 1, 2, 2, 3, 3, 2, 2, 1, 1, 0],
-  [0, 1, 2, 2, 3, 3, 4, 4, 3, 2, 1, 0],
-  [0, 1, 2, 3, 3, 4, 5, 5, 4, 2, 1, 0],
-  [0, 1, 2, 3, 3, 4, 5, 5, 4, 3, 1, 0],
-  [0, 1, 2, 2, 3, 3, 4, 4, 4, 3, 1, 0],
-  [0, 1, 1, 2, 2, 2, 3, 4, 4, 2, 1, 0],
-  [0, 0, 1, 1, 2, 2, 2, 3, 2, 1, 0, 0],
-  [0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+export const TERRACED_CELLS: readonly (readonly TerracedCell[])[] = [
+  [W, W, W, W, W, W, W, W, W, W, W, W],
+  [W, W, S1, S1, S1, S1, S1, S1, S1, W, W, W],
+  [W, S1, S1, G1, G2, G2, G2, G2, S1, S1, W, W],
+  [W, S1, G2, G2, G2, G2, G3, G3, R2, S1, S1, W],
+  [W, S1, G2, G2, G2, G2, G4, G4, R2, G2, S1, W],
+  [W, S1, G2, G2, G2, G3, G4, G4, R4, R2, S1, W],
+  [W, S1, G2, G2, G2, G3, G4, G4, R5, R2, S1, W],
+  [W, S1, G2, G2, G2, G3, G3, G4, R4, G2, S1, W],
+  [W, S1, G1, G2, G2, G2, G3, G4, R4, G2, S1, W],
+  [W, W, S1, G1, G2, G2, G2, G3, G2, S1, W, W],
+  [W, W, W, S1, S1, S1, S1, S1, S1, W, W, W],
+  [W, W, W, W, W, W, W, W, W, W, W, W],
 ] as const;

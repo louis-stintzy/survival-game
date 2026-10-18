@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { createTerracedTerrainGeometry } from "./createTerracedTerrainGeometry";
+import type { TerracedCell } from "./terracedTerrainPrototypeData";
 
 describe("createTerracedTerrainGeometry", () => {
   test("une colonne isolée génère un dessus et quatre côtés", () => {
@@ -50,11 +51,33 @@ describe("createTerracedTerrainGeometry", () => {
       ),
     ).toBe(true);
   });
+
+  test("colore le dessus depuis la surface indépendamment du niveau", () => {
+    const grass = createTerracedTerrainGeometry({
+      cells: [[{ level: 4, surface: "grass" }]],
+      cellSize: 1,
+      heightStep: 1,
+    });
+    const rock = createTerracedTerrainGeometry({
+      cells: [[{ level: 4, surface: "rock" }]],
+      cellSize: 1,
+      heightStep: 1,
+    });
+
+    expect(grass.colors.slice(0, 4)).not.toEqual(rock.colors.slice(0, 4));
+  });
 });
 
 function createGeometry(levels: readonly (readonly number[])[]) {
   return createTerracedTerrainGeometry({
-    levels,
+    cells: levels.map((row) =>
+      row.map(
+        (level): TerracedCell => ({
+          level,
+          surface: level === 0 ? "water" : "grass",
+        }),
+      ),
+    ),
     cellSize: 1,
     heightStep: 1,
   });

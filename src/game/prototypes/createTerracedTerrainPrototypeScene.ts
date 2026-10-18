@@ -8,13 +8,16 @@ import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import { Scene } from "@babylonjs/core/scene";
 import { createGameCamera } from "../camera/createGameCamera";
 import { GAME_PALETTE } from "../constants/gamePalette";
+import { createCameraRotation } from "../gameplay/movement/createCameraRotation";
 import { createPlayer } from "../models/createPlayer";
 import { createLighting } from "../rendering/createLighting";
 import { createTerracedTerrainGeometry } from "./createTerracedTerrainGeometry";
+import { createTerracedPlayerMovement } from "./createTerracedPlayerMovement";
+import { sampleTerracedTerrain } from "./sampleTerracedTerrain";
 import {
   TERRACED_CELL_SIZE,
+  TERRACED_CELLS,
   TERRACED_HEIGHT_STEP,
-  TERRACED_LEVELS,
   TERRACED_WATER_HEIGHT,
 } from "./terracedTerrainPrototypeData";
 
@@ -24,11 +27,11 @@ const WATER_VISUAL_SIZE = 60;
 export function createTerracedTerrainPrototypeScene(engine: Engine): Scene {
   const scene = new Scene(engine);
   scene.clearColor = new Color4(0.56, 0.84, 0.91, 1);
-  createGameCamera(scene, engine);
+  const camera = createGameCamera(scene, engine);
   const lighting = createLighting(scene);
 
   const geometry = createTerracedTerrainGeometry({
-    levels: TERRACED_LEVELS,
+    cells: TERRACED_CELLS,
     cellSize: TERRACED_CELL_SIZE,
     heightStep: TERRACED_HEIGHT_STEP,
   });
@@ -59,13 +62,38 @@ export function createTerracedTerrainPrototypeScene(engine: Engine): Scene {
   );
   water.receiveShadows = true;
 
-  const shadowCasters = createScaleReferences(scene);
-  shadowCasters.forEach((mesh) => lighting.shadows.addShadowCaster(mesh));
+  const references = createScaleReferences(scene);
+  references.shadowCasters.forEach((mesh) =>
+    lighting.shadows.addShadowCaster(mesh),
+  );
+
+  const sampleTerrain = (x: number, z: number) =>
+    sampleTerracedTerrain(
+      TERRACED_CELLS,
+      TERRACED_CELL_SIZE,
+      TERRACED_HEIGHT_STEP,
+      x,
+      z,
+    );
+  const updateCameraRotation = createCameraRotation(camera);
+  const updatePlayerMovement = createTerracedPlayerMovement(
+    references.player,
+    camera,
+    sampleTerrain,
+  );
+  scene.onBeforeRenderObservable.add(() => {
+    const deltaTimeInSeconds = engine.getDeltaTime() / 1000;
+    updateCameraRotation(deltaTimeInSeconds);
+    updatePlayerMovement(deltaTimeInSeconds);
+  });
 
   return scene;
 }
 
-function createScaleReferences(scene: Scene): Mesh[] {
+function createScaleReferences(scene: Scene): {
+  player: Mesh;
+  shadowCasters: Mesh[];
+} {
   const playerMaterial = createMaterial(
     scene,
     "terraced-player-material",
@@ -143,16 +171,16 @@ function createScaleReferences(scene: Scene): Mesh[] {
     meshes.push(rock);
   });
 
-  return meshes;
+  return { player, shadowCasters: meshes };
 }
 
 function getCellCenter(column: number, row: number) {
-  const columnCount = TERRACED_LEVELS[0].length;
-  const rowCount = TERRACED_LEVELS.length;
+  const columnCount = TERRACED_CELLS[0].length;
+  const rowCount = TERRACED_CELLS.length;
   return {
     x: (-columnCount * TERRACED_CELL_SIZE) / 2 +
       (column + 0.5) * TERRACED_CELL_SIZE,
-    y: TERRACED_LEVELS[row][column] * TERRACED_HEIGHT_STEP,
+    y: TERRACED_CELLS[row][column].level * TERRACED_HEIGHT_STEP,
     z: (-rowCount * TERRACED_CELL_SIZE) / 2 +
       (row + 0.5) * TERRACED_CELL_SIZE,
   };
