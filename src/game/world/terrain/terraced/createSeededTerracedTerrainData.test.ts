@@ -34,7 +34,13 @@ describe("createSeededTerracedTerrainData", () => {
       expect(surfaces).toContain("water");
       expect(surfaces).toContain("sand");
       expect(surfaces).toContain("grass");
-      expect(landLevels).toEqual(new Set([1, 2, 3, 4]));
+      expect(landLevels).toContain(1);
+      expect(landLevels).toContain(2);
+      expect(landLevels).toContain(4);
+      expect(
+        terrain.cells.filter(({ level }) => level === 2).length,
+      ).toBeGreaterThan(100);
+      expect(countCliffAdjacencies(terrain.cells, 101, 101)).toBeGreaterThan(0);
       expect(
         terrain.cells.every(
           ({ level }) => Number.isInteger(level) && level >= 0,
@@ -79,3 +85,35 @@ describe("createSeededTerracedTerrainData", () => {
     },
   );
 });
+
+function countCliffAdjacencies(
+  cells: readonly { level: number; surface: string }[],
+  rowCount: number,
+  columnCount: number,
+) {
+  let count = 0;
+  for (let row = 0; row < rowCount; row += 1) {
+    for (let column = 0; column < columnCount; column += 1) {
+      const index = row * columnCount + column;
+      const cell = cells[index];
+      if (cell.surface === "water") continue;
+
+      for (const [rowOffset, columnOffset] of [
+        [0, 1],
+        [1, 0],
+      ]) {
+        const neighborRow = row + rowOffset;
+        const neighborColumn = column + columnOffset;
+        if (neighborRow >= rowCount || neighborColumn >= columnCount) continue;
+        const neighbor = cells[neighborRow * columnCount + neighborColumn];
+        if (
+          neighbor.surface !== "water" &&
+          Math.abs(cell.level - neighbor.level) >= 2
+        ) {
+          count += 1;
+        }
+      }
+    }
+  }
+  return count;
+}
