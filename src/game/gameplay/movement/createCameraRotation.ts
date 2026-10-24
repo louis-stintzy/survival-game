@@ -1,6 +1,6 @@
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 
-const QUARTER_TURN = Math.PI / 2;
+const CAMERA_ROTATION_STEP = Math.PI / 4;
 const CAMERA_ROTATION_DURATION_SECONDS = 0.25;
 
 export function createCameraRotation(camera: ArcRotateCamera) {
@@ -32,7 +32,7 @@ export function createCameraRotation(camera: ArcRotateCamera) {
     if (!rotationInProgress && requestedDirection !== 0) {
       rotationStartAlpha = camera.alpha;
       rotationTargetAlpha =
-        rotationStartAlpha + requestedDirection * QUARTER_TURN;
+        rotationStartAlpha + requestedDirection * CAMERA_ROTATION_STEP;
       rotationElapsed = 0;
       rotationInProgress = true;
       requestedDirection = 0;

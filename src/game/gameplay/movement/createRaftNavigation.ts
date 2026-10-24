@@ -123,12 +123,11 @@ export function createRaftNavigation(options: RaftNavigationOptions) {
       direction.normalize();
 
       const candidateRotation = Math.atan2(direction.x, direction.z);
-      const moved = moveHorizontally(
+      moveHorizontally(
         direction.x * RAFT_MOVEMENT_SPEED * deltaTimeInSeconds,
         direction.z * RAFT_MOVEMENT_SPEED * deltaTimeInSeconds,
         candidateRotation,
       );
-      if (moved) raft.root.rotation.y = candidateRotation;
     }
 
     attachPlayerToRaft();
@@ -148,17 +147,19 @@ export function createRaftNavigation(options: RaftNavigationOptions) {
     const stepX = movementX / stepCount;
     const stepZ = movementZ / stepCount;
 
-    let moved = false;
     for (let step = 0; step < stepCount; step += 1) {
       const x = raft.root.position.x + stepX;
       const z = raft.root.position.z + stepZ;
-      const navigable = isNavigableFootprint(x, z, candidateRotation);
+      const validRotation = selectRaftStepRotation(
+        candidateRotation,
+        raft.root.rotation.y,
+        (rotation) => isNavigableFootprint(x, z, rotation),
+      );
 
-      if (!navigable) break;
+      if (validRotation === undefined) break;
       raft.root.position.set(x, waterHeight, z);
-      moved = true;
+      raft.root.rotation.y = validRotation;
     }
-    return moved;
   }
 
   function tryDisembark(): boolean {
@@ -231,4 +232,15 @@ export function createRaftNavigation(options: RaftNavigationOptions) {
       raft.root.position.z,
     );
   }
+}
+
+/** Choisit uniquement une orientation dont l'empreinte candidate est navigable. */
+export function selectRaftStepRotation(
+  candidateRotation: number,
+  currentRotation: number,
+  isNavigable: (rotation: number) => boolean,
+): number | undefined {
+  if (isNavigable(candidateRotation)) return candidateRotation;
+  if (isNavigable(currentRotation)) return currentRotation;
+  return undefined;
 }

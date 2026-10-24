@@ -15,6 +15,7 @@ import { createResourceInventory } from "./inventory/createResourceInventory";
 import { createEquipmentInventory } from "./inventory/createEquipmentInventory";
 import { createEquipment } from "./equipment/createEquipment";
 import { createCameraRotation } from "./movement/createCameraRotation";
+import { createCameraZoom } from "./movement/createCameraZoom";
 import { createPlayerMovement } from "./movement/createPlayerMovement";
 import { createResourceInteraction } from "./interaction/createResourceInteraction";
 import { createWorkbenchCrafting } from "./crafting/createWorkbenchCrafting";
@@ -75,6 +76,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
   // ----- Mouvement -----
 
   const updateCameraRotation = createCameraRotation(camera);
+  const updateCameraZoom = createCameraZoom(camera, scene.getEngine());
   const getPlayerWorldCollision = createPlayerWorldCollision(
     island.harvestableResources,
     builtCollisionMeshes,
@@ -157,6 +159,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
     update(deltaTimeInSeconds: number) {
       worldClock.update(deltaTimeInSeconds);
       updateCameraRotation(deltaTimeInSeconds);
+      updateCameraZoom(deltaTimeInSeconds);
       raftNavigation.update(deltaTimeInSeconds);
       updatePlayerMovement(deltaTimeInSeconds);
       updateWorldInteraction(deltaTimeInSeconds);
