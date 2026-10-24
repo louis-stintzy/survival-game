@@ -1,7 +1,8 @@
 import type { TerracedTerrainData } from "../terrain/terraced/terracedTerrainTypes";
 import { sampleTerracedTerrain } from "../terrain/terraced/sampleTerracedTerrain";
 
-const RAFT_SPAWN_DISTANCE = 2;
+const RAFT_SPAWN_DISTANCE = 2.65;
+const RAFT_DEPARTURE_CHECK_DISTANCE = 0.25;
 
 interface RaftFootprint {
   halfWidth: number;
@@ -20,10 +21,10 @@ export interface TemporaryIslandSpawns {
 }
 
 const CARDINAL_DIRECTIONS = [
-  { x: 0, z: 1, rotation: Math.PI / 2 },
-  { x: 0, z: -1, rotation: Math.PI / 2 },
-  { x: 1, z: 0, rotation: 0 },
-  { x: -1, z: 0, rotation: 0 },
+  { x: 0, z: 1, rotation: 0 },
+  { x: 0, z: -1, rotation: Math.PI },
+  { x: 1, z: 0, rotation: Math.PI / 2 },
+  { x: -1, z: 0, rotation: -Math.PI / 2 },
 ] as const;
 
 /** Recherche déterministe provisoire d'une plage et de son radeau voisin. */
@@ -54,7 +55,15 @@ export function findTemporaryIslandSpawns(
         z: playerSpawn.z + direction.z * RAFT_SPAWN_DISTANCE,
         rotation: direction.rotation,
       };
-      if (isRaftFootprintOnWater(terrain, raftSpawn, footprint)) {
+      const departurePosition = {
+        ...raftSpawn,
+        x: raftSpawn.x + direction.x * RAFT_DEPARTURE_CHECK_DISTANCE,
+        z: raftSpawn.z + direction.z * RAFT_DEPARTURE_CHECK_DISTANCE,
+      };
+      if (
+        isRaftFootprintOnWater(terrain, raftSpawn, footprint) &&
+        isRaftFootprintOnWater(terrain, departurePosition, footprint)
+      ) {
         return { playerSpawn, raftSpawn };
       }
     }

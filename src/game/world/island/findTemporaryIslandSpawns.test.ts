@@ -5,6 +5,7 @@ import { sampleTerracedTerrain } from "../terrain/terraced/sampleTerracedTerrain
 import { findTemporaryIslandSpawns } from "./findTemporaryIslandSpawns";
 
 const REPRESENTATIVE_SEEDS = [1, 42, 12345, 54321, 99999] as const;
+const DEPARTURE_CHECK_DISTANCE = 0.25;
 
 describe("findTemporaryIslandSpawns", () => {
   test.each(REPRESENTATIVE_SEEDS)(
@@ -26,14 +27,33 @@ describe("findTemporaryIslandSpawns", () => {
           spawns.playerSpawn.z,
         )?.surface,
       ).toBe("sand");
-      expect(
-        Math.hypot(
-          spawns.raftSpawn.x - spawns.playerSpawn.x,
-          spawns.raftSpawn.z - spawns.playerSpawn.z,
-        ),
-      ).toBeLessThanOrEqual(2.75);
+      const playerToRaftX = spawns.raftSpawn.x - spawns.playerSpawn.x;
+      const playerToRaftZ = spawns.raftSpawn.z - spawns.playerSpawn.z;
+      const distance = Math.hypot(playerToRaftX, playerToRaftZ);
+
+      expect(distance).toBeLessThanOrEqual(2.75);
+
+      const outwardDirection = {
+        x: playerToRaftX / distance,
+        z: playerToRaftZ / distance,
+      };
+
+      expect(spawns.raftSpawn.rotation).toBeCloseTo(
+        Math.atan2(outwardDirection.x, outwardDirection.z),
+      );
       expect(
         getRaftCheckpointSurfaces(terrain, spawns.raftSpawn),
+      ).toEqual(Array(7).fill("water"));
+      expect(
+        getRaftCheckpointSurfaces(terrain, {
+          ...spawns.raftSpawn,
+          x:
+            spawns.raftSpawn.x +
+            outwardDirection.x * DEPARTURE_CHECK_DISTANCE,
+          z:
+            spawns.raftSpawn.z +
+            outwardDirection.z * DEPARTURE_CHECK_DISTANCE,
+        }),
       ).toEqual(Array(7).fill("water"));
     },
   );
