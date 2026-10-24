@@ -21,7 +21,16 @@ describe("generateIslandShape", () => {
     expect(shape.values.some((value) => value > 0)).toBe(true);
     expect(shape.values.some((value) => value < 0)).toBe(true);
     expect(shape.massCount).toBeGreaterThanOrEqual(2);
-    expect(shape.massCount).toBeLessThanOrEqual(4);
+    expect(shape.massCount).toBeLessThanOrEqual(10);
+    expect(shape.levelOneMassCount).toBeGreaterThanOrEqual(1);
+    expect(shape.levelOneMassCount).toBeLessThanOrEqual(3);
+    expect(shape.levelTwoMassCount).toBeGreaterThanOrEqual(0);
+    expect(shape.levelTwoMassCount).toBeLessThanOrEqual(
+      shape.levelOneMassCount * 2,
+    );
+    expect(shape.massCount).toBe(
+      1 + shape.levelOneMassCount + shape.levelTwoMassCount,
+    );
   });
 
   test.each(REPRESENTATIVE_SEEDS)(

@@ -1,14 +1,25 @@
-import { createSeededRandom } from "./createSeededRandom";
+import {
+  createSeededRandom,
+  type SeededRandom,
+} from "./createSeededRandom";
 
-const MAIN_RADIUS_MIN = 14;
-const MAIN_RADIUS_MAX = 23;
+const MAIN_MAJOR_RADIUS_MIN = 17;
+const MAIN_MAJOR_RADIUS_MAX = 24;
+const MAIN_MINOR_RATIO_MIN = 0.55;
+const MAIN_MINOR_RATIO_MAX = 0.95;
 const MAIN_CENTER_OFFSET = 2;
-const SECONDARY_MASS_COUNT_MIN = 1;
-const SECONDARY_MASS_COUNT_MAX = 3;
-const SECONDARY_SCALE_MIN = 0.45;
-const SECONDARY_SCALE_MAX = 0.75;
-const SECONDARY_OFFSET_MIN = 0.35;
-const SECONDARY_OFFSET_MAX = 0.65;
+const LEVEL_ONE_MASS_COUNT_MIN = 1;
+const LEVEL_ONE_MASS_COUNT_MAX = 3;
+const LEVEL_ONE_SCALE_MIN = 0.4;
+const LEVEL_ONE_SCALE_MAX = 0.7;
+const LEVEL_ONE_OFFSET_MIN = 0.68;
+const LEVEL_ONE_OFFSET_MAX = 0.92;
+const LEVEL_TWO_MASS_COUNT_MIN = 0;
+const LEVEL_TWO_MASS_COUNT_MAX = 2;
+const LEVEL_TWO_SCALE_MIN = 0.3;
+const LEVEL_TWO_SCALE_MAX = 0.55;
+const LEVEL_TWO_OFFSET_MIN = 0.65;
+const LEVEL_TWO_OFFSET_MAX = 0.95;
 const FULL_ROTATION = Math.PI * 2;
 
 interface EllipticalMass {
@@ -23,6 +34,8 @@ export interface IslandShape {
   rowCount: number;
   columnCount: number;
   massCount: number;
+  levelOneMassCount: number;
+  levelTwoMassCount: number;
   values: readonly number[];
 }
 
@@ -41,35 +54,54 @@ export function generateIslandShape(
   assertGridDimension(columnCount, "columnCount");
 
   const random = createSeededRandom(seed);
+  const majorRadius = random.float(
+    MAIN_MAJOR_RADIUS_MIN,
+    MAIN_MAJOR_RADIUS_MAX,
+  );
   const mainMass: EllipticalMass = {
     centerX: random.float(-MAIN_CENTER_OFFSET, MAIN_CENTER_OFFSET),
     centerZ: random.float(-MAIN_CENTER_OFFSET, MAIN_CENTER_OFFSET),
-    radiusX: random.float(MAIN_RADIUS_MIN, MAIN_RADIUS_MAX),
-    radiusZ: random.float(MAIN_RADIUS_MIN, MAIN_RADIUS_MAX),
+    radiusX: majorRadius,
+    radiusZ:
+      majorRadius *
+      random.float(MAIN_MINOR_RATIO_MIN, MAIN_MINOR_RATIO_MAX),
     rotation: random.float(0, FULL_ROTATION),
   };
-  const secondaryMassCount = random.integer(
-    SECONDARY_MASS_COUNT_MIN,
-    SECONDARY_MASS_COUNT_MAX,
+  const levelOneMassCount = random.integer(
+    LEVEL_ONE_MASS_COUNT_MIN,
+    LEVEL_ONE_MASS_COUNT_MAX,
   );
   const masses = [mainMass];
+  const levelOneMasses: EllipticalMass[] = [];
+  let levelTwoMassCount = 0;
 
-  for (let index = 0; index < secondaryMassCount; index += 1) {
-    const scale = random.float(SECONDARY_SCALE_MIN, SECONDARY_SCALE_MAX);
-    const offsetAngle = random.float(0, FULL_ROTATION);
-    const offsetDistance =
-      Math.min(mainMass.radiusX, mainMass.radiusZ) *
-      random.float(SECONDARY_OFFSET_MIN, SECONDARY_OFFSET_MAX);
-
-    // Le centre secondaire reste à l'intérieur de l'ellipse principale : les
-    // deux masses se chevauchent donc largement malgré leurs rotations.
-    masses.push({
-      centerX: mainMass.centerX + Math.cos(offsetAngle) * offsetDistance,
-      centerZ: mainMass.centerZ + Math.sin(offsetAngle) * offsetDistance,
-      radiusX: mainMass.radiusX * scale,
-      radiusZ: mainMass.radiusZ * scale,
-      rotation: random.float(0, FULL_ROTATION),
+  for (let index = 0; index < levelOneMassCount; index += 1) {
+    const child = createChildMass(mainMass, random, {
+      scaleMin: LEVEL_ONE_SCALE_MIN,
+      scaleMax: LEVEL_ONE_SCALE_MAX,
+      offsetMin: LEVEL_ONE_OFFSET_MIN,
+      offsetMax: LEVEL_ONE_OFFSET_MAX,
     });
+    levelOneMasses.push(child);
+    masses.push(child);
+  }
+
+  for (const parent of levelOneMasses) {
+    const childCount = random.integer(
+      LEVEL_TWO_MASS_COUNT_MIN,
+      LEVEL_TWO_MASS_COUNT_MAX,
+    );
+    levelTwoMassCount += childCount;
+    for (let index = 0; index < childCount; index += 1) {
+      masses.push(
+        createChildMass(parent, random, {
+          scaleMin: LEVEL_TWO_SCALE_MIN,
+          scaleMax: LEVEL_TWO_SCALE_MAX,
+          offsetMin: LEVEL_TWO_OFFSET_MIN,
+          offsetMax: LEVEL_TWO_OFFSET_MAX,
+        }),
+      );
+    }
   }
 
   const values: number[] = [];
@@ -88,7 +120,45 @@ export function generateIslandShape(
     }
   }
 
-  return { rowCount, columnCount, massCount: masses.length, values };
+  return {
+    rowCount,
+    columnCount,
+    massCount: masses.length,
+    levelOneMassCount,
+    levelTwoMassCount,
+    values,
+  };
+}
+
+interface ChildMassRanges {
+  scaleMin: number;
+  scaleMax: number;
+  offsetMin: number;
+  offsetMax: number;
+}
+
+function createChildMass(
+  parent: EllipticalMass,
+  random: SeededRandom,
+  ranges: ChildMassRanges,
+): EllipticalMass {
+  const angle = random.float(0, FULL_ROTATION);
+  const offsetFactor = random.float(ranges.offsetMin, ranges.offsetMax);
+  const localOffsetX = Math.cos(angle) * parent.radiusX * offsetFactor;
+  const localOffsetZ = Math.sin(angle) * parent.radiusZ * offsetFactor;
+  const cosine = Math.cos(parent.rotation);
+  const sine = Math.sin(parent.rotation);
+
+  // L'offset local suit l'ellipse du parent, puis sa rotation dans la grille.
+  const worldOffsetX = localOffsetX * cosine - localOffsetZ * sine;
+  const worldOffsetZ = localOffsetX * sine + localOffsetZ * cosine;
+  return {
+    centerX: parent.centerX + worldOffsetX,
+    centerZ: parent.centerZ + worldOffsetZ,
+    radiusX: parent.radiusX * random.float(ranges.scaleMin, ranges.scaleMax),
+    radiusZ: parent.radiusZ * random.float(ranges.scaleMin, ranges.scaleMax),
+    rotation: random.float(0, FULL_ROTATION),
+  };
 }
 
 function sampleMassSignal(mass: EllipticalMass, x: number, z: number) {
