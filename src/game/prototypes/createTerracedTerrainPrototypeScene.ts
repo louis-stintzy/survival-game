@@ -10,7 +10,9 @@ import { GAME_PALETTE } from "../constants/gamePalette";
 import { createCameraRotation } from "../gameplay/movement/createCameraRotation";
 import { createPlayer } from "../models/createPlayer";
 import { createLighting } from "../rendering/createLighting";
+import { resolveWorldSeed } from "../world/generation/worldSeed";
 import { createBaseTerracedTerrainData } from "../world/terrain/terraced/createBaseTerracedTerrainData";
+import { createSeededTerracedTerrainData } from "../world/terrain/terraced/createSeededTerracedTerrainData";
 import { createTerracedTerrainMeshes } from "../world/terrain/terraced/createTerracedTerrainMeshes";
 import { sampleTerracedTerrain } from "../world/terrain/terraced/sampleTerracedTerrain";
 import type { TerracedTerrainData } from "../world/terrain/terraced/terracedTerrainTypes";
@@ -24,15 +26,13 @@ export function createTerracedTerrainPrototypeScene(engine: Engine): Scene {
   scene.clearColor = new Color4(0.56, 0.84, 0.91, 1);
   const camera = createGameCamera(scene, engine);
   const lighting = createLighting(scene);
-  const showBaseTerrain =
-    new URLSearchParams(window.location.search).get("terrain") === "base";
-  const terrainData = showBaseTerrain
-    ? createBaseTerracedTerrainData()
-    : TERRACED_TERRAIN_DATA;
+  const terrainMode = new URLSearchParams(window.location.search).get("terrain");
+  const playerOnly = terrainMode === "base" || terrainMode === "seeded";
+  const terrainData = selectTerrainData(terrainMode);
 
   createTerracedTerrainMeshes(scene, terrainData);
 
-  const references = createScaleReferences(scene, terrainData, showBaseTerrain);
+  const references = createScaleReferences(scene, terrainData, playerOnly);
   references.shadowCasters.forEach((mesh) =>
     lighting.shadows.addShadowCaster(mesh),
   );
@@ -52,6 +52,15 @@ export function createTerracedTerrainPrototypeScene(engine: Engine): Scene {
   });
 
   return scene;
+}
+
+function selectTerrainData(mode: string | null): TerracedTerrainData {
+  if (mode === "base") return createBaseTerracedTerrainData();
+  if (mode === "seeded") {
+    const seed = resolveWorldSeed(window.location.search);
+    return createSeededTerracedTerrainData(seed);
+  }
+  return TERRACED_TERRAIN_DATA;
 }
 
 function createScaleReferences(
