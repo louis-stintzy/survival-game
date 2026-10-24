@@ -6,7 +6,8 @@ import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine";
 
 const INITIAL_CAMERA_ALPHA = -Math.PI / 2.15;
 const INITIAL_CAMERA_BETA = Math.PI / 3.2;
-const CAMERA_RADIUS = 30;
+// Le rayon éloigne la caméra pour éviter le near clipping au dézoom maximal.
+const CAMERA_RADIUS = 50;
 export const INITIAL_CAMERA_VIEW_HEIGHT = 28;
 
 /** Applique une hauteur de vue orthographique en conservant les proportions. */
