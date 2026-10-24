@@ -4,17 +4,16 @@ import type { StandardMaterial } from "@babylonjs/core/Materials/standardMateria
 import type { Scene } from "@babylonjs/core/scene";
 import type { HarvestableResource } from "../../resources/resourceTypes";
 import { createIslandResources } from "./createIslandResources";
-import { PLAYER_SPAWN, RAFT_SPAWN } from "./islandLayout";
 import {
   createRaft,
   type Raft,
 } from "../../models/createRaft";
 import { RAFT_NAVIGATION_FOOTPRINT } from "../../models/raftGeometry";
-import { createBaseTerracedTerrainData } from "../terrain/terraced/createBaseTerracedTerrainData";
+import { createSeededTerracedTerrainData } from "../terrain/terraced/createSeededTerracedTerrainData";
 import { createTerracedTerrainMeshes } from "../terrain/terraced/createTerracedTerrainMeshes";
 import { sampleTerracedTerrain } from "../terrain/terraced/sampleTerracedTerrain";
 import type { TerrainSampler } from "../terrain/terrainTypes";
-import { validateTemporaryIslandSpawns } from "./validateTemporaryIslandSpawns";
+import { findTemporaryIslandSpawns } from "./findTemporaryIslandSpawns";
 
 interface IslandMaterials {
   trunk: StandardMaterial;
@@ -34,18 +33,26 @@ export interface Island {
   raft: Raft;
 }
 
-export function createIsland(scene: Scene, materials: IslandMaterials): Island {
-  const terrainData = createBaseTerracedTerrainData();
+export function createIsland(
+  scene: Scene,
+  materials: IslandMaterials,
+  worldSeed: number,
+): Island {
+  const terrainData = createSeededTerracedTerrainData(worldSeed);
   const { terrainMesh, waterMesh } = createTerracedTerrainMeshes(
     scene,
     terrainData,
   );
   const sample: TerrainSampler = (x, z) =>
     sampleTerracedTerrain(terrainData, x, z);
-  const { playerGround } = validateTemporaryIslandSpawns(
-    sample,
+  const { playerSpawn, raftSpawn } = findTemporaryIslandSpawns(
+    terrainData,
     RAFT_NAVIGATION_FOOTPRINT,
   );
+  const playerGround = sample(playerSpawn.x, playerSpawn.z);
+  if (!playerGround) {
+    throw new Error("Le spawn joueur trouvé ne correspond pas au terrain.");
+  }
 
   const resources = createIslandResources(
     scene,
@@ -57,12 +64,8 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
     sample,
   );
   const raft = createRaft(scene, "raft", materials.raft);
-  raft.root.position.set(
-    RAFT_SPAWN.x,
-    terrainData.waterHeight,
-    RAFT_SPAWN.z,
-  );
-  raft.root.rotation.y = RAFT_SPAWN.rotation;
+  raft.root.position.set(raftSpawn.x, terrainData.waterHeight, raftSpawn.z);
+  raft.root.rotation.y = raftSpawn.rotation;
 
   return {
     terrainMesh,
@@ -72,9 +75,9 @@ export function createIsland(scene: Scene, materials: IslandMaterials): Island {
     shadowCasters: [...resources.shadowCasters, ...raft.meshes],
     harvestableResources: resources.harvestableResources,
     playerSpawnGroundPosition: new Vector3(
-      PLAYER_SPAWN.x,
+      playerSpawn.x,
       playerGround.height,
-      PLAYER_SPAWN.z,
+      playerSpawn.z,
     ),
     raft,
   };

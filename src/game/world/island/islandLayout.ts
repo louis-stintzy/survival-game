@@ -12,27 +12,6 @@ export interface RockPlacement {
   rotation: number;
 }
 
-export interface IslandSpawnPoint {
-  x: number;
-  z: number;
-}
-
-export interface RaftSpawnPoint extends IslandSpawnPoint {
-  rotation: number;
-}
-
-export const PLAYER_SPAWN: IslandSpawnPoint = {
-  x: 0,
-  z: 29.7,
-};
-
-// Position temporaire proche de la plage de départ pour le prototype nautique.
-export const RAFT_SPAWN: RaftSpawnPoint = {
-  x: 0,
-  z: 31.7,
-  rotation: Math.PI / 2,
-};
-
 export const TREE_PLACEMENTS: TreePlacement[] = [
   // ============================================================
   // Masse forestière ouest
