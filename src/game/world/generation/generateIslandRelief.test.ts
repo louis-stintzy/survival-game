@@ -9,9 +9,12 @@ const REPRESENTATIVE_SEEDS = [1, 42, 12345, 54321, 99999] as const;
 describe("generateIslandRelief", () => {
   test("est déterministe et utilise une séquence propre à la seed", () => {
     const shape = createShape(12345);
+    const firstRelief = generateIslandRelief({ seed: 12345, shape });
+    const secondRelief = generateIslandRelief({ seed: 12345, shape });
 
-    expect(generateIslandRelief({ seed: 12345, shape })).toEqual(
-      generateIslandRelief({ seed: 12345, shape }),
+    expect(firstRelief).toEqual(secondRelief);
+    expect(firstRelief.areas.map(({ accessAngle }) => accessAngle)).toEqual(
+      secondRelief.areas.map(({ accessAngle }) => accessAngle),
     );
     expect(generateIslandRelief({ seed: 1, shape }).levels).not.toEqual(
       generateIslandRelief({ seed: 42, shape }).levels,
@@ -35,7 +38,7 @@ describe("generateIslandRelief", () => {
       );
       expect(
         relief.levels.every(
-          (level) => level === 0 || (level >= 4 && level <= 8),
+          (level) => level === 0 || (level >= 3 && level <= 8),
         ),
       ).toBe(true);
 
@@ -43,6 +46,9 @@ describe("generateIslandRelief", () => {
         const centerIndex =
           area.centerRow * shape.columnCount + area.centerColumn;
         expect(shape.values[centerIndex]).toBeGreaterThanOrEqual(0.4);
+        expect(Number.isFinite(area.accessAngle)).toBe(true);
+        expect(area.accessAngle).toBeGreaterThanOrEqual(0);
+        expect(area.accessAngle).toBeLessThan(Math.PI * 2);
       }
     },
   );

@@ -7,10 +7,11 @@ const RELIEF_AREA_COUNT_MAX = 4;
 const RELIEF_RADIUS_MIN = 4;
 const RELIEF_RADIUS_MAX = 10;
 const RELIEF_CENTER_MIN_SIGNAL = 0.4;
+const RELIEF_ACCESS_CORRIDOR_HALF_WIDTH = 1.5;
 const FULL_ROTATION = Math.PI * 2;
 
 export type IslandReliefTargetLevel = 4 | 5 | 6 | 7 | 8;
-export type IslandReliefLevel = 0 | IslandReliefTargetLevel;
+export type IslandReliefLevel = 0 | 3 | IslandReliefTargetLevel;
 
 export interface IslandReliefArea {
   centerRow: number;
@@ -18,6 +19,7 @@ export interface IslandReliefArea {
   radiusX: number;
   radiusZ: number;
   rotation: number;
+  accessAngle: number;
   targetLevel: IslandReliefTargetLevel;
 }
 
@@ -63,17 +65,28 @@ export function generateIslandRelief(
   for (let index = 0; index < areaCount; index += 1) {
     const centerIndex =
       interiorCellIndices[random.integer(0, interiorCellIndices.length - 1)];
+    const radiusX = random.float(RELIEF_RADIUS_MIN, RELIEF_RADIUS_MAX);
+    const radiusZ = random.float(RELIEF_RADIUS_MIN, RELIEF_RADIUS_MAX);
+    const accessAngle = random.float(0, FULL_ROTATION);
+    const accessRadius = getEllipseRadiusAtAngle(
+      radiusX,
+      radiusZ,
+      accessAngle,
+    );
+    const requestedTargetLevel = random.integer(index === 0 ? 6 : 4, 8);
+    const feasibleTargetLevel = Math.min(
+      requestedTargetLevel,
+      Math.floor(accessRadius) + 3,
+    );
     areas.push({
       centerRow: Math.floor(centerIndex / shape.columnCount),
       centerColumn: centerIndex % shape.columnCount,
-      radiusX: random.float(RELIEF_RADIUS_MIN, RELIEF_RADIUS_MAX),
-      radiusZ: random.float(RELIEF_RADIUS_MIN, RELIEF_RADIUS_MAX),
+      radiusX,
+      radiusZ,
       rotation: random.float(0, FULL_ROTATION),
-      // Le premier plateau garantit une amplitude nettement visible.
-      targetLevel: random.integer(
-        index === 0 ? 6 : 4,
-        8,
-      ) as IslandReliefTargetLevel,
+      accessAngle,
+      // Le niveau est borné pour laisser assez de place à chaque marche +1.
+      targetLevel: feasibleTargetLevel as IslandReliefTargetLevel,
     });
   }
 
@@ -82,9 +95,19 @@ export function generateIslandRelief(
     for (let column = 0; column < shape.columnCount; column += 1) {
       let level: IslandReliefLevel = 0;
       for (const area of areas) {
-        if (isInsideArea(row, column, area)) {
-          level = Math.max(level, area.targetLevel) as IslandReliefLevel;
-        }
+        level = Math.max(
+          level,
+          sampleAreaLevel(row, column, area),
+        ) as IslandReliefLevel;
+      }
+      const primaryAccessLevel = sampleAccessCorridorLevel(
+        row,
+        column,
+        areas[0],
+      );
+      if (primaryAccessLevel !== undefined) {
+        // Une superposition ne doit pas reboucher l'accès du plateau principal.
+        level = primaryAccessLevel;
       }
       levels.push(level);
     }
@@ -99,18 +122,107 @@ export function generateIslandRelief(
   };
 }
 
-function isInsideArea(
+function sampleAreaLevel(
   row: number,
   column: number,
   area: IslandReliefArea,
-) {
+): IslandReliefLevel {
   const x = column - area.centerColumn;
   const z = row - area.centerRow;
   const cosine = Math.cos(area.rotation);
   const sine = Math.sin(area.rotation);
   const localX = x * cosine + z * sine;
   const localZ = -x * sine + z * cosine;
-  return Math.hypot(localX / area.radiusX, localZ / area.radiusZ) <= 1;
+  if (Math.hypot(localX / area.radiusX, localZ / area.radiusZ) > 1) {
+    return 0;
+  }
+
+  return sampleAccessCorridorLevel(row, column, area) ?? area.targetLevel;
+}
+
+function sampleAccessCorridorLevel(
+  row: number,
+  column: number,
+  area: IslandReliefArea,
+): IslandReliefLevel | undefined {
+  const x = column - area.centerColumn;
+  const z = row - area.centerRow;
+  const cosine = Math.cos(area.rotation);
+  const sine = Math.sin(area.rotation);
+  const localX = x * cosine + z * sine;
+  const localZ = -x * sine + z * cosine;
+  if (Math.hypot(localX / area.radiusX, localZ / area.radiusZ) > 1) {
+    return undefined;
+  }
+
+  const accessCosine = Math.cos(area.accessAngle);
+  const accessSine = Math.sin(area.accessAngle);
+  const distanceTowardAccess =
+    localX * accessCosine + localZ * accessSine;
+  const distanceAcrossAccess =
+    -localX * accessSine + localZ * accessCosine;
+  if (
+    distanceTowardAccess < 0 ||
+    Math.abs(distanceAcrossAccess) > RELIEF_ACCESS_CORRIDOR_HALF_WIDTH
+  ) {
+    return undefined;
+  }
+
+  const accessEdgeDistance = getEllipseAccessEdgeDistance(
+    area.radiusX,
+    area.radiusZ,
+    area.accessAngle,
+    distanceAcrossAccess,
+  );
+  const distanceFromEdge = Math.max(
+    0,
+    accessEdgeDistance - distanceTowardAccess,
+  );
+  return Math.min(
+    area.targetLevel,
+    3 + Math.floor(distanceFromEdge),
+  ) as IslandReliefLevel;
+}
+
+function getEllipseAccessEdgeDistance(
+  radiusX: number,
+  radiusZ: number,
+  angle: number,
+  distanceAcrossAccess: number,
+) {
+  const directionX = Math.cos(angle);
+  const directionZ = Math.sin(angle);
+  const perpendicularX = -directionZ;
+  const perpendicularZ = directionX;
+  const inverseRadiusXSquared = 1 / (radiusX * radiusX);
+  const inverseRadiusZSquared = 1 / (radiusZ * radiusZ);
+  const quadraticA =
+    directionX * directionX * inverseRadiusXSquared +
+    directionZ * directionZ * inverseRadiusZSquared;
+  const quadraticB =
+    2 *
+    distanceAcrossAccess *
+    (directionX * perpendicularX * inverseRadiusXSquared +
+      directionZ * perpendicularZ * inverseRadiusZSquared);
+  const quadraticC =
+    distanceAcrossAccess *
+      distanceAcrossAccess *
+      (perpendicularX * perpendicularX * inverseRadiusXSquared +
+        perpendicularZ * perpendicularZ * inverseRadiusZSquared) -
+    1;
+  const discriminant =
+    quadraticB * quadraticB - 4 * quadraticA * quadraticC;
+  return (-quadraticB + Math.sqrt(discriminant)) / (2 * quadraticA);
+}
+
+function getEllipseRadiusAtAngle(
+  radiusX: number,
+  radiusZ: number,
+  angle: number,
+) {
+  const cosine = Math.cos(angle);
+  const sine = Math.sin(angle);
+  return 1 / Math.hypot(cosine / radiusX, sine / radiusZ);
 }
 
 function assertShape(shape: IslandShape) {

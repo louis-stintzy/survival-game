@@ -41,6 +41,7 @@ describe("createSeededTerracedTerrainData", () => {
         terrain.cells.filter(({ level }) => level === 2).length,
       ).toBeGreaterThan(100);
       expect(countCliffAdjacencies(terrain.cells, 101, 101)).toBeGreaterThan(0);
+      expect(canReachHighReliefFromCoast(terrain.cells, 101, 101)).toBe(true);
       expect(
         terrain.cells.every(
           ({ level }) => Number.isInteger(level) && level >= 0,
@@ -116,4 +117,80 @@ function countCliffAdjacencies(
     }
   }
   return count;
+}
+
+function canReachHighReliefFromCoast(
+  cells: readonly { level: number; surface: string }[],
+  rowCount: number,
+  columnCount: number,
+) {
+  const visited = new Set<number>();
+  const queue: number[] = [];
+  for (let row = 0; row < rowCount; row += 1) {
+    for (let column = 0; column < columnCount; column += 1) {
+      const index = row * columnCount + column;
+      if (
+        cells[index].surface === "grass" &&
+        cells[index].level === 2 &&
+        getCardinalNeighborIndices(row, column, rowCount, columnCount).some(
+          (neighborIndex) => cells[neighborIndex].surface === "sand",
+        )
+      ) {
+        visited.add(index);
+        queue.push(index);
+      }
+    }
+  }
+
+  for (let cursor = 0; cursor < queue.length; cursor += 1) {
+    const index = queue[cursor];
+    const cell = cells[index];
+    if (cell.level >= 6) return true;
+
+    const row = Math.floor(index / columnCount);
+    const column = index % columnCount;
+    for (const neighborIndex of getCardinalNeighborIndices(
+      row,
+      column,
+      rowCount,
+      columnCount,
+    )) {
+      const neighbor = cells[neighborIndex];
+      if (
+        !visited.has(neighborIndex) &&
+        neighbor.surface !== "water" &&
+        neighbor.level - cell.level < 2
+      ) {
+        visited.add(neighborIndex);
+        queue.push(neighborIndex);
+      }
+    }
+  }
+
+  return false;
+}
+
+function getCardinalNeighborIndices(
+  row: number,
+  column: number,
+  rowCount: number,
+  columnCount: number,
+) {
+  return [
+    [row - 1, column],
+    [row + 1, column],
+    [row, column - 1],
+    [row, column + 1],
+  ]
+    .filter(
+      ([neighborRow, neighborColumn]) =>
+        neighborRow >= 0 &&
+        neighborRow < rowCount &&
+        neighborColumn >= 0 &&
+        neighborColumn < columnCount,
+    )
+    .map(
+      ([neighborRow, neighborColumn]) =>
+        neighborRow * columnCount + neighborColumn,
+    );
 }
