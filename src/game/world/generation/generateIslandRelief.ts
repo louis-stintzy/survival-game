@@ -9,7 +9,8 @@ const RELIEF_RADIUS_MAX = 10;
 const RELIEF_CENTER_MIN_SIGNAL = 0.4;
 const FULL_ROTATION = Math.PI * 2;
 
-export type IslandReliefLevel = 0 | 3 | 4;
+export type IslandReliefTargetLevel = 4 | 5 | 6 | 7 | 8;
+export type IslandReliefLevel = 0 | IslandReliefTargetLevel;
 
 export interface IslandReliefArea {
   centerRow: number;
@@ -17,7 +18,7 @@ export interface IslandReliefArea {
   radiusX: number;
   radiusZ: number;
   rotation: number;
-  targetLevel: 3 | 4;
+  targetLevel: IslandReliefTargetLevel;
 }
 
 export interface IslandRelief {
@@ -68,13 +69,11 @@ export function generateIslandRelief(
       radiusX: random.float(RELIEF_RADIUS_MIN, RELIEF_RADIUS_MAX),
       radiusZ: random.float(RELIEF_RADIUS_MIN, RELIEF_RADIUS_MAX),
       rotation: random.float(0, FULL_ROTATION),
-      // Les deux premiers plateaux garantissent les niveaux 4 puis 3.
-      targetLevel:
-        index === 0
-          ? 4
-          : index === 1
-            ? 3
-            : (random.integer(3, 4) as 3 | 4),
+      // Le premier plateau garantit une amplitude nettement visible.
+      targetLevel: random.integer(
+        index === 0 ? 6 : 4,
+        8,
+      ) as IslandReliefTargetLevel,
     });
   }
 

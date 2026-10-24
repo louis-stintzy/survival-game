@@ -36,7 +36,7 @@ describe("createSeededTerracedTerrainData", () => {
       expect(surfaces).toContain("grass");
       expect(landLevels).toContain(1);
       expect(landLevels).toContain(2);
-      expect(landLevels).toContain(4);
+      expect(Math.max(...landLevels)).toBeGreaterThanOrEqual(6);
       expect(
         terrain.cells.filter(({ level }) => level === 2).length,
       ).toBeGreaterThan(100);

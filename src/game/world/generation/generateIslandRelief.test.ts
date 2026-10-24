@@ -30,12 +30,14 @@ describe("generateIslandRelief", () => {
       expect(relief.areaCount).toBeGreaterThanOrEqual(2);
       expect(relief.areaCount).toBeLessThanOrEqual(4);
       expect(relief.areas).toHaveLength(relief.areaCount);
-      expect(relief.areas.some(({ targetLevel }) => targetLevel === 4)).toBe(
+      expect(relief.areas.some(({ targetLevel }) => targetLevel >= 6)).toBe(
         true,
       );
-      expect(relief.levels.every((level) => [0, 3, 4].includes(level))).toBe(
-        true,
-      );
+      expect(
+        relief.levels.every(
+          (level) => level === 0 || (level >= 4 && level <= 8),
+        ),
+      ).toBe(true);
 
       for (const area of relief.areas) {
         const centerIndex =
