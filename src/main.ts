@@ -17,7 +17,7 @@ const scene = showTerracedPrototype
 function createGameScene() {
   const worldSeed = resolveWorldSeed(window.location.search);
   console.info(`[world] Seed: ${worldSeed}`);
-  return createScene(engine);
+  return createScene(engine, worldSeed);
 }
 
 // Un jeu redessine continuellement la scène afin que les animations et les
