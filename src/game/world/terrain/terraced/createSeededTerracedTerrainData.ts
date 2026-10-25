@@ -12,6 +12,7 @@ import type {
   TerracedCell,
   TerracedTerrainData,
 } from "./terracedTerrainTypes";
+import { repairTerracedLandTraps } from "./repairTerracedLandTraps";
 
 export const SEEDED_SAND_MAX_SIGNAL = 0.12;
 export const SEEDED_COASTAL_GRASS_MAX_SIGNAL = 0.29;
@@ -28,7 +29,7 @@ export function createSeededTerracedTerrainData(
   const topography = generateIslandTopography({ seed, shape });
   const rockMask = generateIslandRockMask({ seed, shape });
 
-  return {
+  const quantizedTerrain: TerracedTerrainData = {
     rowCount: shape.rowCount,
     columnCount: shape.columnCount,
     cellSize: BASE_TERRACED_CELL_SIZE,
@@ -42,6 +43,8 @@ export function createSeededTerracedTerrainData(
       ),
     ),
   };
+
+  return repairTerracedLandTraps(quantizedTerrain).terrainData;
 }
 
 export function createTerracedCellFromTopography(

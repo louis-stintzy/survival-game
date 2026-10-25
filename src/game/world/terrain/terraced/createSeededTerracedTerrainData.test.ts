@@ -7,6 +7,7 @@ import {
   SEEDED_COASTAL_GRASS_MAX_SIGNAL,
   SEEDED_SAND_MAX_SIGNAL,
 } from "./createSeededTerracedTerrainData";
+import { findTerracedLandTrapIndices } from "./repairTerracedLandTraps";
 
 const REPRESENTATIVE_SEEDS = [1, 42, 12345, 54321, 99999] as const;
 
@@ -148,6 +149,7 @@ describe("createSeededTerracedTerrainData", () => {
       );
       expect(maximumReachableLevel).toBeGreaterThanOrEqual(2);
       expect(maximumReachableLevel).toBe(maximumLandLevel);
+      expect(findTerracedLandTrapIndices(terrain)).toEqual([]);
       expect(
         countUnsafeSandToLandAdjacencies(
           terrain.cells,
