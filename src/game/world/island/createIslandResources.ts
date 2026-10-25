@@ -27,6 +27,44 @@ const ROCK_GROUND_SINK_RATIO = 0.45;
 const ROCK_COLLISION_HALF_WIDTH_RATIO = 0.85;
 const ROCK_COLLISION_HALF_DEPTH_RATIO = 0.7;
 
+export function isRockPlacementTerrainValid(
+  placement: RockPlacement,
+  sampleTerrain: TerrainSampler,
+) {
+  const center = sampleTerrain(placement.x, placement.z);
+  if (
+    !center?.isLand ||
+    (center.surface !== "grass" && center.surface !== "rock")
+  ) {
+    return false;
+  }
+
+  const halfWidth = ROCK_COLLISION_HALF_WIDTH_RATIO * placement.scale;
+  const halfDepth = ROCK_COLLISION_HALF_DEPTH_RATIO * placement.scale;
+  const localCheckpoints = [
+    { x: 0, z: 0 },
+    { x: -halfWidth, z: 0 },
+    { x: halfWidth, z: 0 },
+    { x: 0, z: -halfDepth },
+    { x: 0, z: halfDepth },
+    { x: -halfWidth, z: -halfDepth },
+    { x: -halfWidth, z: halfDepth },
+    { x: halfWidth, z: -halfDepth },
+    { x: halfWidth, z: halfDepth },
+  ];
+  const cosine = Math.cos(placement.rotation);
+  const sine = Math.sin(placement.rotation);
+
+  return localCheckpoints.every((checkpoint) => {
+    const x =
+      placement.x + checkpoint.x * cosine + checkpoint.z * sine;
+    const z =
+      placement.z - checkpoint.x * sine + checkpoint.z * cosine;
+    const ground = sampleTerrain(x, z);
+    return ground?.isLand === true && ground.level === center.level;
+  });
+}
+
 function createTree(
   scene: Scene,
   placement: TreePlacement,
@@ -78,7 +116,7 @@ function createRock(
 ): Mesh {
   const rock = MeshBuilder.CreatePolyhedron(
     `rock-${index}`,
-    { type: 1, size: 1 },
+    { type: 2, size: 1 },
     scene,
   );
   rock.position = new Vector3(placement.x, 0, placement.z);
@@ -150,8 +188,9 @@ export function createIslandResources(
 
   const rockResources: HarvestableResource[] = ROCK_PLACEMENTS.flatMap(
     (placement, index) => {
+      if (!isRockPlacementTerrainValid(placement, sampleTerrain)) return [];
       const ground = sampleTerrain(placement.x, placement.z);
-      if (ground?.surface !== "grass" && ground?.surface !== "rock") return [];
+      if (!ground) return [];
 
       const rock = createRock(
         scene,

@@ -38,6 +38,20 @@ const PLAYER_FOOTPRINT_OFFSETS = [
   { x: -PLAYER_DIAGONAL_FOOTPRINT_OFFSET, z: PLAYER_DIAGONAL_FOOTPRINT_OFFSET },
   { x: -PLAYER_DIAGONAL_FOOTPRINT_OFFSET, z: -PLAYER_DIAGONAL_FOOTPRINT_OFFSET },
 ] as const;
+const PLAYER_INTERMEDIATE_FOOTPRINT_OFFSETS = Array.from(
+  { length: 8 },
+  (_, index) => {
+    const angle = Math.PI / 8 + (index * Math.PI) / 4;
+    return {
+      x: Math.cos(angle) * PLAYER_COLLISION_RADIUS,
+      z: Math.sin(angle) * PLAYER_COLLISION_RADIUS,
+    };
+  },
+);
+const PLAYER_CLIFF_FOOTPRINT_OFFSETS = [
+  ...PLAYER_FOOTPRINT_OFFSETS,
+  ...PLAYER_INTERMEDIATE_FOOTPRINT_OFFSETS,
+];
 const MOVEMENT_KEYS = new Set([
   "z",
   "w",
@@ -97,7 +111,7 @@ export function isPlayerFootprintBlockedByCliff(
   movementZ: number,
   sampleTerrain: TerrainSampler,
 ): boolean {
-  return PLAYER_FOOTPRINT_OFFSETS.some(({ x, z }) => {
+  return PLAYER_CLIFF_FOOTPRINT_OFFSETS.some(({ x, z }) => {
     if (x * movementX + z * movementZ < 0) return false;
 
     const ground = sampleTerrain(candidateX + x, candidateZ + z);

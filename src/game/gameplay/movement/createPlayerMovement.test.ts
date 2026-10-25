@@ -116,6 +116,20 @@ describe("isPlayerFootprintBlockedByCliff", () => {
     ).toBe(true);
   });
 
+  test("bloque le coin d'une cellule +2 déjà engagé dans le rayon", () => {
+    const sampleTerrain: TerrainSampler = (x, z) => ({
+      height: x >= 0.44 && z >= 0.18 ? 1.6 : 0.8,
+      level: x >= 0.44 && z >= 0.18 ? 4 : 2,
+      surface: "grass",
+      isLand: true,
+    });
+
+    expect(sampleTerrain(0, 0)?.level).toBe(2);
+    expect(
+      isPlayerFootprintBlockedByCliff(0, 0, 2, 1, 0, sampleTerrain),
+    ).toBe(true);
+  });
+
   test("ignore une falaise +2 derrière le mouvement", () => {
     const sampleTerrain: TerrainSampler = (x) => ({
       height: x >= 0.4 ? 1.6 : 0.8,
