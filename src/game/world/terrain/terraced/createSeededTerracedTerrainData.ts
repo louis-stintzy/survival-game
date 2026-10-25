@@ -1,5 +1,6 @@
 import { generateIslandShape } from "../../generation/generateIslandShape";
 import { generateIslandTopography } from "../../generation/generateIslandTopography";
+import { generateIslandRockMask } from "../../generation/generateIslandRockMask";
 import {
   BASE_TERRACED_CELL_SIZE,
   BASE_TERRACED_COLUMN_COUNT,
@@ -25,6 +26,7 @@ export function createSeededTerracedTerrainData(
     columnCount: BASE_TERRACED_COLUMN_COUNT,
   });
   const topography = generateIslandTopography({ seed, shape });
+  const rockMask = generateIslandRockMask({ seed, shape });
 
   return {
     rowCount: shape.rowCount,
@@ -36,6 +38,7 @@ export function createSeededTerracedTerrainData(
       createTerracedCellFromTopography(
         signal,
         topography.heights[index],
+        rockMask.values[index],
       ),
     ),
   };
@@ -44,6 +47,7 @@ export function createSeededTerracedTerrainData(
 export function createTerracedCellFromTopography(
   signal: number,
   continuousHeight: number,
+  isRock = false,
 ): TerracedCell {
   if (signal <= 0) return { level: 0, surface: "water" };
   if (signal <= SEEDED_SAND_MAX_SIGNAL) {
@@ -57,7 +61,7 @@ export function createTerracedCellFromTopography(
       continuousHeight,
       BASE_TERRACED_HEIGHT_STEP,
     ),
-    surface: "grass",
+    surface: isRock ? "rock" : "grass",
   };
 }
 

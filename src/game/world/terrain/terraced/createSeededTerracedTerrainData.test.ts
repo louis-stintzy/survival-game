@@ -43,6 +43,7 @@ describe("createTerracedCellFromTopography", () => {
       createTerracedCellFromTopography(
         (SEEDED_SAND_MAX_SIGNAL + SEEDED_COASTAL_GRASS_MAX_SIGNAL) / 2,
         4,
+        true,
       ),
     ).toEqual({ level: 2, surface: "grass" });
     expect(
@@ -51,6 +52,19 @@ describe("createTerracedCellFromTopography", () => {
         1.6,
       ),
     ).toEqual({ level: 4, surface: "grass" });
+    expect(
+      createTerracedCellFromTopography(
+        SEEDED_COASTAL_GRASS_MAX_SIGNAL + 0.01,
+        1.6,
+        true,
+      ),
+    ).toEqual({ level: 4, surface: "rock" });
+  });
+
+  test("conserve le même level pour grass et rock", () => {
+    const grass = createTerracedCellFromTopography(0.5, 2.4, false);
+    const rock = createTerracedCellFromTopography(0.5, 2.4, true);
+    expect(rock.level).toBe(grass.level);
   });
 });
 
@@ -84,6 +98,7 @@ describe("createSeededTerracedTerrainData", () => {
       expect(surfaces).toContain("water");
       expect(surfaces).toContain("sand");
       expect(surfaces).toContain("grass");
+      expect(surfaces).toContain("rock");
       expect(grassLevels.size).toBeGreaterThan(1);
       expect(grassLevels).toContain(2);
       expect(Math.max(...grassLevels)).toBeGreaterThan(4);
@@ -104,7 +119,9 @@ describe("createSeededTerracedTerrainData", () => {
       ).toBe(true);
       expect(
         terrain.cells
-          .filter((cell) => cell.surface === "grass")
+          .filter(
+            (cell) => cell.surface === "grass" || cell.surface === "rock",
+          )
           .every((cell) => cell.level >= 2),
       ).toBe(true);
 
