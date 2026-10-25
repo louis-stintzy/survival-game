@@ -1,4 +1,5 @@
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { PLAYER_RADIUS } from "../../models/createPlayer";
 import type { HarvestableResource } from "../../resources/resourceTypes";
 import type { CollisionContact, XZPosition } from "./collisionTypes";
 import { getCirclesContact } from "./circleCollision";
@@ -9,7 +10,7 @@ import { getCircleHorizontalBoundsContact } from "./horizontalBoundsCollision";
  * Rayon horizontal du joueur utilisé pour toutes les collisions
  * dans le plan X/Z.
  */
-export const PLAYER_COLLISION_RADIUS = 0.5;
+export const PLAYER_COLLISION_RADIUS = PLAYER_RADIUS;
 
 export interface PlayerCollisionQuery {
   /** Position tentée, utilisée pour détecter l'obstacle rencontré. */

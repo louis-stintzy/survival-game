@@ -4,6 +4,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Scene } from "@babylonjs/core/scene";
 
 export const PLAYER_HALF_HEIGHT = 1.1;
+export const PLAYER_RADIUS = 0.55;
 const PLAYER_HEIGHT = PLAYER_HALF_HEIGHT * 2;
 
 export function createPlayer(
@@ -13,7 +14,7 @@ export function createPlayer(
 ) {
   const player = MeshBuilder.CreateCapsule(
     "player",
-    { height: PLAYER_HEIGHT, radius: 0.55, tessellation: 8 },
+    { height: PLAYER_HEIGHT, radius: PLAYER_RADIUS, tessellation: 8 },
     scene,
   );
   player.position = new Vector3(
