@@ -2,13 +2,19 @@ import { createSeededRandom } from "./createSeededRandom";
 import type { IslandShape } from "./generateIslandShape";
 
 const TOPOGRAPHY_SEED_SALT = 0xa341_316c;
-const HILL_COUNT_MIN = 1;
-const HILL_COUNT_MAX = 3;
+const HILL_COUNT_MIN = 2;
+const HILL_COUNT_MAX = 4;
 const HILL_RADIUS_MIN = 6;
 const HILL_RADIUS_MAX = 14;
 const HILL_HEIGHT_MIN = 1.2;
 const HILL_HEIGHT_MAX = 3;
 const HILL_CENTER_MIN_SIGNAL = 0.4;
+const MOUNTAIN_CHANCE = 0.6;
+const MOUNTAIN_RADIUS_MIN = 12;
+const MOUNTAIN_RADIUS_MAX = 20;
+const MOUNTAIN_HEIGHT_MIN = 3.2;
+const MOUNTAIN_HEIGHT_MAX = 4.8;
+const MOUNTAIN_CENTER_MIN_SIGNAL = 0.5;
 const LAND_BLEND_START_SIGNAL = 0;
 const LAND_BLEND_END_SIGNAL = 0.35;
 const FULL_ROTATION = Math.PI * 2;
@@ -28,6 +34,7 @@ export interface IslandTopography {
   rowCount: number;
   columnCount: number;
   hillCount: number;
+  mountainCount: 0 | 1;
   hills: readonly IslandHill[];
   heights: readonly number[];
 }
@@ -61,16 +68,39 @@ export function generateIslandTopography(
   const hillCount = random.integer(HILL_COUNT_MIN, HILL_COUNT_MAX);
   const hills: IslandHill[] = [];
   for (let index = 0; index < hillCount; index += 1) {
-    const centerIndex =
-      interiorCellIndices[random.integer(0, interiorCellIndices.length - 1)];
-    hills.push({
-      centerRow: Math.floor(centerIndex / shape.columnCount),
-      centerColumn: centerIndex % shape.columnCount,
-      radiusX: random.float(HILL_RADIUS_MIN, HILL_RADIUS_MAX),
-      radiusZ: random.float(HILL_RADIUS_MIN, HILL_RADIUS_MAX),
-      rotation: random.float(0, FULL_ROTATION),
-      height: random.float(HILL_HEIGHT_MIN, HILL_HEIGHT_MAX),
-    });
+    hills.push(
+      createHill(random, interiorCellIndices, shape.columnCount, {
+        radiusMin: HILL_RADIUS_MIN,
+        radiusMax: HILL_RADIUS_MAX,
+        heightMin: HILL_HEIGHT_MIN,
+        heightMax: HILL_HEIGHT_MAX,
+      }),
+    );
+  }
+
+  // La montagne est décidée après toutes les collines ordinaires afin de ne
+  // pas perturber leur séquence de paramètres.
+  const mountainCount: 0 | 1 = random.next() < MOUNTAIN_CHANCE ? 1 : 0;
+  if (mountainCount === 1) {
+    const mountainCellIndices = shape.values
+      .map((shapeSignal, index) => ({ shapeSignal, index }))
+      .filter(({ shapeSignal }) => shapeSignal >= MOUNTAIN_CENTER_MIN_SIGNAL)
+      .map(({ index }) => index);
+    hills.push(
+      createHill(
+        random,
+        mountainCellIndices.length > 0
+          ? mountainCellIndices
+          : interiorCellIndices,
+        shape.columnCount,
+        {
+          radiusMin: MOUNTAIN_RADIUS_MIN,
+          radiusMax: MOUNTAIN_RADIUS_MAX,
+          heightMin: MOUNTAIN_HEIGHT_MIN,
+          heightMax: MOUNTAIN_HEIGHT_MAX,
+        },
+      ),
+    );
   }
 
   const heights = shape.values.map((shapeSignal, index) => {
@@ -115,8 +145,34 @@ export function generateIslandTopography(
     rowCount: shape.rowCount,
     columnCount: shape.columnCount,
     hillCount,
+    mountainCount,
     hills,
     heights,
+  };
+}
+
+interface HillRanges {
+  radiusMin: number;
+  radiusMax: number;
+  heightMin: number;
+  heightMax: number;
+}
+
+function createHill(
+  random: ReturnType<typeof createSeededRandom>,
+  centerCellIndices: readonly number[],
+  columnCount: number,
+  ranges: HillRanges,
+): IslandHill {
+  const centerIndex =
+    centerCellIndices[random.integer(0, centerCellIndices.length - 1)];
+  return {
+    centerRow: Math.floor(centerIndex / columnCount),
+    centerColumn: centerIndex % columnCount,
+    radiusX: random.float(ranges.radiusMin, ranges.radiusMax),
+    radiusZ: random.float(ranges.radiusMin, ranges.radiusMax),
+    rotation: random.float(0, FULL_ROTATION),
+    height: random.float(ranges.heightMin, ranges.heightMax),
   };
 }
 

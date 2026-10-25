@@ -52,9 +52,15 @@ describe("generateIslandTopography", () => {
       expect(topography.columnCount).toBe(shape.columnCount);
       expect(topography.heights).toHaveLength(GRID_SIZE * GRID_SIZE);
       expect(topography.heights.every(Number.isFinite)).toBe(true);
-      expect(topography.hillCount).toBeGreaterThanOrEqual(1);
-      expect(topography.hillCount).toBeLessThanOrEqual(3);
-      expect(topography.hills).toHaveLength(topography.hillCount);
+      expect(topography.hillCount).toBeGreaterThanOrEqual(2);
+      expect(topography.hillCount).toBeLessThanOrEqual(4);
+      expect(topography.mountainCount).toBeGreaterThanOrEqual(0);
+      expect(topography.mountainCount).toBeLessThanOrEqual(1);
+      expect(topography.hills).toHaveLength(
+        topography.hillCount + topography.mountainCount,
+      );
+      expect(topography.hills.length).toBeGreaterThanOrEqual(2);
+      expect(topography.hills.length).toBeLessThanOrEqual(5);
       expect(landHeights.some((height) => height > 0)).toBe(true);
       expect(
         landHeights.some(
@@ -67,7 +73,7 @@ describe("generateIslandTopography", () => {
         ),
       ).toBe(true);
 
-      for (const hill of topography.hills) {
+      for (const hill of topography.hills.slice(0, topography.hillCount)) {
         const centerIndex =
           hill.centerRow * shape.columnCount + hill.centerColumn;
         expect(shape.values[centerIndex]).toBeGreaterThanOrEqual(0.4);
@@ -82,6 +88,28 @@ describe("generateIslandTopography", () => {
         expect(hill.rotation).toBeLessThan(Math.PI * 2);
         expect(hill.height).toBeGreaterThanOrEqual(1.2);
         expect(hill.height).toBeLessThanOrEqual(3);
+      }
+
+      const mountains = topography.hills.slice(topography.hillCount);
+      expect(mountains).toHaveLength(topography.mountainCount);
+      for (const mountain of mountains) {
+        const centerIndex =
+          mountain.centerRow * shape.columnCount + mountain.centerColumn;
+        const hasDeepInterior = shape.values.some((signal) => signal >= 0.5);
+        expect(shape.values[centerIndex]).toBeGreaterThanOrEqual(
+          hasDeepInterior ? 0.5 : 0.4,
+        );
+        expect(Number.isFinite(mountain.radiusX)).toBe(true);
+        expect(mountain.radiusX).toBeGreaterThanOrEqual(12);
+        expect(mountain.radiusX).toBeLessThanOrEqual(20);
+        expect(Number.isFinite(mountain.radiusZ)).toBe(true);
+        expect(mountain.radiusZ).toBeGreaterThanOrEqual(12);
+        expect(mountain.radiusZ).toBeLessThanOrEqual(20);
+        expect(Number.isFinite(mountain.rotation)).toBe(true);
+        expect(mountain.rotation).toBeGreaterThanOrEqual(0);
+        expect(mountain.rotation).toBeLessThan(Math.PI * 2);
+        expect(mountain.height).toBeGreaterThanOrEqual(3.2);
+        expect(mountain.height).toBeLessThanOrEqual(4.8);
       }
     },
   );
