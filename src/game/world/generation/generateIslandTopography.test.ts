@@ -71,9 +71,34 @@ describe("generateIslandTopography", () => {
         const centerIndex =
           hill.centerRow * shape.columnCount + hill.centerColumn;
         expect(shape.values[centerIndex]).toBeGreaterThanOrEqual(0.4);
+        expect(Number.isFinite(hill.radiusX)).toBe(true);
+        expect(hill.radiusX).toBeGreaterThanOrEqual(6);
+        expect(hill.radiusX).toBeLessThanOrEqual(14);
+        expect(Number.isFinite(hill.radiusZ)).toBe(true);
+        expect(hill.radiusZ).toBeGreaterThanOrEqual(6);
+        expect(hill.radiusZ).toBeLessThanOrEqual(14);
+        expect(Number.isFinite(hill.rotation)).toBe(true);
+        expect(hill.rotation).toBeGreaterThanOrEqual(0);
+        expect(hill.rotation).toBeLessThan(Math.PI * 2);
+        expect(hill.height).toBeGreaterThanOrEqual(1.2);
+        expect(hill.height).toBeLessThanOrEqual(3);
       }
     },
   );
+
+  test("produit plusieurs proportions de collines non circulaires", () => {
+    const ratios = REPRESENTATIVE_SEEDS.flatMap((seed) => {
+      const shape = createShape(seed);
+      return generateIslandTopography({ seed, shape }).hills.map(
+        ({ radiusX, radiusZ }) => radiusX / radiusZ,
+      );
+    });
+
+    expect(
+      new Set(ratios.map((ratio) => ratio.toFixed(3))).size,
+    ).toBeGreaterThan(1);
+    expect(ratios.some((ratio) => Math.abs(ratio - 1) > 0.05)).toBe(true);
+  });
 });
 
 function createShape(seed: number) {

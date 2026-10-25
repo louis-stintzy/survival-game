@@ -11,13 +11,16 @@ const HILL_HEIGHT_MAX = 3;
 const HILL_CENTER_MIN_SIGNAL = 0.4;
 const LAND_BLEND_START_SIGNAL = 0;
 const LAND_BLEND_END_SIGNAL = 0.35;
+const FULL_ROTATION = Math.PI * 2;
 export const ISLAND_TOPOGRAPHY_BASE_LAND_HEIGHT = 0.8;
 export const ISLAND_TOPOGRAPHY_SEA_FLOOR_HEIGHT = -0.9;
 
 export interface IslandHill {
   centerRow: number;
   centerColumn: number;
-  radius: number;
+  radiusX: number;
+  radiusZ: number;
+  rotation: number;
   height: number;
 }
 
@@ -63,7 +66,9 @@ export function generateIslandTopography(
     hills.push({
       centerRow: Math.floor(centerIndex / shape.columnCount),
       centerColumn: centerIndex % shape.columnCount,
-      radius: random.float(HILL_RADIUS_MIN, HILL_RADIUS_MAX),
+      radiusX: random.float(HILL_RADIUS_MIN, HILL_RADIUS_MAX),
+      radiusZ: random.float(HILL_RADIUS_MIN, HILL_RADIUS_MAX),
+      rotation: random.float(0, FULL_ROTATION),
       height: random.float(HILL_HEIGHT_MIN, HILL_HEIGHT_MAX),
     });
   }
@@ -82,11 +87,20 @@ export function generateIslandTopography(
     let hillContribution = 0;
 
     for (const hill of hills) {
+      const x = column - hill.centerColumn;
+      const z = row - hill.centerRow;
+      const cosine = Math.cos(hill.rotation);
+      const sine = Math.sin(hill.rotation);
+
+      // La cellule est tournée dans le repère local de l'ellipse avant de
+      // mesurer sa distance normalisée selon les deux rayons indépendants.
+      const localX = x * cosine + z * sine;
+      const localZ = -x * sine + z * cosine;
       const hillDistance = Math.hypot(
-        column - hill.centerColumn,
-        row - hill.centerRow,
+        localX / hill.radiusX,
+        localZ / hill.radiusZ,
       );
-      const hillBlend = 1 - smoothstep(0, hill.radius, hillDistance);
+      const hillBlend = 1 - smoothstep(0, 1, hillDistance);
       hillContribution = Math.max(
         hillContribution,
         hill.height * hillBlend,
