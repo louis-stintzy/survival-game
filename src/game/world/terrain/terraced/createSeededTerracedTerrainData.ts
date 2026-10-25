@@ -13,6 +13,7 @@ import type {
 } from "./terracedTerrainTypes";
 
 export const SEEDED_SAND_MAX_SIGNAL = 0.12;
+export const SEEDED_COASTAL_GRASS_MAX_SIGNAL = 0.29;
 
 /** Convertit une silhouette seedée pure en cellules terrassées de production. */
 export function createSeededTerracedTerrainData(
@@ -32,18 +33,24 @@ export function createSeededTerracedTerrainData(
     heightStep: BASE_TERRACED_HEIGHT_STEP,
     waterHeight: BASE_TERRACED_WATER_HEIGHT,
     cells: shape.values.map((signal, index) =>
-      signalToTerracedCell(signal, topography.heights[index]),
+      createTerracedCellFromTopography(
+        signal,
+        topography.heights[index],
+      ),
     ),
   };
 }
 
-function signalToTerracedCell(
+export function createTerracedCellFromTopography(
   signal: number,
   continuousHeight: number,
 ): TerracedCell {
   if (signal <= 0) return { level: 0, surface: "water" };
   if (signal <= SEEDED_SAND_MAX_SIGNAL) {
     return { level: 1, surface: "sand" };
+  }
+  if (signal <= SEEDED_COASTAL_GRASS_MAX_SIGNAL) {
+    return { level: 2, surface: "grass" };
   }
   return {
     level: quantizeTopographyHeight(

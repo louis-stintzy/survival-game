@@ -1,8 +1,11 @@
 import { describe, expect, test } from "vitest";
 import { createTerracedTerrainGeometry } from "./createTerracedTerrainGeometry";
 import {
+  createTerracedCellFromTopography,
   createSeededTerracedTerrainData,
   quantizeTopographyHeight,
+  SEEDED_COASTAL_GRASS_MAX_SIGNAL,
+  SEEDED_SAND_MAX_SIGNAL,
 } from "./createSeededTerracedTerrainData";
 
 const REPRESENTATIVE_SEEDS = [1, 42, 12345, 54321, 99999] as const;
@@ -24,6 +27,30 @@ describe("quantizeTopographyHeight", () => {
 
   test("ne descend jamais une cellule grass sous le level 2", () => {
     expect(quantizeTopographyHeight(0.2, 0.4)).toBe(2);
+  });
+});
+
+describe("createTerracedCellFromTopography", () => {
+  test("conserve les règles explicites de surface et de niveau", () => {
+    expect(createTerracedCellFromTopography(0, 4)).toEqual({
+      level: 0,
+      surface: "water",
+    });
+    expect(
+      createTerracedCellFromTopography(SEEDED_SAND_MAX_SIGNAL, 4),
+    ).toEqual({ level: 1, surface: "sand" });
+    expect(
+      createTerracedCellFromTopography(
+        (SEEDED_SAND_MAX_SIGNAL + SEEDED_COASTAL_GRASS_MAX_SIGNAL) / 2,
+        4,
+      ),
+    ).toEqual({ level: 2, surface: "grass" });
+    expect(
+      createTerracedCellFromTopography(
+        SEEDED_COASTAL_GRASS_MAX_SIGNAL + 0.01,
+        1.6,
+      ),
+    ).toEqual({ level: 4, surface: "grass" });
   });
 });
 
@@ -100,6 +127,13 @@ describe("createSeededTerracedTerrainData", () => {
       );
       expect(maximumReachableLevel).toBeGreaterThanOrEqual(2);
       expect(maximumReachableLevel).toBeLessThanOrEqual(maximumGrassLevel);
+      expect(
+        countUnsafeSandToLandAdjacencies(
+          terrain.cells,
+          terrain.rowCount,
+          terrain.columnCount,
+        ),
+      ).toBe(0);
     },
   );
 
@@ -217,4 +251,24 @@ function getCardinalNeighbors(
   if (column > 0) neighbors.push(index - 1);
   if (column + 1 < columnCount) neighbors.push(index + 1);
   return neighbors;
+}
+
+function countUnsafeSandToLandAdjacencies(
+  cells: readonly { level: number; surface: string }[],
+  rowCount: number,
+  columnCount: number,
+) {
+  let count = 0;
+  for (let index = 0; index < cells.length; index += 1) {
+    if (cells[index].surface !== "sand") continue;
+    for (const neighborIndex of getCardinalNeighbors(
+      index,
+      rowCount,
+      columnCount,
+    )) {
+      const neighbor = cells[neighborIndex];
+      if (neighbor.surface !== "water" && neighbor.level >= 3) count += 1;
+    }
+  }
+  return count;
 }
