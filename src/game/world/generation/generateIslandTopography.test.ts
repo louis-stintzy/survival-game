@@ -100,16 +100,19 @@ describe("generateIslandTopography", () => {
           hasDeepInterior ? 0.5 : 0.4,
         );
         expect(Number.isFinite(mountain.radiusX)).toBe(true);
-        expect(mountain.radiusX).toBeGreaterThanOrEqual(12);
-        expect(mountain.radiusX).toBeLessThanOrEqual(20);
+        expect(mountain.radiusX).toBeGreaterThanOrEqual(20);
+        expect(mountain.radiusX).toBeLessThanOrEqual(28);
         expect(Number.isFinite(mountain.radiusZ)).toBe(true);
-        expect(mountain.radiusZ).toBeGreaterThanOrEqual(12);
-        expect(mountain.radiusZ).toBeLessThanOrEqual(20);
+        expect(mountain.radiusZ).toBeGreaterThanOrEqual(20);
+        expect(mountain.radiusZ).toBeLessThanOrEqual(28);
         expect(Number.isFinite(mountain.rotation)).toBe(true);
         expect(mountain.rotation).toBeGreaterThanOrEqual(0);
         expect(mountain.rotation).toBeLessThan(Math.PI * 2);
-        expect(mountain.height).toBeGreaterThanOrEqual(3.2);
-        expect(mountain.height).toBeLessThanOrEqual(4.8);
+        expect(mountain.height).toBeGreaterThanOrEqual(6);
+        expect(mountain.height).toBeLessThanOrEqual(8);
+        expect(mountain.height).toBeGreaterThan(3);
+        expect(mountain.radiusX).toBeGreaterThan(14);
+        expect(mountain.radiusZ).toBeGreaterThan(14);
       }
     },
   );

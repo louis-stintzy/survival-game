@@ -136,14 +136,18 @@ describe("createSeededTerracedTerrainData", () => {
           adjacencyCounts.cliff,
       ).toBeGreaterThan(0);
 
-      const maximumGrassLevel = Math.max(...grassLevels);
+      const maximumLandLevel = Math.max(
+        ...terrain.cells
+          .filter((cell) => cell.surface !== "water")
+          .map((cell) => cell.level),
+      );
       const maximumReachableLevel = findMaximumReachableLevelFromCoast(
         terrain.cells,
         terrain.rowCount,
         terrain.columnCount,
       );
       expect(maximumReachableLevel).toBeGreaterThanOrEqual(2);
-      expect(maximumReachableLevel).toBeLessThanOrEqual(maximumGrassLevel);
+      expect(maximumReachableLevel).toBe(maximumLandLevel);
       expect(
         countUnsafeSandToLandAdjacencies(
           terrain.cells,
