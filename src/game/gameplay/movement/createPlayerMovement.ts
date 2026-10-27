@@ -11,11 +11,12 @@ import type {
   TerrainSample,
   TerrainSampler,
 } from "../../world/terrain/terrainTypes";
+import type { TerracedTerrainData } from "../../world/terrain/terraced/terracedTerrainTypes";
+import { getTerracedTerrainCollision } from "../collision/terracedTerrainCollision";
 
 type MoveAttempt =
   | { kind: "moved" }
   | { kind: "collision"; contact: CollisionContact }
-  | { kind: "terrainCliff" }
   | { kind: "noGround" };
 
 /**
@@ -88,26 +89,6 @@ export function canTraverseTerrainLevels(
   return candidateLevel - currentLevel < 2;
 }
 
-/** Vérifie si le pourtour de la capsule rencontrerait une terrasse trop haute. */
-export function isPlayerFootprintBlockedByCliff(
-  candidateX: number,
-  candidateZ: number,
-  currentLevel: number,
-  movementX: number,
-  movementZ: number,
-  sampleTerrain: TerrainSampler,
-): boolean {
-  return PLAYER_FOOTPRINT_OFFSETS.some(({ x, z }) => {
-    if (x * movementX + z * movementZ < 0) return false;
-
-    const ground = sampleTerrain(candidateX + x, candidateZ + z);
-    return (
-      ground?.isLand === true &&
-      !canTraverseTerrainLevels(currentLevel, ground.level)
-    );
-  });
-}
-
 /**
  * Retarde une descente tant qu'une partie du pourtour repose encore sur une
  * terrasse plus haute. La hauteur courante n'est jamais augmentée ici.
@@ -154,6 +135,7 @@ export function resolvePlayerVerticalPosition(
 export function createPlayerMovement(
   player: Mesh,
   camera: ArcRotateCamera,
+  terrainData: TerracedTerrainData,
   sampleTerrain: TerrainSampler,
   getCollisionContact: (
     query: PlayerCollisionQuery,
@@ -251,29 +233,29 @@ export function createPlayerMovement(
     const ground = sampleTerrain(x, z);
     if (!ground?.isLand) return { kind: "noGround" };
     const currentGround = sampleTerrain(reference.x, reference.z);
-    if (
-      !currentGround?.isLand ||
-      !canTraverseTerrainLevels(currentGround.level, ground.level) ||
-      isPlayerFootprintBlockedByCliff(
-        x,
-        z,
-        currentGround.level,
-        x - reference.x,
-        z - reference.z,
-        sampleTerrain,
-      )
-    ) {
-      return { kind: "terrainCliff" };
+    if (!currentGround?.isLand) return { kind: "noGround" };
+
+    const terrainCollision = getTerracedTerrainCollision(
+      terrainData,
+      { x, z },
+      reference,
+      currentGround.level,
+    );
+    if (terrainCollision?.kind === "blocked") {
+      return { kind: "collision", contact: terrainCollision.contact };
     }
 
     player.position.x = x;
-    player.position.y = resolvePlayerVerticalPosition(
-      x,
-      z,
-      player.position.y,
-      ground,
-      sampleTerrain,
-    );
+    player.position.y =
+      terrainCollision?.kind === "stepUp"
+        ? terrainCollision.height + PLAYER_HALF_HEIGHT
+        : resolvePlayerVerticalPosition(
+            x,
+            z,
+            player.position.y,
+            ground,
+            sampleTerrain,
+          );
     player.position.z = z;
     return { kind: "moved" };
   }
@@ -309,10 +291,6 @@ export function createPlayerMovement(
       return false;
     }
 
-    if (moveAttempt.kind === "terrainCliff") {
-      return tryTerrainCliffSlide(movementX, movementZ, reference);
-    }
-
     const slideMovement = projectMovementAlongSurface(
       movementX,
       movementZ,
@@ -327,32 +305,6 @@ export function createPlayerMovement(
     );
 
     return slideAttempt.kind === "moved";
-  }
-
-  /** Tente au plus une composante afin de longer le bord d'une terrasse. */
-  function tryTerrainCliffSlide(
-    movementX: number,
-    movementZ: number,
-    reference: XZPosition,
-  ): boolean {
-    const alternatives = [
-      { x: movementX, z: 0 },
-      { x: 0, z: movementZ },
-    ].sort(
-      (first, second) =>
-        Math.hypot(second.x, second.z) - Math.hypot(first.x, first.z),
-    );
-
-    for (const movement of alternatives) {
-      if (movement.x === 0 && movement.z === 0) continue;
-      const attempt = tryMoveTo(
-        player.position.x + movement.x,
-        player.position.z + movement.z,
-        reference,
-      );
-      if (attempt.kind === "moved") return true;
-    }
-    return false;
   }
 
   /**

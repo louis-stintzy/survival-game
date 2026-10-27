@@ -5,6 +5,7 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import type { Scene } from "@babylonjs/core/scene";
 import type { HarvestableResource } from "../../resources/resourceTypes";
 import type { TerrainSampler } from "../terrain/terrainTypes";
+import type { TerracedTerrainData } from "../terrain/terraced/terracedTerrainTypes";
 import {
   ROCK_PLACEMENTS,
   TREE_PLACEMENTS,
@@ -26,6 +27,108 @@ export interface IslandResources {
 const ROCK_GROUND_SINK_RATIO = 0.45;
 const ROCK_COLLISION_HALF_WIDTH_RATIO = 0.85;
 const ROCK_COLLISION_HALF_DEPTH_RATIO = 0.7;
+export const MIN_HARVESTABLE_ROCKS = 6;
+const FALLBACK_ROCK_MINIMUM_DISTANCE = 2.5;
+const FALLBACK_ROCK_SCALES = [0.6, 0.65, 0.7] as const;
+
+export function isRockPlacementTerrainValid(
+  placement: RockPlacement,
+  sampleTerrain: TerrainSampler,
+) {
+  const center = sampleTerrain(placement.x, placement.z);
+  if (
+    !center?.isLand ||
+    (center.surface !== "grass" && center.surface !== "rock")
+  ) {
+    return false;
+  }
+
+  const halfWidth = ROCK_COLLISION_HALF_WIDTH_RATIO * placement.scale;
+  const halfDepth = ROCK_COLLISION_HALF_DEPTH_RATIO * placement.scale;
+  const localCheckpoints = [
+    { x: 0, z: 0 },
+    { x: -halfWidth, z: 0 },
+    { x: halfWidth, z: 0 },
+    { x: 0, z: -halfDepth },
+    { x: 0, z: halfDepth },
+    { x: -halfWidth, z: -halfDepth },
+    { x: -halfWidth, z: halfDepth },
+    { x: halfWidth, z: -halfDepth },
+    { x: halfWidth, z: halfDepth },
+  ];
+  const cosine = Math.cos(placement.rotation);
+  const sine = Math.sin(placement.rotation);
+
+  return localCheckpoints.every((checkpoint) => {
+    const x =
+      placement.x + checkpoint.x * cosine + checkpoint.z * sine;
+    const z =
+      placement.z - checkpoint.x * sine + checkpoint.z * cosine;
+    const ground = sampleTerrain(x, z);
+    return ground?.isLand === true && ground.level === center.level;
+  });
+}
+
+/**
+ * Conserve les placements historiques valides puis complète, si nécessaire,
+ * avec des centres de cellules parcourus en row-major.
+ */
+export function resolveRockPlacements(
+  terrain: TerracedTerrainData,
+  sampleTerrain: TerrainSampler,
+): RockPlacement[] {
+  const placements = ROCK_PLACEMENTS.filter((placement) =>
+    isRockPlacementTerrainValid(placement, sampleTerrain),
+  );
+  if (placements.length >= MIN_HARVESTABLE_ROCKS) return placements;
+
+  const minimumX = (-terrain.columnCount * terrain.cellSize) / 2;
+  const minimumZ = (-terrain.rowCount * terrain.cellSize) / 2;
+  const minimumDistanceSquared = FALLBACK_ROCK_MINIMUM_DISTANCE ** 2;
+
+  for (
+    let row = 0;
+    row < terrain.rowCount && placements.length < MIN_HARVESTABLE_ROCKS;
+    row += 1
+  ) {
+    for (
+      let column = 0;
+      column < terrain.columnCount && placements.length < MIN_HARVESTABLE_ROCKS;
+      column += 1
+    ) {
+      const cell = terrain.cells[row * terrain.columnCount + column];
+      if (cell.surface !== "grass" && cell.surface !== "rock") continue;
+
+      const cellIndex = row * terrain.columnCount + column;
+      const placement: RockPlacement = {
+        x: minimumX + (column + 0.5) * terrain.cellSize,
+        z: minimumZ + (row + 0.5) * terrain.cellSize,
+        scale: FALLBACK_ROCK_SCALES[cellIndex % FALLBACK_ROCK_SCALES.length],
+        rotation: ((row * 37 + column * 17) % 360) * (Math.PI / 180),
+      };
+      const isFarEnough = placements.every(
+        (existing) =>
+          (placement.x - existing.x) ** 2 +
+            (placement.z - existing.z) ** 2 >=
+          minimumDistanceSquared,
+      );
+      if (
+        isFarEnough &&
+        isRockPlacementTerrainValid(placement, sampleTerrain)
+      ) {
+        placements.push(placement);
+      }
+    }
+  }
+
+  if (placements.length < MIN_HARVESTABLE_ROCKS) {
+    throw new Error(
+      `Impossible de placer les ${MIN_HARVESTABLE_ROCKS} rochers récoltables requis.`,
+    );
+  }
+
+  return placements;
+}
 
 function createTree(
   scene: Scene,
@@ -78,7 +181,7 @@ function createRock(
 ): Mesh {
   const rock = MeshBuilder.CreatePolyhedron(
     `rock-${index}`,
-    { type: 1, size: 1 },
+    { type: 2, size: 1 },
     scene,
   );
   rock.position = new Vector3(placement.x, 0, placement.z);
@@ -112,12 +215,14 @@ function createRock(
  *
  * @param scene Scène Babylon dans laquelle créer les ressources.
  * @param materials Matériaux utilisés pour les arbres et les rochers.
+ * @param terrainData Grille utilisée pour compléter les rochers si nécessaire.
  * @param sampleTerrain Source des surfaces autorisées et hauteurs réelles.
  * @returns Les ressources récoltables et les meshes devant projeter une ombre.
  */
 export function createIslandResources(
   scene: Scene,
   materials: IslandResourceMaterials,
+  terrainData: TerracedTerrainData,
   sampleTerrain: TerrainSampler,
 ): IslandResources {
   const treeResources: HarvestableResource[] = TREE_PLACEMENTS.flatMap(
@@ -148,10 +253,14 @@ export function createIslandResources(
     },
   );
 
-  const rockResources: HarvestableResource[] = ROCK_PLACEMENTS.flatMap(
+  const rockResources: HarvestableResource[] = resolveRockPlacements(
+    terrainData,
+    sampleTerrain,
+  ).flatMap(
     (placement, index) => {
+      if (!isRockPlacementTerrainValid(placement, sampleTerrain)) return [];
       const ground = sampleTerrain(placement.x, placement.z);
-      if (ground?.surface !== "grass" && ground?.surface !== "rock") return [];
+      if (!ground) return [];
 
       const rock = createRock(
         scene,

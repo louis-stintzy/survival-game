@@ -14,6 +14,7 @@ import { createTerracedTerrainMeshes } from "../terrain/terraced/createTerracedT
 import { sampleTerracedTerrain } from "../terrain/terraced/sampleTerracedTerrain";
 import type { TerrainSampler } from "../terrain/terrainTypes";
 import { findTemporaryIslandSpawns } from "./findTemporaryIslandSpawns";
+import type { TerracedTerrainData } from "../terrain/terraced/terracedTerrainTypes";
 
 interface IslandMaterials {
   trunk: StandardMaterial;
@@ -23,6 +24,7 @@ interface IslandMaterials {
 }
 
 export interface Island {
+  terrainData: TerracedTerrainData;
   terrainMesh: Mesh;
   waterMesh: Mesh;
   sampleTerrain: TerrainSampler;
@@ -61,6 +63,7 @@ export function createIsland(
       leaves: materials.leaves,
       rock: materials.rock,
     },
+    terrainData,
     sample,
   );
   const raft = createRaft(scene, "raft", materials.raft);
@@ -68,6 +71,7 @@ export function createIsland(
   raft.root.rotation.y = raftSpawn.rotation;
 
   return {
+    terrainData,
     terrainMesh,
     waterMesh,
     sampleTerrain: sample,

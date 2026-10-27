@@ -92,6 +92,7 @@ export function createGameplaySystems(options: GameplaySystemsOptions) {
   const updatePlayerMovement = createPlayerMovement(
     player,
     camera,
+    island.terrainData,
     island.sampleTerrain,
     getPlayerWorldCollision,
     () => !raftNavigation.isEmbarked(),
