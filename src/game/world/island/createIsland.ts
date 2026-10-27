@@ -63,6 +63,7 @@ export function createIsland(
       leaves: materials.leaves,
       rock: materials.rock,
     },
+    terrainData,
     sample,
   );
   const raft = createRaft(scene, "raft", materials.raft);

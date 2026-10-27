@@ -121,6 +121,7 @@ function getExposedFaceBounds(
       column,
       -1,
       currentLevel,
+      terrain.cells[row * terrain.columnCount + column].level,
     );
     faces.push({
       minimumX: cellMinimumX,
@@ -136,6 +137,7 @@ function getExposedFaceBounds(
       column,
       1,
       currentLevel,
+      terrain.cells[row * terrain.columnCount + column].level,
     );
     faces.push({
       minimumX: cellMaximumX,
@@ -151,6 +153,7 @@ function getExposedFaceBounds(
       column,
       -1,
       currentLevel,
+      terrain.cells[row * terrain.columnCount + column].level,
     );
     faces.push({
       minimumX: terrainMinimumX + firstColumn * terrain.cellSize,
@@ -166,6 +169,7 @@ function getExposedFaceBounds(
       column,
       1,
       currentLevel,
+      terrain.cells[row * terrain.columnCount + column].level,
     );
     faces.push({
       minimumX: terrainMinimumX + firstColumn * terrain.cellSize,
@@ -184,17 +188,18 @@ function findVerticalFaceRun(
   column: number,
   side: -1 | 1,
   currentLevel: number,
+  sourceLevel: number,
 ): [number, number] {
   let firstRow = row;
   let lastRow = row;
   while (
-    isHigherLandCell(terrain, firstRow - 1, column, currentLevel) &&
+    isLandCellAtLevel(terrain, firstRow - 1, column, sourceLevel) &&
     !isHigherLandCell(terrain, firstRow - 1, column + side, currentLevel)
   ) {
     firstRow -= 1;
   }
   while (
-    isHigherLandCell(terrain, lastRow + 1, column, currentLevel) &&
+    isLandCellAtLevel(terrain, lastRow + 1, column, sourceLevel) &&
     !isHigherLandCell(terrain, lastRow + 1, column + side, currentLevel)
   ) {
     lastRow += 1;
@@ -208,17 +213,18 @@ function findHorizontalFaceRun(
   column: number,
   side: -1 | 1,
   currentLevel: number,
+  sourceLevel: number,
 ): [number, number] {
   let firstColumn = column;
   let lastColumn = column;
   while (
-    isHigherLandCell(terrain, row, firstColumn - 1, currentLevel) &&
+    isLandCellAtLevel(terrain, row, firstColumn - 1, sourceLevel) &&
     !isHigherLandCell(terrain, row + side, firstColumn - 1, currentLevel)
   ) {
     firstColumn -= 1;
   }
   while (
-    isHigherLandCell(terrain, row, lastColumn + 1, currentLevel) &&
+    isLandCellAtLevel(terrain, row, lastColumn + 1, sourceLevel) &&
     !isHigherLandCell(terrain, row + side, lastColumn + 1, currentLevel)
   ) {
     lastColumn += 1;
@@ -243,4 +249,23 @@ function isHigherLandCell(
 
   const cell = terrain.cells[row * terrain.columnCount + column];
   return cell.surface !== "water" && cell.level > currentLevel;
+}
+
+function isLandCellAtLevel(
+  terrain: TerracedTerrainData,
+  row: number,
+  column: number,
+  level: number,
+): boolean {
+  if (
+    row < 0 ||
+    row >= terrain.rowCount ||
+    column < 0 ||
+    column >= terrain.columnCount
+  ) {
+    return false;
+  }
+
+  const cell = terrain.cells[row * terrain.columnCount + column];
+  return cell.surface !== "water" && cell.level === level;
 }

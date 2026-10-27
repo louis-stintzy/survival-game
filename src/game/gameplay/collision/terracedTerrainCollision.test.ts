@@ -55,6 +55,22 @@ describe("getTerracedTerrainCollision", () => {
     ).toMatchObject({ kind: "stepUp", level: 3 });
   });
 
+  test("ne prolonge pas une falaise +2 devant la face voisine +1", () => {
+    const terrain = createTerrain([
+      [2, 3],
+      [2, 4],
+    ]);
+
+    expect(
+      getTerracedTerrainCollision(
+        terrain,
+        { x: -0.55, z: -0.5 },
+        { x: -0.65, z: -0.5 },
+        2,
+      ),
+    ).toMatchObject({ kind: "stepUp", level: 3 });
+  });
+
   test("bloque une falaise +2 de face avec une normale de sliding", () => {
     const terrain = createTerrain([[2, 4, 4]]);
 

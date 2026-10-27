@@ -5,6 +5,7 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import type { Scene } from "@babylonjs/core/scene";
 import type { HarvestableResource } from "../../resources/resourceTypes";
 import type { TerrainSampler } from "../terrain/terrainTypes";
+import type { TerracedTerrainData } from "../terrain/terraced/terracedTerrainTypes";
 import {
   ROCK_PLACEMENTS,
   TREE_PLACEMENTS,
@@ -26,6 +27,9 @@ export interface IslandResources {
 const ROCK_GROUND_SINK_RATIO = 0.45;
 const ROCK_COLLISION_HALF_WIDTH_RATIO = 0.85;
 const ROCK_COLLISION_HALF_DEPTH_RATIO = 0.7;
+export const MIN_HARVESTABLE_ROCKS = 6;
+const FALLBACK_ROCK_MINIMUM_DISTANCE = 2.5;
+const FALLBACK_ROCK_SCALES = [0.6, 0.65, 0.7] as const;
 
 export function isRockPlacementTerrainValid(
   placement: RockPlacement,
@@ -63,6 +67,67 @@ export function isRockPlacementTerrainValid(
     const ground = sampleTerrain(x, z);
     return ground?.isLand === true && ground.level === center.level;
   });
+}
+
+/**
+ * Conserve les placements historiques valides puis complète, si nécessaire,
+ * avec des centres de cellules parcourus en row-major.
+ */
+export function resolveRockPlacements(
+  terrain: TerracedTerrainData,
+  sampleTerrain: TerrainSampler,
+): RockPlacement[] {
+  const placements = ROCK_PLACEMENTS.filter((placement) =>
+    isRockPlacementTerrainValid(placement, sampleTerrain),
+  );
+  if (placements.length >= MIN_HARVESTABLE_ROCKS) return placements;
+
+  const minimumX = (-terrain.columnCount * terrain.cellSize) / 2;
+  const minimumZ = (-terrain.rowCount * terrain.cellSize) / 2;
+  const minimumDistanceSquared = FALLBACK_ROCK_MINIMUM_DISTANCE ** 2;
+
+  for (
+    let row = 0;
+    row < terrain.rowCount && placements.length < MIN_HARVESTABLE_ROCKS;
+    row += 1
+  ) {
+    for (
+      let column = 0;
+      column < terrain.columnCount && placements.length < MIN_HARVESTABLE_ROCKS;
+      column += 1
+    ) {
+      const cell = terrain.cells[row * terrain.columnCount + column];
+      if (cell.surface !== "grass" && cell.surface !== "rock") continue;
+
+      const cellIndex = row * terrain.columnCount + column;
+      const placement: RockPlacement = {
+        x: minimumX + (column + 0.5) * terrain.cellSize,
+        z: minimumZ + (row + 0.5) * terrain.cellSize,
+        scale: FALLBACK_ROCK_SCALES[cellIndex % FALLBACK_ROCK_SCALES.length],
+        rotation: ((row * 37 + column * 17) % 360) * (Math.PI / 180),
+      };
+      const isFarEnough = placements.every(
+        (existing) =>
+          (placement.x - existing.x) ** 2 +
+            (placement.z - existing.z) ** 2 >=
+          minimumDistanceSquared,
+      );
+      if (
+        isFarEnough &&
+        isRockPlacementTerrainValid(placement, sampleTerrain)
+      ) {
+        placements.push(placement);
+      }
+    }
+  }
+
+  if (placements.length < MIN_HARVESTABLE_ROCKS) {
+    throw new Error(
+      `Impossible de placer les ${MIN_HARVESTABLE_ROCKS} rochers récoltables requis.`,
+    );
+  }
+
+  return placements;
 }
 
 function createTree(
@@ -150,12 +215,14 @@ function createRock(
  *
  * @param scene Scène Babylon dans laquelle créer les ressources.
  * @param materials Matériaux utilisés pour les arbres et les rochers.
+ * @param terrainData Grille utilisée pour compléter les rochers si nécessaire.
  * @param sampleTerrain Source des surfaces autorisées et hauteurs réelles.
  * @returns Les ressources récoltables et les meshes devant projeter une ombre.
  */
 export function createIslandResources(
   scene: Scene,
   materials: IslandResourceMaterials,
+  terrainData: TerracedTerrainData,
   sampleTerrain: TerrainSampler,
 ): IslandResources {
   const treeResources: HarvestableResource[] = TREE_PLACEMENTS.flatMap(
@@ -186,7 +253,10 @@ export function createIslandResources(
     },
   );
 
-  const rockResources: HarvestableResource[] = ROCK_PLACEMENTS.flatMap(
+  const rockResources: HarvestableResource[] = resolveRockPlacements(
+    terrainData,
+    sampleTerrain,
+  ).flatMap(
     (placement, index) => {
       if (!isRockPlacementTerrainValid(placement, sampleTerrain)) return [];
       const ground = sampleTerrain(placement.x, placement.z);
