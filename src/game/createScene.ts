@@ -54,6 +54,7 @@ export function createScene(engine: Engine, worldSeed: number): Scene {
 
   // Les éléments du monde projettent leurs ombres sur le terrain terrassé.
   addShadowCasters([
+    island.terrainMesh,
     player,
     ...island.shadowCasters,
     ...Object.values(equipmentModels).flatMap((model) => model.meshes),
