@@ -3,7 +3,7 @@ import type { IslandShape } from "./generateIslandShape";
 
 const COAST_DETAIL_SEED_SALT = 0x9e37_79b9;
 export const COAST_DETAIL_CONTROL_SPACING = 8;
-export const COAST_DETAIL_AMPLITUDE = 0.06;
+export const COAST_DETAIL_AMPLITUDE = 0.039;
 export const COAST_DETAIL_SIGNAL_RANGE = 0.18;
 
 export interface CoastDetailControlGrid {
