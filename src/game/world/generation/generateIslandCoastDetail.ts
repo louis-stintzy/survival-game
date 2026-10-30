@@ -32,15 +32,127 @@ export function generateIslandCoastDetail(
     detailSeed,
   );
 
-  const values = shape.values.map((baseSignal, index) => {
+  const detailedValues = shape.values.map((baseSignal, index) => {
     const row = Math.floor(index / shape.columnCount);
     const column = index % shape.columnCount;
     const detail = sampleSmoothedCoastDetail(controlGrid, row, column);
     const coastWeight = calculateCoastWeight(baseSignal);
     return baseSignal + detail * COAST_DETAIL_AMPLITUDE * coastWeight;
   });
+  const values = repairClosedWaterPockets(
+    detailedValues,
+    shape.rowCount,
+    shape.columnCount,
+  );
 
   return { ...shape, values };
+}
+
+/**
+ * Remplit uniquement les poches d'eau sans connexion cardinale au bord.
+ * Le signal positif minimal de leur contour prolonge localement la côte sans
+ * introduire de niveau de terrain arbitraire dans ce domaine de génération.
+ */
+function repairClosedWaterPockets(
+  sourceValues: readonly number[],
+  rowCount: number,
+  columnCount: number,
+): number[] {
+  const values = [...sourceValues];
+  const ocean = new Uint8Array(values.length);
+  const pending: number[] = [];
+
+  for (let column = 0; column < columnCount; column += 1) {
+    enqueueWater(column, values, ocean, pending);
+    enqueueWater((rowCount - 1) * columnCount + column, values, ocean, pending);
+  }
+  for (let row = 1; row + 1 < rowCount; row += 1) {
+    enqueueWater(row * columnCount, values, ocean, pending);
+    enqueueWater(row * columnCount + columnCount - 1, values, ocean, pending);
+  }
+  floodWater(values, rowCount, columnCount, ocean, pending);
+
+  const visitedPocket = new Uint8Array(values.length);
+  for (let start = 0; start < values.length; start += 1) {
+    if (values[start] > 0 || ocean[start] === 1 || visitedPocket[start] === 1) {
+      continue;
+    }
+
+    const pocket: number[] = [];
+    const pocketPending = [start];
+    visitedPocket[start] = 1;
+    let repairSignal = Number.POSITIVE_INFINITY;
+
+    while (pocketPending.length > 0) {
+      const index = pocketPending.pop()!;
+      pocket.push(index);
+      for (const neighbor of getCardinalNeighborIndices(
+        index,
+        rowCount,
+        columnCount,
+      )) {
+        if (values[neighbor] > 0) {
+          repairSignal = Math.min(repairSignal, values[neighbor]);
+        } else if (ocean[neighbor] === 0 && visitedPocket[neighbor] === 0) {
+          visitedPocket[neighbor] = 1;
+          pocketPending.push(neighbor);
+        }
+      }
+    }
+
+    const positiveFill = Number.isFinite(repairSignal)
+      ? repairSignal
+      : Number.EPSILON;
+    for (const index of pocket) values[index] = positiveFill;
+  }
+
+  return values;
+}
+
+function enqueueWater(
+  index: number,
+  values: readonly number[],
+  visited: Uint8Array,
+  pending: number[],
+): void {
+  if (values[index] <= 0 && visited[index] === 0) {
+    visited[index] = 1;
+    pending.push(index);
+  }
+}
+
+function floodWater(
+  values: readonly number[],
+  rowCount: number,
+  columnCount: number,
+  visited: Uint8Array,
+  pending: number[],
+): void {
+  while (pending.length > 0) {
+    const index = pending.pop()!;
+    for (const neighbor of getCardinalNeighborIndices(
+      index,
+      rowCount,
+      columnCount,
+    )) {
+      enqueueWater(neighbor, values, visited, pending);
+    }
+  }
+}
+
+function getCardinalNeighborIndices(
+  index: number,
+  rowCount: number,
+  columnCount: number,
+): number[] {
+  const row = Math.floor(index / columnCount);
+  const column = index % columnCount;
+  const neighbors: number[] = [];
+  if (row > 0) neighbors.push(index - columnCount);
+  if (row + 1 < rowCount) neighbors.push(index + columnCount);
+  if (column > 0) neighbors.push(index - 1);
+  if (column + 1 < columnCount) neighbors.push(index + 1);
+  return neighbors;
 }
 
 /** Crée les valeurs seedées de la grille grossière, indépendamment du shape. */
@@ -77,16 +189,8 @@ export function sampleSmoothedCoastDetail(
 ): number {
   const controlRow = row / grid.spacing;
   const controlColumn = column / grid.spacing;
-  const firstRow = clamp(
-    Math.floor(controlRow),
-    0,
-    grid.rowCount - 1,
-  );
-  const firstColumn = clamp(
-    Math.floor(controlColumn),
-    0,
-    grid.columnCount - 1,
-  );
+  const firstRow = clamp(Math.floor(controlRow), 0, grid.rowCount - 1);
+  const firstColumn = clamp(Math.floor(controlColumn), 0, grid.columnCount - 1);
   const secondRow = Math.min(firstRow + 1, grid.rowCount - 1);
   const secondColumn = Math.min(firstColumn + 1, grid.columnCount - 1);
   const rowBlend = smooth(controlRow - firstRow);
