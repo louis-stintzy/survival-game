@@ -14,6 +14,14 @@ export interface TerracedTerrainGeometry {
 type FaceColor = readonly [number, number, number, number];
 type FaceNormal = readonly [number, number, number];
 
+const UINT32_RANGE = 0x1_0000_0000;
+const SIDE_COLOR_VARIATION = 0.02;
+const TOP_COLOR_VARIATION = {
+  sand: 0.015,
+  grass: 0.015,
+  rock: 0.03,
+} as const;
+
 const COLORS = {
   sandTop: hexToRgba(GAME_PALETTE.terrain.sandTop),
   sandSide: hexToRgba(GAME_PALETTE.terrain.sandSide),
@@ -67,7 +75,7 @@ export function createTerracedTerrainGeometry(
 
       addQuad(
         [x0, topY, z0, x1, topY, z0, x1, topY, z1, x0, topY, z1],
-        getTopColor(landSurface),
+        getTopColor(landSurface, row, column),
         [0, 1, 0],
       );
 
@@ -87,32 +95,90 @@ export function createTerracedTerrainGeometry(
         for (let layer = neighborLevel; layer < level; layer += 1) {
           const bottomY = layer * terrain.heightStep;
           const upperY = (layer + 1) * terrain.heightStep;
-          const sideColor = getSideColor(landSurface, level, layer);
+          const sideColor = getSideColor(
+            landSurface,
+            level,
+            layer,
+            row,
+            column,
+          );
           switch (direction) {
             case "north":
               addQuad(
-                [x0, bottomY, z0, x1, bottomY, z0, x1, upperY, z0, x0, upperY, z0],
+                [
+                  x0,
+                  bottomY,
+                  z0,
+                  x1,
+                  bottomY,
+                  z0,
+                  x1,
+                  upperY,
+                  z0,
+                  x0,
+                  upperY,
+                  z0,
+                ],
                 sideColor,
                 [0, 0, -1],
               );
               break;
             case "south":
               addQuad(
-                [x1, bottomY, z1, x0, bottomY, z1, x0, upperY, z1, x1, upperY, z1],
+                [
+                  x1,
+                  bottomY,
+                  z1,
+                  x0,
+                  bottomY,
+                  z1,
+                  x0,
+                  upperY,
+                  z1,
+                  x1,
+                  upperY,
+                  z1,
+                ],
                 sideColor,
                 [0, 0, 1],
               );
               break;
             case "east":
               addQuad(
-                [x1, bottomY, z0, x1, bottomY, z1, x1, upperY, z1, x1, upperY, z0],
+                [
+                  x1,
+                  bottomY,
+                  z0,
+                  x1,
+                  bottomY,
+                  z1,
+                  x1,
+                  upperY,
+                  z1,
+                  x1,
+                  upperY,
+                  z0,
+                ],
                 sideColor,
                 [1, 0, 0],
               );
               break;
             case "west":
               addQuad(
-                [x0, bottomY, z1, x0, bottomY, z0, x0, upperY, z0, x0, upperY, z1],
+                [
+                  x0,
+                  bottomY,
+                  z1,
+                  x0,
+                  bottomY,
+                  z0,
+                  x0,
+                  upperY,
+                  z0,
+                  x0,
+                  upperY,
+                  z1,
+                ],
                 sideColor,
                 [-1, 0, 0],
               );
@@ -159,21 +225,79 @@ export function createTerracedTerrainGeometry(
   }
 }
 
-function getTopColor(surface: Exclude<TerracedSurface, "water">): FaceColor {
-  if (surface === "sand") return COLORS.sandTop;
-  if (surface === "rock") return COLORS.rockTop;
-  return COLORS.grassTop;
+function getTopColor(
+  surface: Exclude<TerracedSurface, "water">,
+  row: number,
+  column: number,
+): FaceColor {
+  const baseColor =
+    surface === "sand"
+      ? COLORS.sandTop
+      : surface === "rock"
+        ? COLORS.rockTop
+        : COLORS.grassTop;
+  return varyFaceColor(baseColor, row, column, 0, TOP_COLOR_VARIATION[surface]);
 }
 
 function getSideColor(
   surface: Exclude<TerracedSurface, "water">,
   level: number,
   layer: number,
+  row: number,
+  column: number,
 ): FaceColor {
-  if (surface === "rock") return COLORS.rockSide;
-  if (surface === "sand" && layer === level - 1) return COLORS.sandSide;
-  if (surface === "grass" && layer === level - 1) return COLORS.dirtSide;
-  return COLORS.deepRockSide;
+  const depthFromTop = level - layer;
+  let baseColor: FaceColor;
+
+  if (surface === "rock") {
+    baseColor = depthFromTop === 1 ? COLORS.rockSide : COLORS.deepRockSide;
+  } else if (depthFromTop === 1) {
+    baseColor = surface === "sand" ? COLORS.sandSide : COLORS.dirtSide;
+  } else if (depthFromTop === 2) {
+    baseColor = COLORS.rockSide;
+  } else {
+    baseColor = COLORS.deepRockSide;
+  }
+
+  return varyFaceColor(
+    baseColor,
+    row,
+    column,
+    depthFromTop,
+    SIDE_COLOR_VARIATION,
+  );
+}
+
+/** Variation stable par cellule et couche, identique pour les quatre sommets. */
+function varyFaceColor(
+  color: FaceColor,
+  row: number,
+  column: number,
+  salt: number,
+  maximumVariation: number,
+): FaceColor {
+  let hash =
+    Math.imul(row + 1, 0x1f12_3bb5) ^
+    Math.imul(column + 1, 0x5f35_6495) ^
+    Math.imul(salt + 1, 0x6c8e_9cf5);
+  hash ^= hash >>> 16;
+  hash = Math.imul(hash, 0x7feb_352d);
+  hash ^= hash >>> 15;
+  hash = Math.imul(hash, 0x846c_a68b);
+  hash ^= hash >>> 16;
+  const signedVariation = ((hash >>> 0) / UINT32_RANGE) * 2 - 1;
+  const factor = 1 + signedVariation * maximumVariation;
+
+  return [
+    clampColor(color[0] * factor),
+    clampColor(color[1] * factor),
+    clampColor(color[2] * factor),
+    color[3],
+  ];
+}
+
+function clampColor(value: number): number {
+  return Math.min(1, Math.max(0, value));
 }
 
 function hexToRgba(hexColor: string): FaceColor {
