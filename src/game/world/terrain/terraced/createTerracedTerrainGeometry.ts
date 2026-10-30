@@ -15,10 +15,13 @@ type FaceColor = readonly [number, number, number, number];
 type FaceNormal = readonly [number, number, number];
 
 const COLORS = {
-  sand: hexToRgba(GAME_PALETTE.world.sand),
-  grass: hexToRgba(GAME_PALETTE.world.grass),
-  rock: hexToRgba(GAME_PALETTE.world.rock),
-  dirt: hexToRgba("#85502A"),
+  sandTop: hexToRgba(GAME_PALETTE.terrain.sandTop),
+  sandSide: hexToRgba(GAME_PALETTE.terrain.sandSide),
+  grassTop: hexToRgba(GAME_PALETTE.terrain.grassTop),
+  dirtSide: hexToRgba(GAME_PALETTE.terrain.dirtSide),
+  rockTop: hexToRgba(GAME_PALETTE.terrain.rockTop),
+  rockSide: hexToRgba(GAME_PALETTE.terrain.rockSide),
+  deepRockSide: hexToRgba(GAME_PALETTE.terrain.deepRockSide),
 } as const;
 
 /**
@@ -157,9 +160,9 @@ export function createTerracedTerrainGeometry(
 }
 
 function getTopColor(surface: Exclude<TerracedSurface, "water">): FaceColor {
-  if (surface === "sand") return COLORS.sand;
-  if (surface === "rock") return COLORS.rock;
-  return COLORS.grass;
+  if (surface === "sand") return COLORS.sandTop;
+  if (surface === "rock") return COLORS.rockTop;
+  return COLORS.grassTop;
 }
 
 function getSideColor(
@@ -167,10 +170,10 @@ function getSideColor(
   level: number,
   layer: number,
 ): FaceColor {
-  if (surface === "rock") return COLORS.rock;
-  if (surface === "sand" && layer === level - 1) return COLORS.sand;
-  if (surface === "grass" && layer === level - 1) return COLORS.dirt;
-  return COLORS.rock;
+  if (surface === "rock") return COLORS.rockSide;
+  if (surface === "sand" && layer === level - 1) return COLORS.sandSide;
+  if (surface === "grass" && layer === level - 1) return COLORS.dirtSide;
+  return COLORS.deepRockSide;
 }
 
 function hexToRgba(hexColor: string): FaceColor {

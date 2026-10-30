@@ -70,7 +70,71 @@ describe("createTerracedTerrainGeometry", () => {
       );
     }
   });
+
+  test("stratifie une colonne grass entre top, dirt et roche profonde", () => {
+    const geometry = createSurfaceColumn("grass");
+    const top = getFaceColor(geometry.colors, 0);
+    const deepRock = getFaceColor(geometry.colors, 1);
+    const dirt = getFaceColor(geometry.colors, 3);
+
+    expect(top).not.toEqual(dirt);
+    expect(dirt).not.toEqual(deepRock);
+    expect(top).not.toEqual(deepRock);
+    expectFaceHasConstantColor(geometry.colors, 0);
+    expectFaceHasConstantColor(geometry.colors, 1);
+    expectFaceHasConstantColor(geometry.colors, 3);
+  });
+
+  test("stratifie une colonne sand entre top, côté sable et roche profonde", () => {
+    const geometry = createSurfaceColumn("sand");
+    const top = getFaceColor(geometry.colors, 0);
+    const deepRock = getFaceColor(geometry.colors, 1);
+    const sandSide = getFaceColor(geometry.colors, 3);
+
+    expect(top).not.toEqual(sandSide);
+    expect(sandSide).not.toEqual(deepRock);
+    expect(top).not.toEqual(deepRock);
+    expectFaceHasConstantColor(geometry.colors, 0);
+    expectFaceHasConstantColor(geometry.colors, 1);
+    expectFaceHasConstantColor(geometry.colors, 3);
+  });
+
+  test("différencie le dessus et les côtés d'une colonne rock", () => {
+    const geometry = createSurfaceColumn("rock");
+    const top = getFaceColor(geometry.colors, 0);
+    const rockSide = getFaceColor(geometry.colors, 1);
+
+    expect(top).not.toEqual(rockSide);
+    expectFaceHasConstantColor(geometry.colors, 0);
+    expectFaceHasConstantColor(geometry.colors, 1);
+    expect(geometry.colors.every(Number.isFinite)).toBe(true);
+  });
 });
+
+function createSurfaceColumn(
+  surface: Exclude<TerracedCell["surface"], "water">,
+) {
+  return createTerracedTerrainGeometry(
+    createTerrain([[{ level: 3, surface }]]),
+  );
+}
+
+function getFaceColor(colors: readonly number[], faceIndex: number): number[] {
+  const colorStart = faceIndex * 4 * 4;
+  return colors.slice(colorStart, colorStart + 4);
+}
+
+function expectFaceHasConstantColor(
+  colors: readonly number[],
+  faceIndex: number,
+): void {
+  const expected = getFaceColor(colors, faceIndex);
+  const colorStart = faceIndex * 4 * 4;
+  for (let vertex = 1; vertex < 4; vertex += 1) {
+    const vertexStart = colorStart + vertex * 4;
+    expect(colors.slice(vertexStart, vertexStart + 4)).toEqual(expected);
+  }
+}
 
 function createGeometry(levels: readonly (readonly number[])[]) {
   return createTerracedTerrainGeometry(
