@@ -2,6 +2,7 @@ const BROWN = "#61361A";
 const STONE_GRAY = "#616E70";
 const SAND = "#E8BF75";
 const GRASS = "#4DAD52";
+const WATER = "#2E9EC7";
 
 // const STONE_GRAY = "#979287";
 // const SAND = "#F3D187";
@@ -9,7 +10,7 @@ const GRASS = "#4DAD52";
 
 export const GAME_PALETTE = {
   world: {
-    water: "#2E9EC7",
+    water: WATER,
     sand: SAND,
     grass: GRASS,
     trunk: BROWN,
@@ -26,6 +27,9 @@ export const GAME_PALETTE = {
     rockTop: STONE_GRAY,
     rockSide: "#515D5F",
     deepRockSide: "#465153",
+    waterDeep: WATER,
+    waterMid: "#42B4CE",
+    waterShallow: "#66CDD6",
   },
 
   player: {
