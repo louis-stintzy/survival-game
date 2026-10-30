@@ -26,8 +26,9 @@ export interface CoastalSeabedGeometry {
 }
 
 /**
- * Construit une surface sous-marine continue. Les cellules d'eau voisines
- * partagent leurs sommets ; aucune paroi verticale interne n'est générée.
+ * Construit une surface sous-marine continue et strictement visuelle. Les
+ * cellules d'eau voisines partagent leurs sommets, contrairement au terrain
+ * terrestre terrassé ; aucune paroi verticale interne n'est générée.
  */
 export function createCoastalSeabedGeometry(
   terrain: TerracedTerrainData,

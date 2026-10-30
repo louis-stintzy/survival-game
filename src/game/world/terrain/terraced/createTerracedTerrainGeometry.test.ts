@@ -82,7 +82,7 @@ describe("createTerracedTerrainGeometry", () => {
     const rock = getFaceColor(geometry.colors, 3);
     const dirt = getFaceColor(geometry.colors, 4);
 
-    expectColorNearHex(top, GAME_PALETTE.terrain.grassTop, 0.04);
+    expectColorNearHex(top, GAME_PALETTE.terrain.grassTop, 0.015);
     expectColorNearHex(dirt, GAME_PALETTE.terrain.dirtSide, 0.02);
     expectColorNearHex(rock, GAME_PALETTE.terrain.rockSide, 0.02);
     expectColorNearHex(deepRock, GAME_PALETTE.terrain.deepRockSide, 0.02);
@@ -98,7 +98,7 @@ describe("createTerracedTerrainGeometry", () => {
     const rock = getFaceColor(geometry.colors, 3);
     const sandSide = getFaceColor(geometry.colors, 4);
 
-    expectColorNearHex(top, GAME_PALETTE.terrain.sandTop, 0.03);
+    expectColorNearHex(top, GAME_PALETTE.terrain.sandTop, 0.015);
     expectColorNearHex(sandSide, GAME_PALETTE.terrain.sandSide, 0.02);
     expectColorNearHex(rock, GAME_PALETTE.terrain.rockSide, 0.02);
     expectColorNearHex(deepRock, GAME_PALETTE.terrain.deepRockSide, 0.02);
@@ -134,8 +134,8 @@ describe("createTerracedTerrainGeometry", () => {
 
     expect(first.colors).toEqual(second.colors);
     expect(firstTop).not.toEqual(secondTop);
-    expectColorNearHex(firstTop, GAME_PALETTE.terrain.grassTop, 0.04);
-    expectColorNearHex(secondTop, GAME_PALETTE.terrain.grassTop, 0.04);
+    expectColorNearHex(firstTop, GAME_PALETTE.terrain.grassTop, 0.015);
+    expectColorNearHex(secondTop, GAME_PALETTE.terrain.grassTop, 0.015);
     expectFaceHasConstantColor(first.colors, 0);
     expectFaceHasConstantColor(first.colors, 4);
   });

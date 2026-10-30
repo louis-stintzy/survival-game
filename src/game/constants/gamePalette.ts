@@ -4,10 +4,6 @@ const SAND = "#E8BF75";
 const GRASS = "#4DAD52";
 const WATER = "#2E9EC7";
 
-// const STONE_GRAY = "#979287";
-// const SAND = "#F3D187";
-// const GRASS = "#81D24F";
-
 export const GAME_PALETTE = {
   world: {
     water: WATER,

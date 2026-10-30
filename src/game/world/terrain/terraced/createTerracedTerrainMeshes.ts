@@ -18,7 +18,7 @@ export interface TerracedTerrainMeshes {
   waterMesh: Mesh;
 }
 
-/** Crée le mesh terrassé coloré unique et son plan d'eau indépendant. */
+/** Crée le terrain, son fond marin visuel et son plan d'eau indépendant. */
 export function createTerracedTerrainMeshes(
   scene: Scene,
   terrain: TerracedTerrainData,

@@ -44,7 +44,7 @@ describe("createCoastalWaterDepthData", () => {
     ]);
   });
 
-  test("ne crée aucun overlay sans cellule terrestre", () => {
+  test("ne calcule aucune distance côtière sans cellule terrestre", () => {
     const terrain = createTerrain(["WW", "WW"]);
 
     expect(createCoastalWaterDepthData(terrain).distances).toEqual([0, 0, 0, 0]);

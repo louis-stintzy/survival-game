@@ -3,9 +3,7 @@ import type { TerracedTerrainData } from "./terracedTerrainTypes";
 export const COASTAL_SEABED_MAX_DISTANCE = 8;
 
 export interface CoastalWaterDepthData {
-  rowCount: number;
-  columnCount: number;
-  /** 0 signifie terre ou eau profonde sans fond marin côtier. */
+  /** 0 signifie terre ou eau hors de la bande côtière calculée. */
   distances: readonly number[];
 }
 
@@ -60,11 +58,7 @@ export function createCoastalWaterDepthData(
     }
   }
 
-  return {
-    rowCount: terrain.rowCount,
-    columnCount: terrain.columnCount,
-    distances,
-  };
+  return { distances };
 }
 
 function getCardinalNeighbors(
