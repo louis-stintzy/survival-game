@@ -1,6 +1,7 @@
 import { generateIslandShape } from "../../generation/generateIslandShape";
 import { generateIslandTopography } from "../../generation/generateIslandTopography";
 import { generateIslandRockMask } from "../../generation/generateIslandRockMask";
+import { generateIslandCoastDetail } from "../../generation/generateIslandCoastDetail";
 import {
   BASE_TERRACED_CELL_SIZE,
   BASE_TERRACED_COLUMN_COUNT,
@@ -21,11 +22,12 @@ export const SEEDED_COASTAL_GRASS_MAX_SIGNAL = 0.29;
 export function createSeededTerracedTerrainData(
   seed: number,
 ): TerracedTerrainData {
-  const shape = generateIslandShape({
+  const baseShape = generateIslandShape({
     seed,
     rowCount: BASE_TERRACED_ROW_COUNT,
     columnCount: BASE_TERRACED_COLUMN_COUNT,
   });
+  const shape = generateIslandCoastDetail({ seed, shape: baseShape });
   const topography = generateIslandTopography({ seed, shape });
   const rockMask = generateIslandRockMask({ seed, shape });
 
