@@ -5,13 +5,17 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import type { Scene } from "@babylonjs/core/scene";
 import { GAME_PALETTE } from "../../../constants/gamePalette";
-import { createCoastalSeabedGeometry } from "./createCoastalSeabedGeometry";
+import {
+  createCoastalSeabedGeometry,
+  DEEP_SEABED_DEPTH,
+} from "./createCoastalSeabedGeometry";
 import { createTerracedTerrainGeometry } from "./createTerracedTerrainGeometry";
 import type { TerracedTerrainData } from "./terracedTerrainTypes";
 
 const MAX_SIMULTANEOUS_LIGHTS = 8;
 const WATER_VISUAL_SIZE_MULTIPLIER = 1.5;
 const WATER_ALPHA = 0.55;
+const DEEP_SEABED_VERTICAL_OFFSET = 0.02;
 
 export interface TerracedTerrainMeshes {
   terrainMesh: Mesh;
@@ -42,6 +46,17 @@ export function createTerracedTerrainMeshes(
   const logicalDepth = terrain.rowCount * terrain.cellSize;
   const waterVisualSize =
     Math.max(logicalWidth, logicalDepth) * WATER_VISUAL_SIZE_MULTIPLIER;
+  const deepSeabedMesh = MeshBuilder.CreateGround(
+    "terraced-deep-seabed",
+    { width: waterVisualSize, height: waterVisualSize, subdivisions: 1 },
+    scene,
+  );
+  deepSeabedMesh.position.y =
+    terrain.waterHeight - DEEP_SEABED_DEPTH - DEEP_SEABED_VERTICAL_OFFSET;
+  deepSeabedMesh.material = createDeepSeabedMaterial(scene);
+  deepSeabedMesh.receiveShadows = true;
+  deepSeabedMesh.isPickable = false;
+
   const waterMesh = MeshBuilder.CreateGround(
     "terraced-water",
     { width: waterVisualSize, height: waterVisualSize, subdivisions: 1 },
@@ -101,6 +116,16 @@ function createSeabedMaterial(scene: Scene): StandardMaterial {
     scene,
   );
   material.diffuseColor = Color3.White();
+  material.specularColor = Color3.Black();
+  material.maxSimultaneousLights = MAX_SIMULTANEOUS_LIGHTS;
+  return material;
+}
+
+function createDeepSeabedMaterial(scene: Scene): StandardMaterial {
+  const material = new StandardMaterial("terraced-deep-seabed-material", scene);
+  material.diffuseColor = Color3.FromHexString(
+    GAME_PALETTE.terrain.seabedDeep,
+  );
   material.specularColor = Color3.Black();
   material.maxSimultaneousLights = MAX_SIMULTANEOUS_LIGHTS;
   return material;
