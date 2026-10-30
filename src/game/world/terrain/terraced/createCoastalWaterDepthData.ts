@@ -1,6 +1,6 @@
 import type { TerracedTerrainData } from "./terracedTerrainTypes";
 
-export const COASTAL_SEABED_MAX_DISTANCE = 4;
+export const COASTAL_SEABED_MAX_DISTANCE = 8;
 
 export interface CoastalWaterDepthData {
   rowCount: number;

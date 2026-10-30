@@ -27,9 +27,8 @@ export const GAME_PALETTE = {
     rockTop: STONE_GRAY,
     rockSide: "#515D5F",
     deepRockSide: "#465153",
-    seabedSandTop: "#D7B36F",
-    seabedSandSide: "#B88E56",
-    seabedDeep: "#7F806D",
+    seabedShallow: "#D9B878",
+    seabedDeep: "#92917B",
   },
 
   player: {

@@ -5,18 +5,16 @@ import {
 } from "./createCoastalWaterDepthData";
 import type { TerracedTerrainData } from "./terracedTerrainTypes";
 
-export const SEABED_FIRST_DEPTH = 0.15;
-export const SEABED_DEPTH_STEP = 0.2;
+export const SHORE_SEABED_DEPTH = 0.1;
+export const DEEP_SEABED_DEPTH = 1.1;
 
 const SEABED_COLOR_VARIATION = 0.0125;
 const UINT32_RANGE = 0x1_0000_0000;
 
-type FaceColor = readonly [number, number, number, number];
-type FaceNormal = readonly [number, number, number];
+type VertexColor = readonly [number, number, number, number];
 
 const COLORS = {
-  top: hexToRgba(GAME_PALETTE.terrain.seabedSandTop),
-  side: hexToRgba(GAME_PALETTE.terrain.seabedSandSide),
+  shallow: hexToRgba(GAME_PALETTE.terrain.seabedShallow),
   deep: hexToRgba(GAME_PALETTE.terrain.seabedDeep),
 } as const;
 
@@ -25,10 +23,12 @@ export interface CoastalSeabedGeometry {
   indices: number[];
   colors: number[];
   normals: number[];
-  topQuadCount: number;
 }
 
-/** Construit le fond marin visuel côtier sans modifier le terrain logique. */
+/**
+ * Construit une surface sous-marine continue. Les cellules d'eau voisines
+ * partagent leurs sommets ; aucune paroi verticale interne n'est générée.
+ */
 export function createCoastalSeabedGeometry(
   terrain: TerracedTerrainData,
 ): CoastalSeabedGeometry {
@@ -36,127 +36,86 @@ export function createCoastalSeabedGeometry(
   const positions: number[] = [];
   const indices: number[] = [];
   const colors: number[] = [];
-  const normals: number[] = [];
   const minimumX = (-terrain.columnCount * terrain.cellSize) / 2;
   const minimumZ = (-terrain.rowCount * terrain.cellSize) / 2;
-  let topQuadCount = 0;
+  const vertexIndices = new Map<number, number>();
 
-  depthData.distances.forEach((distance, index) => {
-    if (distance === 0) return;
-    const row = Math.floor(index / terrain.columnCount);
-    const column = index % terrain.columnCount;
-    const x0 = minimumX + column * terrain.cellSize;
-    const x1 = x0 + terrain.cellSize;
-    const z0 = minimumZ + row * terrain.cellSize;
-    const z1 = z0 + terrain.cellSize;
-    const height = getSeabedHeight(terrain.waterHeight, distance);
-    addQuad(
-      [x0, height, z0, x1, height, z0, x1, height, z1, x0, height, z1],
-      varyColor(getTopColor(distance), row, column, distance),
-      [0, 1, 0],
+  for (let row = 0; row < terrain.rowCount; row += 1) {
+    for (let column = 0; column < terrain.columnCount; column += 1) {
+      const cellIndex = row * terrain.columnCount + column;
+      if (terrain.cells[cellIndex].surface !== "water") continue;
+
+      const first = getOrCreateVertex(row, column);
+      const second = getOrCreateVertex(row, column + 1);
+      const third = getOrCreateVertex(row + 1, column + 1);
+      const fourth = getOrCreateVertex(row + 1, column);
+      indices.push(first, second, third, first, third, fourth);
+    }
+  }
+
+  return {
+    positions,
+    indices,
+    colors,
+    normals: computeSmoothNormals(positions, indices),
+  };
+
+  function getOrCreateVertex(vertexRow: number, vertexColumn: number): number {
+    const vertexKey = vertexRow * (terrain.columnCount + 1) + vertexColumn;
+    const existing = vertexIndices.get(vertexKey);
+    if (existing !== undefined) return existing;
+
+    const averageDistance = getAverageAdjacentDistance(
+      vertexRow,
+      vertexColumn,
     );
-    topQuadCount += 1;
-  });
+    const blend = getSeabedBlend(averageDistance);
+    const x = minimumX + vertexColumn * terrain.cellSize;
+    const z = minimumZ + vertexRow * terrain.cellSize;
+    const y = getSeabedHeight(terrain.waterHeight, averageDistance);
+    const vertexIndex = positions.length / 3;
+    positions.push(x, y, z);
+    colors.push(
+      ...varyColor(
+        interpolateColor(COLORS.shallow, COLORS.deep, blend),
+        vertexRow,
+        vertexColumn,
+      ),
+    );
+    vertexIndices.set(vertexKey, vertexIndex);
+    return vertexIndex;
+  }
 
-  depthData.distances.forEach((distance, index) => {
-    if (distance === 0) return;
-    const row = Math.floor(index / terrain.columnCount);
-    const column = index % terrain.columnCount;
-    const x0 = minimumX + column * terrain.cellSize;
-    const x1 = x0 + terrain.cellSize;
-    const z0 = minimumZ + row * terrain.cellSize;
-    const z1 = z0 + terrain.cellSize;
-    const upperY = getSeabedHeight(terrain.waterHeight, distance);
+  function getAverageAdjacentDistance(
+    vertexRow: number,
+    vertexColumn: number,
+  ): number {
+    let totalDistance = 0;
+    let adjacentCellCount = 0;
 
-    addSide(row - 1, column, "north");
-    addSide(row + 1, column, "south");
-    addSide(row, column + 1, "east");
-    addSide(row, column - 1, "west");
-
-    function addSide(
-      neighborRow: number,
-      neighborColumn: number,
-      direction: "north" | "south" | "east" | "west",
-    ): void {
-      if (
-        neighborRow < 0 ||
-        neighborRow >= terrain.rowCount ||
-        neighborColumn < 0 ||
-        neighborColumn >= terrain.columnCount
-      ) {
-        return;
-      }
-      const neighborDistance =
-        depthData.distances[
-          neighborRow * terrain.columnCount + neighborColumn
-        ];
-      if (neighborDistance === 0) return;
-      const lowerY = getSeabedHeight(
-        terrain.waterHeight,
-        neighborDistance,
-      );
-      if (lowerY >= upperY) return;
-      const color = varyColor(
-        getSideColor(distance),
-        row,
-        column,
-        distance + 10,
-      );
-
-      switch (direction) {
-        case "north":
-          addQuad(
-            [x0, lowerY, z0, x1, lowerY, z0, x1, upperY, z0, x0, upperY, z0],
-            color,
-            [0, 0, -1],
-          );
-          break;
-        case "south":
-          addQuad(
-            [x1, lowerY, z1, x0, lowerY, z1, x0, upperY, z1, x1, upperY, z1],
-            color,
-            [0, 0, 1],
-          );
-          break;
-        case "east":
-          addQuad(
-            [x1, lowerY, z0, x1, lowerY, z1, x1, upperY, z1, x1, upperY, z0],
-            color,
-            [1, 0, 0],
-          );
-          break;
-        case "west":
-          addQuad(
-            [x0, lowerY, z1, x0, lowerY, z0, x0, upperY, z0, x0, upperY, z1],
-            color,
-            [-1, 0, 0],
-          );
-          break;
+    for (const rowOffset of [-1, 0]) {
+      for (const columnOffset of [-1, 0]) {
+        const cellRow = vertexRow + rowOffset;
+        const cellColumn = vertexColumn + columnOffset;
+        if (
+          cellRow < 0 ||
+          cellRow >= terrain.rowCount ||
+          cellColumn < 0 ||
+          cellColumn >= terrain.columnCount
+        ) {
+          continue;
+        }
+        const cellIndex = cellRow * terrain.columnCount + cellColumn;
+        const cell = terrain.cells[cellIndex];
+        totalDistance +=
+          cell.surface === "water"
+            ? depthData.distances[cellIndex] || COASTAL_SEABED_MAX_DISTANCE
+            : 0;
+        adjacentCellCount += 1;
       }
     }
-  });
 
-  return { positions, indices, colors, normals, topQuadCount };
-
-  function addQuad(
-    coordinates: readonly number[],
-    color: FaceColor,
-    normal: FaceNormal,
-  ): void {
-    const firstVertex = positions.length / 3;
-    positions.push(...coordinates);
-    indices.push(
-      firstVertex,
-      firstVertex + 1,
-      firstVertex + 2,
-      firstVertex,
-      firstVertex + 2,
-      firstVertex + 3,
-    );
-    for (let vertex = 0; vertex < 4; vertex += 1) {
-      colors.push(...color);
-      normals.push(...normal);
-    }
+    return totalDistance / adjacentCellCount;
   }
 }
 
@@ -164,34 +123,80 @@ export function getSeabedHeight(
   waterHeight: number,
   distance: number,
 ): number {
+  return waterHeight - getSeabedDepth(distance);
+}
+
+export function getSeabedDepth(distance: number): number {
+  const blend = getSeabedBlend(distance);
   return (
-    waterHeight -
-    SEABED_FIRST_DEPTH -
-    (distance - 1) * SEABED_DEPTH_STEP
+    SHORE_SEABED_DEPTH +
+    (DEEP_SEABED_DEPTH - SHORE_SEABED_DEPTH) * blend
   );
 }
 
-function getTopColor(distance: number): FaceColor {
-  return interpolateColor(
-    COLORS.top,
-    COLORS.deep,
-    (distance - 1) / (COASTAL_SEABED_MAX_DISTANCE - 1),
+function getSeabedBlend(distance: number): number {
+  const amount = Math.min(
+    1,
+    Math.max(0, distance / COASTAL_SEABED_MAX_DISTANCE),
   );
+  return amount * amount * (3 - 2 * amount);
 }
 
-function getSideColor(distance: number): FaceColor {
-  return interpolateColor(
-    COLORS.side,
-    COLORS.deep,
-    (distance - 1) / (COASTAL_SEABED_MAX_DISTANCE - 1),
-  );
+function computeSmoothNormals(
+  positions: readonly number[],
+  indices: readonly number[],
+): number[] {
+  const normals = Array<number>(positions.length).fill(0);
+
+  for (let index = 0; index < indices.length; index += 3) {
+    const first = indices[index] * 3;
+    const second = indices[index + 1] * 3;
+    const third = indices[index + 2] * 3;
+    const firstEdge = [
+      positions[second] - positions[first],
+      positions[second + 1] - positions[first + 1],
+      positions[second + 2] - positions[first + 2],
+    ];
+    const secondEdge = [
+      positions[third] - positions[first],
+      positions[third + 1] - positions[first + 1],
+      positions[third + 2] - positions[first + 2],
+    ];
+    // Ordre inversé adapté au winding Babylon A-B-D / A-D-C.
+    const faceNormal = [
+      secondEdge[1] * firstEdge[2] - secondEdge[2] * firstEdge[1],
+      secondEdge[2] * firstEdge[0] - secondEdge[0] * firstEdge[2],
+      secondEdge[0] * firstEdge[1] - secondEdge[1] * firstEdge[0],
+    ];
+    for (const vertex of [first, second, third]) {
+      normals[vertex] += faceNormal[0];
+      normals[vertex + 1] += faceNormal[1];
+      normals[vertex + 2] += faceNormal[2];
+    }
+  }
+
+  for (let index = 0; index < normals.length; index += 3) {
+    const length = Math.hypot(
+      normals[index],
+      normals[index + 1],
+      normals[index + 2],
+    );
+    if (length === 0) {
+      normals[index + 1] = 1;
+      continue;
+    }
+    normals[index] /= length;
+    normals[index + 1] /= length;
+    normals[index + 2] /= length;
+  }
+  return normals;
 }
 
 function interpolateColor(
-  start: FaceColor,
-  end: FaceColor,
+  start: VertexColor,
+  end: VertexColor,
   amount: number,
-): FaceColor {
+): VertexColor {
   return [
     start[0] + (end[0] - start[0]) * amount,
     start[1] + (end[1] - start[1]) * amount,
@@ -201,15 +206,13 @@ function interpolateColor(
 }
 
 function varyColor(
-  color: FaceColor,
+  color: VertexColor,
   row: number,
   column: number,
-  salt: number,
-): FaceColor {
+): VertexColor {
   let hash =
     Math.imul(row + 1, 0x1f12_3bb5) ^
-    Math.imul(column + 1, 0x5f35_6495) ^
-    Math.imul(salt + 1, 0x6c8e_9cf5);
+    Math.imul(column + 1, 0x5f35_6495);
   hash ^= hash >>> 16;
   hash = Math.imul(hash, 0x7feb_352d);
   hash ^= hash >>> 15;
@@ -227,7 +230,7 @@ function clampColor(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
-function hexToRgba(hexColor: string): FaceColor {
+function hexToRgba(hexColor: string): VertexColor {
   const value = Number.parseInt(hexColor.slice(1), 16);
   return [
     ((value >> 16) & 0xff) / 255,

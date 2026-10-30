@@ -1,7 +1,10 @@
 import { describe, expect, test } from "vitest";
 import {
   createCoastalSeabedGeometry,
+  DEEP_SEABED_DEPTH,
+  getSeabedDepth,
   getSeabedHeight,
+  SHORE_SEABED_DEPTH,
 } from "./createCoastalSeabedGeometry";
 import type {
   TerracedCell,
@@ -9,31 +12,37 @@ import type {
 } from "./terracedTerrainTypes";
 
 describe("createCoastalSeabedGeometry", () => {
-  test("produit quatre niveaux de fond marin puis aucune géométrie", () => {
-    const geometry = createCoastalSeabedGeometry(createTerrain(["LWWWWW"]));
-    const topHeights = [0, 1, 2, 3].map(
-      (quad) => geometry.positions[quad * 4 * 3 + 1],
+  test("utilise un profil continu et monotone vers le large", () => {
+    const depths = Array.from({ length: 9 }, (_, distance) =>
+      getSeabedDepth(distance),
     );
 
-    expect(geometry.topQuadCount).toBe(4);
-    expect(topHeights[0]).toBeCloseTo(0.15);
-    expect(topHeights[1]).toBeCloseTo(-0.05);
-    expect(topHeights[2]).toBeCloseTo(-0.25);
-    expect(topHeights[3]).toBeCloseTo(-0.45);
-    expect(getSeabedHeight(0.3, 1)).toBeCloseTo(0.15);
-    expect(getSeabedHeight(0.3, 4)).toBeCloseTo(-0.45);
+    expect(depths[0]).toBeCloseTo(SHORE_SEABED_DEPTH);
+    expect(depths[8]).toBeCloseTo(DEEP_SEABED_DEPTH);
+    for (let index = 1; index < depths.length; index += 1) {
+      expect(depths[index]).toBeGreaterThan(depths[index - 1]);
+    }
+    expect(getSeabedHeight(0.3, 0)).toBeLessThan(0.3);
+    expect(getSeabedHeight(0.3, 0)).toBeCloseTo(0.2);
+    expect(getSeabedHeight(0.3, 8)).toBeCloseTo(-0.8);
   });
 
-  test("ajoute une face verticale uniquement entre hauteurs différentes", () => {
-    const stepped = createCoastalSeabedGeometry(createTerrain(["LWW"]));
-    const flat = createCoastalSeabedGeometry(createTerrain(["LL", "WW"]));
-    const steppedQuadCount = stepped.positions.length / 3 / 4;
-    const flatQuadCount = flat.positions.length / 3 / 4;
+  test("partage les sommets et ne crée aucune paroi verticale interne", () => {
+    const geometry = createCoastalSeabedGeometry(createTerrain(["LWW"]));
 
-    expect(stepped.topQuadCount).toBe(2);
-    expect(steppedQuadCount - stepped.topQuadCount).toBe(1);
-    expect(flat.topQuadCount).toBe(2);
-    expect(flatQuadCount - flat.topQuadCount).toBe(0);
+    expect(geometry.positions).toHaveLength(6 * 3);
+    expect(geometry.indices).toHaveLength(4 * 3);
+    expect(new Set(getHorizontalVertexKeys(geometry.positions)).size).toBe(6);
+  });
+
+  test("prolonge le fond à profondeur clampée au-delà de la côte", () => {
+    const geometry = createCoastalSeabedGeometry(createTerrain(["LWWWWWWWWW"]));
+    const minimumY = Math.min(
+      ...geometry.positions.filter((_, index) => index % 3 === 1),
+    );
+
+    expect(geometry.indices).toHaveLength(9 * 2 * 3);
+    expect(minimumY).toBeCloseTo(-0.8);
   });
 
   test("produit des buffers déterministes, finis et valides", () => {
@@ -45,6 +54,8 @@ describe("createCoastalSeabedGeometry", () => {
 
     expect(first).toEqual(second);
     expect(terrain.cells).toEqual(originalCells);
+    expect(first.colors).toHaveLength(vertexCount * 4);
+    expect(first.normals).toHaveLength(vertexCount * 3);
     expect(
       [...first.positions, ...first.colors, ...first.normals].every(
         Number.isFinite,
@@ -56,8 +67,26 @@ describe("createCoastalSeabedGeometry", () => {
         (index) => Number.isInteger(index) && index >= 0 && index < vertexCount,
       ),
     ).toBe(true);
+    for (let index = 0; index < first.normals.length; index += 3) {
+      expect(
+        Math.hypot(
+          first.normals[index],
+          first.normals[index + 1],
+          first.normals[index + 2],
+        ),
+      ).toBeCloseTo(1);
+      expect(first.normals[index + 1]).toBeGreaterThan(0);
+    }
   });
 });
+
+function getHorizontalVertexKeys(positions: readonly number[]): string[] {
+  const keys: string[] = [];
+  for (let index = 0; index < positions.length; index += 3) {
+    keys.push(`${positions[index]},${positions[index + 2]}`);
+  }
+  return keys;
+}
 
 function createTerrain(rows: readonly string[]): TerracedTerrainData {
   const cells: TerracedCell[] = [...rows.join("")].map((surface) =>
