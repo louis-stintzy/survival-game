@@ -1,15 +1,30 @@
 const BROWN = "#61361A";
 const STONE_GRAY = "#616E70";
+const SAND = "#E8BF75";
+const GRASS = "#4DAD52";
+const WATER = "#2E9EC7";
 
 export const GAME_PALETTE = {
   world: {
-    water: "#2E9EC7",
-    sand: "#E8BF75",
-    grass: "#4DAD52",
+    water: WATER,
+    sand: SAND,
+    grass: GRASS,
     trunk: BROWN,
     leaves: "#1F7A3D",
     rock: STONE_GRAY,
     raft: BROWN,
+  },
+
+  terrain: {
+    sandTop: SAND,
+    sandSide: "#CFA45F",
+    grassTop: GRASS,
+    dirtSide: "#85502A",
+    rockTop: STONE_GRAY,
+    rockSide: "#515D5F",
+    deepRockSide: "#465153",
+    seabedShallow: "#D9B878",
+    seabedDeep: "#92917B",
   },
 
   player: {
