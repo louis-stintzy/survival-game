@@ -1,17 +1,17 @@
 import type { TerracedTerrainData } from "./terracedTerrainTypes";
 
-export const COASTAL_WATER_MAX_DISTANCE = 3;
+export const COASTAL_SEABED_MAX_DISTANCE = 4;
 
 export interface CoastalWaterDepthData {
   rowCount: number;
   columnCount: number;
-  /** 0 signifie terre ou eau profonde sans overlay côtier. */
+  /** 0 signifie terre ou eau profonde sans fond marin côtier. */
   distances: readonly number[];
 }
 
 /**
  * Calcule par propagation cardinale la distance des cellules d'eau à la terre,
- * uniquement jusqu'à la largeur visuelle utile à l'overlay côtier.
+ * uniquement jusqu'à la largeur visuelle utile au fond marin côtier.
  */
 export function createCoastalWaterDepthData(
   terrain: TerracedTerrainData,
@@ -42,7 +42,7 @@ export function createCoastalWaterDepthData(
     const index = pending[nextPendingIndex];
     nextPendingIndex += 1;
     const nextDistance = distances[index] + 1;
-    if (nextDistance > COASTAL_WATER_MAX_DISTANCE) continue;
+    if (nextDistance > COASTAL_SEABED_MAX_DISTANCE) continue;
 
     for (const neighbor of getCardinalNeighbors(
       index,

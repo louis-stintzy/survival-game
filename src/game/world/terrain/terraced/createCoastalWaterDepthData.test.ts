@@ -37,9 +37,11 @@ describe("createCoastalWaterDepthData", () => {
   });
 
   test("gère une côte située au bord de la grille", () => {
-    const terrain = createTerrain(["LWWW"]);
+    const terrain = createTerrain(["LWWWWW"]);
 
-    expect(createCoastalWaterDepthData(terrain).distances).toEqual([0, 1, 2, 3]);
+    expect(createCoastalWaterDepthData(terrain).distances).toEqual([
+      0, 1, 2, 3, 4, 0,
+    ]);
   });
 
   test("ne crée aucun overlay sans cellule terrestre", () => {

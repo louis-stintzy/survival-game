@@ -5,18 +5,13 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import type { Scene } from "@babylonjs/core/scene";
 import { GAME_PALETTE } from "../../../constants/gamePalette";
-import {
-  COASTAL_WATER_MAX_DISTANCE,
-  createCoastalWaterDepthData,
-} from "./createCoastalWaterDepthData";
+import { createCoastalSeabedGeometry } from "./createCoastalSeabedGeometry";
 import { createTerracedTerrainGeometry } from "./createTerracedTerrainGeometry";
 import type { TerracedTerrainData } from "./terracedTerrainTypes";
 
 const MAX_SIMULTANEOUS_LIGHTS = 8;
 const WATER_VISUAL_SIZE_MULTIPLIER = 1.5;
-const WATER_VERTICAL_OFFSET = 0.005;
-const DEEP_WATER_ALPHA = 0.82;
-const SHALLOW_WATER_ALPHA = 0.76;
+const WATER_ALPHA = 0.55;
 
 export interface TerracedTerrainMeshes {
   terrainMesh: Mesh;
@@ -56,75 +51,28 @@ export function createTerracedTerrainMeshes(
   waterMesh.material = createWaterMaterial(scene);
   waterMesh.receiveShadows = true;
   waterMesh.isPickable = false;
-  createShallowWaterMesh(scene, terrain, waterMesh);
+  createCoastalSeabedMesh(scene, terrain);
 
   return { terrainMesh, waterMesh };
 }
 
-function createShallowWaterMesh(
+function createCoastalSeabedMesh(
   scene: Scene,
   terrain: TerracedTerrainData,
-  waterMesh: Mesh,
 ): void {
-  const depthData = createCoastalWaterDepthData(terrain);
-  const positions: number[] = [];
-  const indices: number[] = [];
-  const colors: number[] = [];
-  const normals: number[] = [];
-  const minimumX = (-terrain.columnCount * terrain.cellSize) / 2;
-  const minimumZ = (-terrain.rowCount * terrain.cellSize) / 2;
-
-  depthData.distances.forEach((distance, index) => {
-    if (distance === 0) return;
-    const row = Math.floor(index / terrain.columnCount);
-    const column = index % terrain.columnCount;
-    const x0 = minimumX + column * terrain.cellSize;
-    const x1 = x0 + terrain.cellSize;
-    const z0 = minimumZ + row * terrain.cellSize;
-    const z1 = z0 + terrain.cellSize;
-    const firstVertex = positions.length / 3;
-    const color = getCoastalWaterColor(distance);
-
-    positions.push(x0, 0, z0, x1, 0, z0, x1, 0, z1, x0, 0, z1);
-    indices.push(
-      firstVertex,
-      firstVertex + 1,
-      firstVertex + 2,
-      firstVertex,
-      firstVertex + 2,
-      firstVertex + 3,
-    );
-    for (let vertex = 0; vertex < 4; vertex += 1) {
-      colors.push(color.r, color.g, color.b, 1);
-      normals.push(0, 1, 0);
-    }
-  });
-
+  const geometry = createCoastalSeabedGeometry(terrain);
   const vertexData = new VertexData();
-  vertexData.positions = positions;
-  vertexData.indices = indices;
-  vertexData.colors = colors;
-  vertexData.normals = normals;
-  const shallowWaterMesh = new Mesh("terraced-shallow-water", scene);
-  vertexData.applyToMesh(shallowWaterMesh);
-  shallowWaterMesh.material = createShallowWaterMaterial(scene);
-  shallowWaterMesh.useVertexColors = true;
-  shallowWaterMesh.hasVertexAlpha = false;
-  // L'offset minimal évite le z-fighting avec le plan d'océan profond.
-  shallowWaterMesh.position.y = WATER_VERTICAL_OFFSET;
-  shallowWaterMesh.parent = waterMesh;
-  shallowWaterMesh.receiveShadows = true;
-  shallowWaterMesh.isPickable = false;
-}
-
-function getCoastalWaterColor(distance: number): Color3 {
-  if (distance === 1) {
-    return Color3.FromHexString(GAME_PALETTE.terrain.waterShallow);
-  }
-  if (distance === COASTAL_WATER_MAX_DISTANCE) {
-    return Color3.FromHexString(GAME_PALETTE.terrain.waterDeep);
-  }
-  return Color3.FromHexString(GAME_PALETTE.terrain.waterMid);
+  vertexData.positions = geometry.positions;
+  vertexData.indices = geometry.indices;
+  vertexData.colors = geometry.colors;
+  vertexData.normals = geometry.normals;
+  const seabedMesh = new Mesh("terraced-coastal-seabed", scene);
+  vertexData.applyToMesh(seabedMesh);
+  seabedMesh.material = createSeabedMaterial(scene);
+  seabedMesh.useVertexColors = true;
+  seabedMesh.hasVertexAlpha = false;
+  seabedMesh.receiveShadows = true;
+  seabedMesh.isPickable = false;
 }
 
 function createTerrainMaterial(scene: Scene): StandardMaterial {
@@ -140,21 +88,20 @@ function createTerrainMaterial(scene: Scene): StandardMaterial {
 
 function createWaterMaterial(scene: Scene): StandardMaterial {
   const material = new StandardMaterial("terraced-water-material", scene);
-  material.diffuseColor = Color3.FromHexString(GAME_PALETTE.terrain.waterDeep);
+  material.diffuseColor = Color3.FromHexString(GAME_PALETTE.world.water);
   material.specularColor = Color3.Black();
-  material.alpha = DEEP_WATER_ALPHA;
+  material.alpha = WATER_ALPHA;
   material.maxSimultaneousLights = MAX_SIMULTANEOUS_LIGHTS;
   return material;
 }
 
-function createShallowWaterMaterial(scene: Scene): StandardMaterial {
+function createSeabedMaterial(scene: Scene): StandardMaterial {
   const material = new StandardMaterial(
-    "terraced-shallow-water-material",
+    "terraced-coastal-seabed-material",
     scene,
   );
   material.diffuseColor = Color3.White();
   material.specularColor = Color3.Black();
-  material.alpha = SHALLOW_WATER_ALPHA;
   material.maxSimultaneousLights = MAX_SIMULTANEOUS_LIGHTS;
   return material;
 }
